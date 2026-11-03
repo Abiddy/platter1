@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Platter · Preview for Sausalido Cafe</title>
+<meta name="description" content="A preview of Platter, the AI meal builder for restaurant websites, set up with Sausalido Cafe's menu.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#fafaf9;--card:#fff;--ink:#0c0a09;--ink2:#292524;--muted:#78716c;--faint:#a8a29e;
+  --line:#e7e5e4;--soft:#f5f5f4;--accent:#ff5810;--accent-soft:#fff1ea;--ok:#15803d;
+  --r:14px;--shadow:0 1px 2px rgba(12,10,9,.04),0 8px 24px rgba(12,10,9,.06);
+}
+*{box-sizing:border-box;margin:0}
+html{-webkit-text-size-adjust:100%}
+body{font-family:Inter,system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--ink);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+.container{max-width:1120px;margin:0 auto;padding:0 20px}
+
+/* nav */
+.nav{position:sticky;top:0;z-index:10;background:rgba(250,250,249,.85);backdrop-filter:saturate(180%) blur(12px);border-bottom:1px solid var(--line)}
+.nav .container{display:flex;align-items:center;justify-content:space-between;height:60px;gap:12px}
+.logo{display:flex;align-items:center;gap:9px;font-weight:600;font-size:17px;letter-spacing:-.01em}
+.logo svg{display:block}
+.tag{font-size:12px;font-weight:500;color:var(--muted);background:var(--card);border:1px solid var(--line);border-radius:999px;padding:5px 11px;white-space:nowrap}
+.tag b{color:var(--ink);font-weight:600}
+@media (max-width:560px){.tag .long{display:none}}
+html,body{overflow-x:hidden}
+
+/* layout */
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:48px;padding-top:48px;padding-bottom:80px;align-items:start}
+@media (max-width:920px){.layout{grid-template-columns:minmax(0,1fr);gap:28px;padding-top:20px}.widget-col{order:-1}}
+
+/* restaurant column */
+.eyebrow{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+h1{font-size:clamp(32px,5vw,44px);line-height:1.08;letter-spacing:-.03em;font-weight:700;margin:10px 0 12px}
+.lede{color:var(--muted);font-size:16px;max-width:520px}
+.meta{display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:18px;font-size:13px;color:var(--ink2)}
+.meta span{display:inline-flex;align-items:center;gap:6px}
+.meta svg{color:var(--faint)}
+.menu{margin-top:40px}
+.menu-h{display:flex;align-items:baseline;justify-content:space-between;border-bottom:1px solid var(--line);padding-bottom:12px;margin-bottom:4px}
+.menu-h h2{font-size:18px;font-weight:600;letter-spacing:-.01em}
+.menu-h small{color:var(--faint);font-size:12px}
+.sec{margin-top:24px}
+.sec h3{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:4px}
+.row{display:flex;justify-content:space-between;gap:16px;padding:12px 0;border-bottom:1px solid var(--soft)}
+.row:last-child{border-bottom:0}
+.row .nm{font-weight:500;font-size:14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.row .ds{color:var(--muted);font-size:13px;margin-top:2px}
+.row .pr{font-weight:500;font-size:14px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.pop{font-size:11px;font-weight:600;color:var(--accent);background:var(--accent-soft);border-radius:6px;padding:2px 7px}
+
+/* how it works */
+.how{margin-top:48px;display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+@media (max-width:640px){.how{grid-template-columns:1fr}}
+.how div{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px}
+.how .n{font-size:12px;font-weight:600;color:var(--faint)}
+.how .t{font-weight:600;font-size:14px;margin:6px 0 4px}
+.how .d{font-size:13px;color:var(--muted)}
+.foot{margin-top:28px;font-size:12px;color:var(--faint)}
+
+/* widget */
+.widget-col{position:sticky;top:84px}
+@media (max-width:920px){.widget-col{position:static}}
+.w{background:var(--card);border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow);overflow:hidden}
+.w-head{padding:20px 20px 4px;display:flex;gap:12px;align-items:flex-start}
+.w-icon{width:36px;height:36px;border-radius:10px;background:var(--ink);display:grid;place-items:center;flex:none}
+.w-title{font-weight:600;font-size:16px;letter-spacing:-.01em}
+.w-sub{font-size:13px;color:var(--muted)}
+.w-body{padding:16px 20px 20px}
+.lbl{font-size:12px;font-weight:600;color:var(--ink2);margin:16px 0 8px;display:flex;justify-content:space-between}
+.lbl:first-child{margin-top:0}
+.lbl .v{color:var(--ink);font-variant-numeric:tabular-nums}
+.seg{display:grid;background:var(--soft);border-radius:11px;padding:3px;gap:3px}
+.seg button{border-radius:8px;padding:8px 4px;font-size:13px;font-weight:500;color:var(--muted);transition:background .15s,color .15s,box-shadow .15s;line-height:1.2}
+.seg button small{display:block;font-size:11px;font-weight:400;color:var(--faint);margin-top:1px}
+.seg button.on{background:var(--card);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.06),0 0 0 1px rgba(0,0,0,.04)}
+.seg button.on small{color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:13px;font-weight:500;color:var(--ink2);transition:all .15s;background:var(--card)}
+.chip:hover{border-color:#d6d3d1}
+.chip.on{background:var(--ink);border-color:var(--ink);color:#fff}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:4px;border-radius:4px;background:linear-gradient(to right,var(--ink) var(--p,40%),var(--line) var(--p,40%));outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:#fff;border:1px solid #d6d3d1;box-shadow:0 1px 3px rgba(0,0,0,.15);cursor:pointer}
+input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;background:#fff;border:1px solid #d6d3d1;box-shadow:0 1px 3px rgba(0,0,0,.15);cursor:pointer}
+.toggle{display:flex;align-items:center;justify-content:space-between;margin-top:14px;font-size:13px;color:var(--ink2)}
+.sw{width:36px;height:20px;border-radius:999px;background:var(--line);position:relative;transition:background .15s}
+.sw:after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.2);transition:transform .15s}
+.sw.on{background:var(--ink)}.sw.on:after{transform:translateX(16px)}
+
+.res{border-top:1px solid var(--line);background:#fcfcfb}
+.tabs{display:flex;gap:4px;padding:12px 20px 0;border-bottom:1px solid var(--line)}
+.tab{padding:8px 2px 10px;margin-right:14px;font-size:13px;font-weight:500;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px}
+.tab.on{color:var(--ink);border-color:var(--ink)}
+.combo{padding:14px 20px 20px}
+.why{display:flex;gap:8px;font-size:13px;color:var(--ink2);background:var(--accent-soft);border-radius:10px;padding:9px 11px;margin-bottom:10px}
+.why svg{flex:none;margin-top:2px;color:var(--accent)}
+.li{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--soft)}
+.li:last-of-type{border-bottom:0}
+.qty{min-width:28px;height:24px;border-radius:7px;background:var(--soft);font-size:12px;font-weight:600;display:grid;place-items:center;color:var(--ink2);font-variant-numeric:tabular-nums}
+.li .x{flex:1;min-width:0}
+.li .a{font-size:14px;font-weight:500}
+.li .b{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.li .p{font-size:14px;font-variant-numeric:tabular-nums}
+.sum{display:flex;justify-content:space-between;align-items:baseline;border-top:1px solid var(--line);margin-top:6px;padding-top:12px}
+.sum .k{font-size:13px;color:var(--muted)}
+.sum .t{font-size:20px;font-weight:600;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.pp{font-size:12px;color:var(--muted);text-align:right}
+.over{font-size:12px;color:#b45309;margin-top:4px}
+.cta{width:100%;margin-top:14px;background:var(--ink);color:#fff;border-radius:12px;padding:13px 16px;font-weight:600;font-size:15px;display:flex;justify-content:center;align-items:center;gap:8px;transition:background .2s,transform .05s}
+.cta:hover{background:#292524}.cta:active{transform:scale(.99)}
+.cta.done{background:var(--ok)}
+.note{display:none;font-size:12px;color:var(--muted);margin-top:10px;line-height:1.5}
+.note a{color:var(--ink);font-weight:500}
+.pw{text-align:center;font-size:11px;color:var(--faint);padding:0 0 14px;display:flex;justify-content:center;align-items:center;gap:6px}
+.empty{padding:24px 20px;color:var(--muted);font-size:13px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<nav class="nav"><div class="container">
+  <div class="logo">
+    <svg width="24" height="24" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="10" fill="#0c0a09"/><ellipse cx="12" cy="9.5" rx="7" ry="4.2" fill="#fafaf9"/></svg>
+    platter
+  </div>
+  <span class="tag">Preview for <b>Sausalido Cafe</b><span class="long"> · not the official site</span></span>
+</div></nav>
+
+<main class="container layout">
+  <section>
+    <div class="eyebrow">Sausalido Cafe · Torrance</div>
+    <h1>Not sure what to order?<br>We'll build it for you.</h1>
+    <p class="lede">Breakfast plates, acai bowls, sandwiches and Thai-style rice and noodles. Tell Platter who's eating and it puts together the order.</p>
+    <div class="meta">
+      <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-6.2-7-11a7 7 0 1 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>3566 Redondo Beach Blvd, Torrance</span>
+      <span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11h18M5 11V7a7 7 0 0 1 14 0v4M4 15h16l-1 5H5z"/></svg>Breakfast · Lunch · Dinner</span>
+    </div>
+
+    <div class="menu">
+      <div class="menu-h"><h2>Menu</h2><small>Prices from public listings</small></div>
+      <div id="menu"></div>
+    </div>
+
+    <div class="how">
+      <div><div class="n">01</div><div class="t">Reads your menu</div><div class="d">Connects to Square, so items, prices and sold-out dishes stay in sync.</div></div>
+      <div><div class="n">02</div><div class="t">Lives on your website</div><div class="d">One line of code. Matches your brand, works on phones.</div></div>
+      <div><div class="n">03</div><div class="t">Builds bigger orders</div><div class="d">Guests get a complete meal in one tap instead of guessing.</div></div>
+    </div>
+    <p class="foot">This is a Platter preview built from Sausalido Cafe's public menu. Prices may differ in store. · platter.digital</p>
+  </section>
+
+  <aside class="widget-col">
+    <div class="w" role="region" aria-label="Platter meal builder">
+      <div class="w-head">
+        <div class="w-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 17l.8 2.2L22 20l-2.2.8L19 23l-.8-2.2L16 20l2.2-.8z"/></svg></div>
+        <div><div class="w-title">Build my order</div><div class="w-sub">A few taps and it's ready to order.</div></div>
+      </div>
+      <div class="w-body">
+        <div class="lbl">Who's eating</div>
+        <div class="seg" id="party" style="grid-template-columns:repeat(4,1fr)"></div>
+        <div class="lbl">Meal</div>
+        <div class="seg" id="meal" style="grid-template-columns:1fr 1fr"></div>
+        <div class="lbl">Preferences <span style="font-weight:400;color:var(--faint)">Optional</span></div>
+        <div class="chips" id="vibe"></div>
+        <div class="lbl">Budget per person <span class="v" id="budL">$20</span></div>
+        <input type="range" id="budget" min="10" max="35" step="1" value="20" aria-label="Budget per person">
+        <div class="toggle"><span>Add a smoothie for everyone</span><button class="sw" id="drink" role="switch" aria-checked="false" aria-label="Add a smoothie for everyone"></button></div>
+      </div>
+      <div class="res">
+        <div class="tabs" id="tabs" role="tablist"></div>
+        <div id="out"></div>
+        <div class="pw"><svg width="12" height="12" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="10" fill="#a8a29e"/><ellipse cx="12" cy="9.5" rx="7" ry="4.2" fill="#fcfcfb"/></svg>Powered by Platter</div>
+      </div>
+    </div>
+  </aside>
+</main>
+
+<script>
+const ITEMS=[
+{id:'bp',s:'Breakfast',n:'Breakfast Panini',d:'Scrambled eggs, cheese, choice of protein, house sauce',p:10.99,t:['breakfast','hearty'],k:'main',pop:5},
+{id:'ubp',s:'Breakfast',n:'Ultimate Breakfast Panini',d:'Eggs and cheese with turkey or ham plus bacon',p:11.99,t:['breakfast','hearty'],k:'main',pop:4},
+{id:'mbp',s:'Breakfast',n:'Meatless Panini',d:'Eggs, cheese, avocado, tomato',p:11.99,t:['breakfast','veg','light'],k:'main',pop:2},
+{id:'b1',s:'Breakfast',n:'Breakfast #1',d:'2 eggs, 2 bacon, toast',p:9.25,t:['breakfast','hearty'],k:'main',pop:3},
+{id:'b2',s:'Breakfast',n:'#2 Pancake Breakfast',d:'2 pancakes, 2 eggs, 2 bacon',p:12.99,t:['breakfast','hearty','kid'],k:'main',pop:4},
+{id:'b3',s:'Breakfast',n:'#3 French Toast Breakfast',d:'2 French toast, 2 eggs, 2 bacon',p:11.99,t:['breakfast','kid'],k:'main',pop:2},
+{id:'b4',s:'Breakfast',n:'#4 Platinum Plate',d:'Waffle, 2 eggs, 2 bacon',p:12.99,t:['breakfast','hearty','kid'],k:'main',pop:2},
+{id:'acai',s:'Bowls & sandwiches',n:'Original Acai Bowl',d:'Acai, banana, berries, granola, coconut',p:16.50,t:['breakfast','lunch','veg','light'],k:'main',pop:5},
+{id:'phil',s:'Bowls & sandwiches',n:'Philly Cheese',d:'Steak, peppers, onions, provolone, French roll',p:11.99,t:['lunch','hearty'],k:'main',pop:4},
+{id:'veg',s:'Bowls & sandwiches',n:'Vegetarian Sandwich',d:'Avocado, lettuce, tomato, onion, herb aioli',p:9.99,t:['lunch','veg','light'],k:'main',pop:5},
+{id:'emp',s:'Rice & noodles',n:'Empress Chicken',d:'Roasted chili sauce, green onion, cashews, rice',p:14.99,t:['lunch','asian','spicy','hearty'],k:'main',pop:5},
+{id:'herb',s:'Rice & noodles',n:'Sweet Herb Chicken',d:'Bell peppers, onions, sweet herb garlic sauce, rice',p:14.99,t:['lunch','asian'],k:'main',pop:3},
+{id:'basil',s:'Rice & noodles',n:'Spicy Basil Chicken',d:'Basil and chili stir-fry, fried egg on top',p:17.99,t:['lunch','asian','spicy','hearty'],k:'main',pop:3},
+{id:'yaki',s:'Rice & noodles',n:'Yakisoba Chow Mein',d:'Noodles, protein, broccoli, cabbage, carrots',p:12.99,t:['lunch','asian','hearty'],k:'main',pop:3},
+{id:'fish',s:'Plates',n:'Fish & Chips',d:'Two pieces battered cod, fries',p:10.99,t:['lunch','hearty','kid'],k:'main',pop:2},
+{id:'strips',s:'Plates',n:'Chicken Strips & Fries',d:'Crispy chicken strips, fries',p:13.99,t:['lunch','kid','hearty'],k:'main',pop:3},
+{id:'puff',s:'Sides',n:'Curry Puffs (2)',d:'Curried potato, spices, hint of beef',p:8.99,t:['lunch','asian','share'],k:'side',pop:5},
+{id:'roll',s:'Sides',n:'Veggie Spring Rolls',d:'Crispy vegetable spring rolls',p:7.99,t:['lunch','asian','veg','share'],k:'side',pop:3},
+{id:'fries',s:'Sides',n:'French Fries',d:'Side order',p:5.50,t:['lunch','share','kid'],k:'side',pop:2},
+{id:'smoo',s:'Drinks',n:'Fruit Smoothie',d:'Strawberry, mango, mixed berry and more',p:6.99,t:['breakfast','lunch','drink','light'],k:'drink',pop:4}
+];
+const S={party:2,meal:'lunch',vibes:[],budget:20,drinks:false,tab:'fav'};
+const PARTY=[[1,'1','Solo'],[2,'2','Pair'],[4,'4','Family'],[8,'8','Team']];
+const MEAL=[['breakfast','Breakfast'],['lunch','Lunch & dinner']];
+const VIBES=[['asian','Thai & Asian'],['hearty','Hearty'],['light','Light'],['veg','Vegetarian'],['spicy','Spicy'],['kid','Kid-friendly']];
+const TABS={fav:'Most popular',value:'Best value',new:'Something new'};
+const $=id=>document.getElementById(id);
+const money=v=>'$'+v.toFixed(2);
+
+/* menu */
+const secs=[...new Set(ITEMS.map(i=>i.s))];
+$('menu').innerHTML=secs.map(s=>`<div class="sec"><h3>${s}</h3>${ITEMS.filter(i=>i.s===s).map(i=>`<div class="row"><div><div class="nm">${i.n}${i.pop>=5?'<span class="pop">Popular</span>':''}</div><div class="ds">${i.d}</div></div><div class="pr">${money(i.p)}</div></div>`).join('')}</div>`).join('');
+
+/* controls */
+function avail(v){return ITEMS.some(i=>i.k!=='drink'&&i.t.includes(S.meal)&&i.t.includes(v))}
+function renderControls(){
+  $('party').innerHTML=PARTY.map(([v,a,b])=>`<button class="${S.party===v?'on':''}" data-v="${v}" aria-pressed="${S.party===v}">${a}<small>${b}</small></button>`).join('');
+  $('meal').innerHTML=MEAL.map(([v,l])=>`<button class="${S.meal===v?'on':''}" data-v="${v}" aria-pressed="${S.meal===v}">${l}</button>`).join('');
+  $('vibe').innerHTML=VIBES.filter(([v])=>avail(v)).map(([v,l])=>`<button class="chip ${S.vibes.includes(v)?'on':''}" data-v="${v}" aria-pressed="${S.vibes.includes(v)}">${l}</button>`).join('');
+  $('party').querySelectorAll('button').forEach(b=>b.onclick=()=>{S.party=+b.dataset.v;update()});
+  $('meal').querySelectorAll('button').forEach(b=>b.onclick=()=>{S.meal=b.dataset.v;S.vibes=S.vibes.filter(avail);update()});
+  $('vibe').querySelectorAll('button').forEach(b=>b.onclick=()=>{const v=b.dataset.v;S.vibes=S.vibes.includes(v)?S.vibes.filter(x=>x!==v):[...S.vibes,v];update()});
+  const sw=$('drink');sw.classList.toggle('on',S.drinks);sw.setAttribute('aria-checked',S.drinks);
+}
+$('drink').onclick=()=>{S.drinks=!S.drinks;update()};
+const rng=$('budget');
+function paintRange(){rng.style.setProperty('--p',((S.budget-10)/25*100)+'%');$('budL').textContent='$'+S.budget}
+rng.oninput=e=>{S.budget=+e.target.value;paintRange();renderResults()};
+
+/* engine */
+function score(i,st){
+  let s=st==='fav'?i.pop*3:st==='value'?i.pop*1.2-i.p*0.6:(6-i.pop)*2+(i.p%3);
+  S.vibes.forEach(v=>{if(i.t.includes(v))s+=6});
+  if(S.vibes.length&&!S.vibes.some(v=>i.t.includes(v)))s-=8;
+  return s;
+}
+function makeCombo(st){
+  const n=S.party,cap=S.budget*n;
+  const mains=ITEMS.filter(i=>i.k==='main'&&i.t.includes(S.meal)).sort((a,b)=>score(b,st)-score(a,st));
+  const sides=ITEMS.filter(i=>i.k==='side'&&i.t.includes(S.meal)).sort((a,b)=>score(b,st)-score(a,st));
+  const variety=n>=4?Math.min(mains.length,Math.ceil(n*.75)):n;
+  const pick=[];for(let k=0;k<n;k++)pick.push(mains[k%variety]);
+  const sp=[];const ns=n===1?1:Math.ceil(n/2);for(let k=0;k<ns&&sides.length;k++)sp.push(sides[k%sides.length]);
+  const drink=ITEMS.find(i=>i.id==='smoo'),dq=S.drinks?n:0;
+  const total=()=>pick.reduce((a,i)=>a+i.p,0)+sp.reduce((a,i)=>a+i.p,0)+dq*drink.p;
+  const cheap=[...mains].sort((a,b)=>a.p-b.p);let g=0;
+  while(total()>cap&&g++<80){
+    if(sp.length>(n>=4?1:0)){sp.pop();continue}
+    const idx=pick.reduce((m,i,k)=>i.p>pick[m].p?k:m,0);
+    const alt=cheap.find(c=>c.p<pick[idx].p&&(!S.vibes.length||S.vibes.some(v=>c.t.includes(v))))||cheap.find(c=>c.p<pick[idx].p);
+    if(alt){pick[idx]=alt;continue}
+    if(sp.length){sp.pop();continue}
+    break;
+  }
+  const c={};[...pick,...sp].forEach(i=>c[i.id]=(c[i.id]||0)+1);if(dq)c.smoo=(c.smoo||0)+dq;
+  const lines=Object.entries(c).map(([id,q])=>{const i=ITEMS.find(x=>x.id===id);return{q,i}}).sort((a,b)=>(a.i.k==='main'?0:a.i.k==='side'?1:2)-(b.i.k==='main'?0:b.i.k==='side'?1:2));
+  const t=total();
+  return{lines,t,pp:t/n,over:t>cap+0.001,key:Object.keys(c).sort().map(k=>k+c[k]).join(),popCount:lines.filter(l=>l.i.pop>=5).length,shares:sp.length};
+}
+function whyText(st,c){
+  const who={1:'you',2:'the two of you',4:'a family of four',8:'a team of eight'}[S.party];
+  const vibe=S.vibes.length?VIBES.filter(([v])=>S.vibes.includes(v)).map(([,l])=>(l==='Thai & Asian'?l:l.toLowerCase())).join(' + ')+' ':'';
+  if(st==='fav')return `The ${vibe}dishes regulars order most${c.popCount?` (${c.popCount} best-seller${c.popCount>1?'s':''})`:''}, sized for ${who}.`;
+  if(st==='value')return `The most food for your budget, sized for ${who}.`;
+  return `Dishes first-timers usually miss, sized for ${who}.`;
+}
+function renderResults(){
+  const combos={};const seen=new Set();
+  ['fav','value','new'].forEach(st=>{const c=makeCombo(st);if(!seen.has(c.key)){seen.add(c.key);combos[st]=c}});
+  if(!combos[S.tab])S.tab='fav';
+  $('tabs').innerHTML=Object.keys(combos).map(k=>`<button class="tab ${S.tab===k?'on':''}" role="tab" aria-selected="${S.tab===k}" data-k="${k}">${TABS[k]}</button>`).join('');
+  $('tabs').querySelectorAll('.tab').forEach(b=>b.onclick=()=>{S.tab=b.dataset.k;renderResults()});
+  const c=combos[S.tab];
+  if(!c||!c.lines.length){$('out').innerHTML='<div class="empty">Nothing matches yet. Try removing a preference.</div>';return}
+  $('out').innerHTML=`<div class="combo">
+    <div class="why"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.2 6.1L20 10l-5.8 1.9L12 18l-2.2-6.1L4 10l5.8-1.9z"/></svg><span>${whyText(S.tab,c)}</span></div>
+    ${c.lines.map(l=>`<div class="li"><div class="qty">${l.q}×</div><div class="x"><div class="a">${l.i.n}</div><div class="b">${l.i.d}</div></div><div class="p">${money(l.i.p*l.q)}</div></div>`).join('')}
+    <div class="sum"><div class="k">Total${S.party>1?`<div class="pp" style="text-align:left">${money(c.pp)} per person</div>`:''}</div><div class="t">${money(c.t)}</div></div>
+    ${c.over?'<div class="over">A little over budget. This is the closest full meal.</div>':''}
+    <button class="cta" id="cta">Add to order · ${money(c.t)}</button>
+    <div class="note" id="note">In the live version, this adds the whole order to Sausalido's Square cart in one tap. For now, <a href="https://www.sausalido-cafe.com/" target="_blank" rel="noopener">open Sausalido's ordering page</a>.</div>
+  </div>`;
+  $('cta').onclick=()=>{const b=$('cta');b.classList.add('done');b.innerHTML='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg> Added to order';$('note').style.display='block'};
+}
+function update(){renderControls();paintRange();renderResults()}
+update();
+</script>
+</body>
+</html>
