@@ -93,7 +93,8 @@ h1{font-size:38px;line-height:1.02;letter-spacing:-.03em;font-weight:800}
 .tot .v{font-size:32px;font-weight:800;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
 .pp{font-size:14px;color:var(--ink2);text-align:right}
 .pdots{display:flex;justify-content:center;gap:6px;margin:12px 0 16px}.pdots i{width:8px;height:8px;border-radius:9px;background:var(--line);transition:all .2s}.pdots i.on{width:22px;background:var(--ink)}
-.actions{padding:0 22px;display:flex;flex-direction:column;gap:4px;margin-top:auto}
+.actions{position:sticky;bottom:0;padding:14px 22px calc(10px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:2px;margin-top:auto;background:linear-gradient(to bottom,rgba(255,255,255,0),#fff 22%);z-index:5}
+#picks{padding-bottom:0}
 
 /* ticket */
 #ticket{align-items:stretch;text-align:center}
@@ -139,7 +140,7 @@ h1{font-size:38px;line-height:1.02;letter-spacing:-.03em;font-weight:800}
       <img src="https://d2ol7oe51mr4n9.cloudfront.net/user_3GsbRE1t9hIx7tjNcLo5jEaZ8ao/96e4324c-5fc2-4a1f-a62b-067f2a812d76.webp" alt="Foodol waving hello" width="250" height="237">
       <h1>Hey! Let me<br>pick for you.</h1>
       <p class="sub">Trust me, I've tried everything here. Two quick questions and I'll hold up my best combos.</p>
-      <span class="gift"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="8" width="18" height="13" rx="2"/><path d="M12 8v13M3 12h18M7.5 8a2.5 2.5 0 1 1 4.5-1.5V8M16.5 8A2.5 2.5 0 1 0 12 6.5V8"/></svg>Free <span class="xname"></span> with any Foodol combo</span>
+      <span class="gift"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="8" width="18" height="13" rx="2"/><path d="M12 8v13M3 12h18M7.5 8a2.5 2.5 0 1 1 4.5-1.5V8M16.5 8A2.5 2.5 0 1 0 12 6.5V8"/></svg><span>Free <span class="xname"></span> with any Foodol combo</span></span>
     </div>
     <div class="bottom">
       <button class="btn" data-go="who">Let's go</button>
@@ -171,8 +172,7 @@ h1{font-size:38px;line-height:1.02;letter-spacing:-.03em;font-weight:800}
   <section class="screen" id="picks">
     <div class="head"><div><div class="dots" style="margin-bottom:10px"><i class="on"></i><i class="on"></i><i class="on"></i></div><h2>Here's what I'd get</h2></div><span class="hint">Swipe →</span></div>
     <div class="rail" id="rail"></div>
-    <div class="pdots" id="pdots"></div>
-    <div class="actions">
+    <div class="actions"><div class="pdots" id="pdots" style="margin:0 0 10px"></div>
       <button class="btn" id="choose">This one!</button>
       <button class="link" data-go="who">Start over</button>
     </div>
