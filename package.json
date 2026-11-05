@@ -1,15 +1,12 @@
 {
-  "name": "platter",
-  "version": "0.1.0",
+  "name": "foodol",
+  "version": "0.2.0",
   "private": true,
-  "description": "Platter: AI meal builder widget for restaurant websites",
+  "description": "Foodol: picks your perfect combo at the restaurant",
   "scripts": {
-    "start": "serve public -l tcp://0.0.0.0:${PORT:-3000}"
+    "start": "node server.js"
   },
   "engines": {
     "node": ">=18"
-  },
-  "dependencies": {
-    "serve": "^14.2.4"
   }
 }
