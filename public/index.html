@@ -20,7 +20,7 @@
 html,body{height:100%}
 body{font-family:Outfit,system-ui,sans-serif;color:var(--ink);background:#eef5f0;-webkit-font-smoothing:antialiased;font-size:16px}
 button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
-.app{max-width:460px;min-height:100dvh;margin:0 auto;background:var(--bg);position:relative;overflow-x:hidden;display:flex;flex-direction:column;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+.app{max-width:460px;min-height:100dvh;margin:0 auto;background:var(--bg);position:relative;overflow-x:clip;display:flex;flex-direction:column;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
 .screen{flex:1;display:none;flex-direction:column;padding:20px 22px 28px;animation:in .35s ease}
 .screen.on{display:flex}
 @keyframes in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
