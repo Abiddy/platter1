@@ -52,6 +52,14 @@ h1{font-size:38px;line-height:1.02;letter-spacing:-.03em;font-weight:800}
 .tile{border-radius:var(--r);padding:18px 16px;text-align:left;display:flex;flex-direction:column;gap:6px;min-height:128px;justify-content:flex-end;transition:transform .12s;border:2px solid transparent}
 .tile:active{transform:scale(.97)}
 .tile.pick{border-color:var(--ink)}
+.tile{position:relative}
+.tile.sel{border-color:var(--ink);box-shadow:0 4px 0 var(--ink)}
+.check{position:absolute;top:12px;right:12px;width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.8);border:2px solid rgba(18,58,34,.2);display:grid;place-items:center;transition:all .15s}
+.tile.sel .check{background:var(--ink);border-color:var(--ink)}
+.check svg{opacity:0}.tile.sel .check svg{opacity:1}
+.hintline{font-size:15px;color:var(--muted);margin:-12px 0 16px 80px}
+#crave .actions{position:sticky;bottom:0;padding:16px 0 calc(6px + env(safe-area-inset-bottom));margin-top:auto;background:linear-gradient(to bottom,rgba(255,255,255,0),#fff 30%)}
+#crave .btn[disabled]{background:#c9d8ce;box-shadow:0 6px 0 #b3c4b9;cursor:default}
 .tile .big{font-size:44px;font-weight:800;line-height:1;letter-spacing:-.03em}
 .tile .lbl{font-size:17px;font-weight:600}
 .tile .s{font-size:14px;opacity:.75}
@@ -163,7 +171,9 @@ h1{font-size:38px;line-height:1.02;letter-spacing:-.03em;font-weight:800}
   <section class="screen" id="crave">
     <div class="top"><button class="back" data-go="who" aria-label="Back"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button><div class="dots"><i class="on"></i><i class="on"></i><i></i></div><span style="width:44px"></span></div>
     <div class="ask"><img src="https://d2ol7oe51mr4n9.cloudfront.net/user_3GsbRE1t9hIx7tjNcLo5jEaZ8ao/96e4324c-5fc2-4a1f-a62b-067f2a812d76.webp" alt=""><div class="bubble">What are you craving?</div></div>
+    <p class="hintline">Pick as many as you like.</p>
     <div class="grid" id="craveGrid"></div>
+    <div class="actions"><button class="btn" id="craveGo" disabled>Pick at least one</button></div>
   </section>
 
   <!-- thinking -->
@@ -249,7 +259,7 @@ const KINDS = {
   adv:{badge:'Something new',title:'The Adventure',cls:'c-adv'},
 };
 
-const S = {party:2, crave:null, combos:[], idx:0, order:null};
+const S = {party:2, craves:new Set(), combos:[], idx:0, order:null};
 const $ = (id) => document.getElementById(id);
 const money = (v) => '$' + v.toFixed(2);
 const src = new URLSearchParams(location.search).get('src') || '';
@@ -263,16 +273,32 @@ document.querySelectorAll('[data-go]').forEach((b) => b.onclick = () => go(b.dat
 
 /* question tiles */
 $('whoGrid').innerHTML = WHO.map(([n,l,t]) => `<button class="tile ${t}" data-n="${n}"><span class="big">${n === 6 ? '5+' : n}</span><span class="lbl">${l}</span></button>`).join('');
-$('craveGrid').innerHTML = CRAVE.map(([k,l,img,t],i) => `<button class="tile ${t} ${i === CRAVE.length - 1 ? 'wide' : ''}" data-k="${k}"><img src="${IMG + img}.webp" alt="" width="76" height="76"><span class="lbl">${l}</span></button>`).join('');
+$('craveGrid').innerHTML = CRAVE.map(([k,l,img,t],i) => `<button class="tile ${t} ${i === CRAVE.length - 1 ? 'wide' : ''}" data-k="${k}" aria-pressed="false"><span class="check" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg></span><img src="${IMG + img}.webp" alt="" width="76" height="76"><span class="lbl">${l}</span></button>`).join('');
 const pickTile = (b, then) => { b.classList.add('pick'); setTimeout(() => { b.classList.remove('pick'); then(); }, 160); };
 $('whoGrid').querySelectorAll('.tile').forEach((b) => b.onclick = () => pickTile(b, () => { S.party = +b.dataset.n; go('crave'); }));
-$('craveGrid').querySelectorAll('.tile').forEach((b) => b.onclick = () => pickTile(b, () => {
-  S.crave = b.dataset.k; go('think');
-  setTimeout(() => { buildPicks(); go('picks'); }, 1100);
-}));
+function syncCrave(){
+  $('craveGrid').querySelectorAll('.tile').forEach((b) => { const on = S.craves.has(b.dataset.k); b.classList.toggle('sel', on); b.setAttribute('aria-pressed', on); });
+  const n = S.craves.size, g = $('craveGo');
+  g.disabled = !n; g.textContent = !n ? 'Pick at least one' : S.craves.has('surprise') ? 'Surprise me, Foodol!' : `Show my combos (${n})`;
+}
+$('craveGrid').querySelectorAll('.tile').forEach((b) => b.onclick = () => {
+  const k = b.dataset.k;
+  if (S.craves.has(k)) S.craves.delete(k);
+  else { if (k === 'surprise') S.craves.clear(); else S.craves.delete('surprise'); S.craves.add(k); }
+  syncCrave();
+});
+$('craveGo').onclick = () => { if (!S.craves.size) return; go('think'); setTimeout(() => { buildPicks(); go('picks'); }, 1100); };
+syncCrave();
 
 /* combo engine */
-function pool(kind){ return ITEMS.filter((i) => S.crave === 'surprise' ? !i.c.includes('breakfast') || i.id === 'acai' : i.c.includes(S.crave)); }
+function pool(){ return S.craves.has('surprise') ? ITEMS.filter((i) => !i.c.includes('breakfast') || i.id === 'acai') : ITEMS.filter((i) => i.c.some((c) => S.craves.has(c))); }
+function mix(list, how){
+  // round-robin across the chosen cravings so every craving shows up
+  const cats = S.craves.has('surprise') ? ['all'] : [...S.craves];
+  const per = cats.map((c) => list.filter((i) => c === 'all' || i.c.includes(c)).sort((a,b) => score(b,how) - score(a,how)));
+  const out = []; for (let r = 0; r < list.length; r++) for (const l of per) if (l[r] && !out.includes(l[r])) out.push(l[r]);
+  return out;
+}
 function score(i, how){
   if (how === 'fav') return i.pop * 10 - i.p * .1;
   if (how === 'deal') return -i.p + i.pop * .3;
@@ -280,9 +306,9 @@ function score(i, how){
 }
 function makeCombo(how){
   const n = S.party, all = pool();
-  const mains = all.filter((i) => i.k === 'main').sort((a,b) => score(b,how) - score(a,how));
+  const mains = mix(all.filter((i) => i.k === 'main'), how);
   const sides = all.filter((i) => i.k === 'side').sort((a,b) => score(b,how) - score(a,how));
-  const variety = Math.max(1, Math.min(mains.length, n <= 2 ? n : Math.ceil(n * .7)));
+  const variety = Math.max(1, Math.min(mains.length, Math.max(n <= 2 ? n : Math.ceil(n * .7), S.craves.has('surprise') ? 1 : Math.min(S.craves.size, n))));
   const counts = new Map();
   for (let k = 0; k < n; k++){ const m = mains[k % variety]; counts.set(m, (counts.get(m) || 0) + 1); }
   const ns = n === 1 ? (sides.length && how !== 'deal' ? 1 : 0) : Math.ceil(n / 2);
