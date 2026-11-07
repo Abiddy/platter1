@@ -34,7 +34,16 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
 /* hello */
 #hello{justify-content:space-between;text-align:center}
 #hello .mid{display:flex;flex-direction:column;align-items:center;gap:6px}
-#hello img{width:min(66vw,270px);height:auto;margin:6px 0 0}
+#hello img{height:min(30vh,270px);height:min(30dvh,270px);width:auto;max-width:72vw;margin:0}
+#hello{height:100vh;height:100dvh;min-height:0;padding-top:14px;padding-bottom:16px;gap:8px;overflow:hidden}
+#hello .mid{flex:1;min-height:0;justify-content:center;gap:4px}
+#hello h1{font-size:clamp(26px,5dvh,38px)}
+#hello .sub{font-size:clamp(14px,2.2dvh,17px);line-height:1.35}
+#hello .gift{margin-top:6px;font-size:clamp(13px,1.9dvh,15px);padding:7px 12px}
+#hello .tag{font-size:clamp(12px,1.8dvh,14px);padding:6px 14px}
+#hello .btn{padding:clamp(12px,2.1dvh,18px);font-size:clamp(17px,2.4dvh,19px)}
+#hello .btn2{padding:clamp(10px,1.8dvh,15px)}
+#hello .bottom{flex:none}
 @keyframes bob{0%,100%{transform:translateY(0) rotate(-1deg)}50%{transform:translateY(-8px) rotate(1deg)}}
 h1{font-size:38px;line-height:1.02;letter-spacing:-.03em;font-weight:800}
 .sub{font-size:17px;line-height:1.45;color:var(--ink2);max-width:330px}
