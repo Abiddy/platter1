@@ -254,7 +254,7 @@ h1{font-size:38px;line-height:1.02;letter-spacing:-.03em;font-weight:800}
 
 <script>
 const FREE_EXTRA = 'Thai iced tea';
-const FREE_MIN = 25;
+const FREE_MIN = 20;
 const IMG = 'https://d2ol7oe51mr4n9.cloudfront.net/user_3GsbRE1t9hIx7tjNcLo5jEaZ8ao/';
 const PEEK = IMG + '004b740a-d673-4d99-ba28-d5d1fcdc791b.webp';
 
@@ -350,6 +350,20 @@ function makeCombo(how){
   for (let k = 0; k < n; k++){ const m = mains[k % variety]; counts.set(m, (counts.get(m) || 0) + 1); }
   const ns = n === 1 ? (sides.length && how !== 'deal' ? 1 : 0) : Math.ceil(n / 2);
   for (let k = 0; k < ns && sides.length; k++){ const s = sides[k % Math.min(sides.length, 2)]; counts.set(s, (counts.get(s) || 0) + 1); }
+  // keep each combo inside a normal per-person spend (about $14-20 a head)
+  const capPP = {fav:20, deal:16, adv:21}[how], cap = capPP * n;
+  const sum = () => [...counts].reduce((t,[i,q]) => t + i.p * q, 0);
+  const cheaperMains = [...mains].sort((a,b) => a.p - b.p);
+  for (let g = 0; g < 40 && sum() > cap; g++){
+    const sideIn = [...counts.keys()].filter((i) => i.k === 'side');
+    if (sideIn.length && (n < 4 || sideIn.reduce((t,i) => t + counts.get(i), 0) > 1)){
+      const sd = sideIn.sort((a,b) => b.p - a.p)[0]; counts.set(sd, counts.get(sd) - 1); if (!counts.get(sd)) counts.delete(sd); continue;
+    }
+    const top = [...counts.keys()].filter((i) => i.k === 'main').sort((a,b) => b.p - a.p)[0];
+    const alt = cheaperMains.find((c) => c.p < top.p);
+    if (!alt) break;
+    counts.set(top, counts.get(top) - 1); if (!counts.get(top)) counts.delete(top); counts.set(alt, (counts.get(alt) || 0) + 1);
+  }
   const lines = [...counts].map(([i,q]) => ({i,q})).sort((a,b) => (a.i.k === 'main' ? 0 : 1) - (b.i.k === 'main' ? 0 : 1));
   const total = lines.reduce((t,l) => t + l.i.p * l.q, 0);
   return {how, lines, total, key: lines.map((l) => l.i.id + l.q).join()};
