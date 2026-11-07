@@ -131,6 +131,28 @@ h1{font-size:38px;line-height:1.02;letter-spacing:-.03em;font-weight:800}
 .confirm .no{flex:none;padding:15px 18px;border-radius:16px;background:var(--soft);font-weight:600}
 .err{color:#b42318;font-size:14px;display:none}
 
+/* build your own */
+.btn2.alt{border-color:var(--green-d);color:var(--green-d);background:#fff}
+.offer{font-size:15px;color:var(--ink2);margin:-4px 0 6px}
+.offer b{color:var(--green-d)}
+.sec{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:22px 0 2px;font-weight:600}
+.mi{display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid var(--line)}
+.mi .x{flex:1;min-width:0}.mi .a{font-size:16px;font-weight:600}.mi .b{font-size:13px;color:var(--muted);margin-top:2px}.mi .pr{font-size:15px;font-weight:500;margin-top:4px}
+.step{display:flex;align-items:center;gap:8px;flex:none}
+.sbtn{width:40px;height:40px;border-radius:13px;background:var(--green-soft);color:var(--green-d);font-size:22px;font-weight:700;line-height:1}
+.sbtn.add{width:auto;padding:0 16px;font-size:15px}
+.qn{min-width:18px;text-align:center;font-weight:700;font-size:16px}
+.prog{height:8px;background:var(--line);border-radius:9px;overflow:hidden}.prog i{display:block;height:100%;background:var(--green);border-radius:9px;transition:width .25s}
+.btxt{display:flex;justify-content:space-between;align-items:center;font-size:15px;font-weight:600;margin:9px 0 12px}
+.btxt .ok{color:var(--green-d)}
+.btn[disabled]{background:#c9d8ce;box-shadow:0 6px 0 #b3c4b9;cursor:default}
+.nudge{display:flex;align-items:center;gap:10px;margin:6px -6px 8px;padding:10px;border:2px dashed var(--green);border-radius:14px;background:#fff}
+.nudge .n{flex:1;font-size:14px;font-weight:600;color:var(--green-d);line-height:1.3}
+.addb{flex:none;background:var(--green);color:#fff;font-weight:700;font-size:13px;padding:8px 12px;border-radius:999px}
+#build .actions{margin:0 -22px;padding:12px 22px calc(12px + env(safe-area-inset-bottom));background:#fff;border-top:1px solid var(--line);box-shadow:0 -6px 18px rgba(18,58,34,.06)}
+#build{padding-bottom:0}
+.usednote{font-size:14px;color:var(--ink2);background:var(--soft);border-radius:12px;padding:10px 12px;margin-top:8px}
+
 /* menu sheet */
 .sheet{position:fixed;inset:0;background:rgba(18,58,34,.4);display:none;z-index:20}
 .sheet.on{display:block}
@@ -155,8 +177,8 @@ h1{font-size:38px;line-height:1.02;letter-spacing:-.03em;font-weight:800}
       <span class="gift"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="8" width="18" height="13" rx="2"/><path d="M12 8v13M3 12h18M7.5 8a2.5 2.5 0 1 1 4.5-1.5V8M16.5 8A2.5 2.5 0 1 0 12 6.5V8"/></svg><span>Unlock free extras when you order with Foodol</span></span>
     </div>
     <div class="bottom">
-      <button class="btn" data-go="who">Let's go</button>
-      <button class="link" data-menu>See the full menu</button>
+      <button class="btn" data-go="who">Let Foodol pick for me</button>
+      <button class="btn2 alt" data-go="build" style="margin-top:8px">I'll pick my own</button>
     </div>
   </section>
 
@@ -182,6 +204,19 @@ h1{font-size:38px;line-height:1.02;letter-spacing:-.03em;font-weight:800}
     <p>Hmm, let me think…</p>
   </section>
 
+  <!-- build your own -->
+  <section class="screen" id="build">
+    <div class="top"><button class="back" data-go="hello" aria-label="Back"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button><span style="width:44px"></span></div>
+    <h2 style="font-size:28px;font-weight:800;letter-spacing:-.03em">Pick your own</h2>
+    <p class="offer">Orders over <b class="fmin"></b> get a free <b class="xname"></b>.</p>
+    <div id="buildList"></div>
+    <div class="actions">
+      <div class="prog"><i id="progBar" style="width:0"></i></div>
+      <div class="btxt"><span id="progTxt">Add items to start</span><span id="cartTot">$0.00</span></div>
+      <button class="btn" id="redeemFree" disabled>Add items to start</button>
+    </div>
+  </section>
+
   <!-- 4. picks -->
   <section class="screen" id="picks">
     <div class="head"><div><div class="dots" style="margin-bottom:10px"><i class="on"></i><i class="on"></i><i class="on"></i></div><h2>Here's what I'd get</h2></div><span class="hint">Swipe →</span></div>
@@ -205,7 +240,7 @@ h1{font-size:38px;line-height:1.02;letter-spacing:-.03em;font-weight:800}
       <div class="stamp"><b>Redeemed</b><span id="tkWhen"></span></div>
     </div>
     <div class="cashier" id="cashier">
-      <p>For the cashier: ring up the items above, add the free drink, then tap below.</p>
+      <p>For the cashier: ring up the items above, add any item marked FREE, then tap below.</p>
       <button class="btn2" id="redeemBtn">Mark as redeemed</button>
       <div class="confirm" id="confirm"><button class="yes" id="yes">Yes, redeem it</button><button class="no" id="no">Cancel</button></div>
       <p class="err" id="err">Couldn't reach Foodol. Check the connection and try again.</p>
@@ -219,6 +254,7 @@ h1{font-size:38px;line-height:1.02;letter-spacing:-.03em;font-weight:800}
 
 <script>
 const FREE_EXTRA = 'Thai iced tea';
+const FREE_MIN = 25;
 const IMG = 'https://d2ol7oe51mr4n9.cloudfront.net/user_3GsbRE1t9hIx7tjNcLo5jEaZ8ao/';
 const PEEK = IMG + '004b740a-d673-4d99-ba28-d5d1fcdc791b.webp';
 
@@ -259,11 +295,12 @@ const KINDS = {
   adv:{badge:'Something new',title:'The Adventure',cls:'c-adv'},
 };
 
-const S = {party:2, craves:new Set(), combos:[], idx:0, order:null};
+const S = {party:2, craves:new Set(), combos:[], idx:0, order:null, cart:{}};
 const $ = (id) => document.getElementById(id);
 const money = (v) => '$' + v.toFixed(2);
 const src = new URLSearchParams(location.search).get('src') || '';
 document.querySelectorAll('.xname').forEach((e) => e.textContent = FREE_EXTRA);
+document.querySelectorAll('.fmin').forEach((e) => e.textContent = '$' + FREE_MIN);
 
 function go(id){
   document.querySelectorAll('.screen').forEach((s) => s.classList.toggle('on', s.id === id));
@@ -326,20 +363,34 @@ function quote(c){
 function buildPicks(){
   const seen = new Set(); S.combos = [];
   for (const how of ['fav','deal','adv']){ const c = makeCombo(how); if (!seen.has(c.key)){ seen.add(c.key); S.combos.push(c); } }
-  S.idx = 0;
-  $('rail').innerHTML = S.combos.map((c) => {
+  S.idx = 0; renderPicks(); $('rail').scrollLeft = 0;
+}
+function topUp(c){
+  const rem = FREE_MIN - c.total;
+  const extras = ITEMS.filter((i) => i.k === 'side' || i.id === 'smoo').sort((a,b) => a.p - b.p);
+  return extras.find((i) => i.p >= rem) || extras[extras.length - 1];
+}
+function renderPicks(){
+  const keep = $('rail').scrollLeft;
+  $('rail').innerHTML = S.combos.map((c, ci) => {
+    const rem = FREE_MIN - c.total, add = rem > 0 ? topUp(c) : null;
     const K = KINDS[c.how];
     return `<div class="slide"><img class="peek" src="${PEEK}" alt="" width="220" height="149">
       <div class="card ${K.cls}">
         <span class="badge">${K.badge}</span>
         <h3>${K.title}</h3>
         <p class="quote">${quote(c)}</p>
-        <div class="items">${c.lines.map((l) => `<div class="it"><span class="q">${l.q}×</span><span class="n">${l.i.n}</span><span class="p">${money(l.i.p * l.q)}</span></div>`).join('')}${freeRow(FREE_EXTRA)}</div>
+        <div class="items">${c.lines.map((l) => `<div class="it"><span class="q">${l.q}×</span><span class="n">${l.i.n}</span><span class="p">${money(l.i.p * l.q)}</span></div>`).join('')}${rem <= 0 ? freeRow(FREE_EXTRA) : `<div class="nudge"><span class="n">Add ${money(rem)} more for a free ${FREE_EXTRA}</span><button class="addb" data-ci="${ci}" data-id="${add.id}">+ ${add.n}</button></div>`}</div>
         <div class="tot"><span class="l">Total${S.party > 1 ? `<div class="pp" style="text-align:left">${money(c.total / S.party)} per person</div>` : ''}</span><span class="v">${money(c.total)}</span></div>
       </div></div>`;
   }).join('');
-  $('pdots').innerHTML = S.combos.map((_,i) => `<i class="${i ? '' : 'on'}"></i>`).join('');
-  $('rail').scrollLeft = 0;
+  $('pdots').innerHTML = S.combos.map((_,i) => `<i class="${i === S.idx ? 'on' : ''}"></i>`).join('');
+  $('rail').scrollLeft = keep;
+  $('rail').querySelectorAll('.addb').forEach((b) => b.onclick = () => {
+    const c = S.combos[+b.dataset.ci], it = ITEMS.find((i) => i.id === b.dataset.id);
+    const line = c.lines.find((l) => l.i === it); if (line) line.q++; else c.lines.push({i:it, q:1});
+    c.total = c.lines.reduce((t,l) => t + l.i.p * l.q, 0); renderPicks();
+  });
 }
 $('rail').addEventListener('scroll', () => {
   const r = $('rail'), w = r.firstElementChild ? r.firstElementChild.offsetWidth + 14 : 1;
@@ -350,25 +401,54 @@ function freeRow(x){ return `<div class="it freeit"><span class="q">1×</span><s
 function giftSvg(){ return '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="8" width="18" height="13" rx="2"/><path d="M12 8v13M3 12h18M7.5 8a2.5 2.5 0 1 1 4.5-1.5V8M16.5 8A2.5 2.5 0 1 0 12 6.5V8"/></svg>'; }
 
 /* order + ticket */
-$('choose').onclick = async () => {
-  const c = S.combos[S.idx]; const btn = $('choose');
+const today = () => new Date().toLocaleDateString('en-CA');
+function freeUsedToday(){ try { return localStorage.getItem('foodol_free_day') === today(); } catch { return false; } }
+async function placeOrder(btn, label, body){
   btn.disabled = true; btn.textContent = 'One sec…';
   try {
-    const r = await fetch('/api/order', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({
-      kind: c.how, title: KINDS[c.how].title, party: S.party, extra: FREE_EXTRA, src,
-      items: c.lines.map((l) => ({n:l.i.n, q:l.q, p:l.i.p}))
-    })});
+    const total = body.items.reduce((t,i) => t + i.p * i.q, 0);
+    body.extra = total >= FREE_MIN && !freeUsedToday() ? FREE_EXTRA : '';
+    body.src = src;
+    const r = await fetch('/api/order', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)});
     if (!r.ok) throw 0;
     S.order = await r.json(); save(); showTicket();
   } catch { alert('Hmm, Foodol could not connect. Please try again.'); }
-  btn.disabled = false; btn.textContent = 'This one!';
+  btn.disabled = false; btn.textContent = label;
+}
+$('choose').onclick = () => {
+  const c = S.combos[S.idx];
+  placeOrder($('choose'), 'This one!', {kind: c.how, title: KINDS[c.how].title, party: S.party, items: c.lines.map((l) => ({n:l.i.n, q:l.q, p:l.i.p}))});
 };
+
+/* build your own */
+const secs = [...new Set(ITEMS.map((i) => i.s))];
+function renderBuild(){
+  $('buildList').innerHTML = secs.map((sname) => `<div class="sec">${sname}</div>` + ITEMS.filter((i) => i.s === sname).map((i) => {
+    const q = S.cart[i.id] || 0;
+    return `<div class="mi"><div class="x"><div class="a">${i.n}</div><div class="b">${i.d}</div><div class="pr">${money(i.p)}</div></div>
+      <div class="step">${q ? `<button class="sbtn" data-m="${i.id}" aria-label="Remove one ${i.n}">−</button><span class="qn">${q}</span><button class="sbtn" data-p="${i.id}" aria-label="Add one ${i.n}">+</button>` : `<button class="sbtn add" data-p="${i.id}">Add</button>`}</div></div>`;
+  }).join('')).join('');
+  $('buildList').querySelectorAll('[data-p]').forEach((b) => b.onclick = () => { S.cart[b.dataset.p] = (S.cart[b.dataset.p] || 0) + 1; renderBuild(); });
+  $('buildList').querySelectorAll('[data-m]').forEach((b) => b.onclick = () => { const k = b.dataset.m; S.cart[k]--; if (S.cart[k] <= 0) delete S.cart[k]; renderBuild(); });
+  const lines = Object.entries(S.cart).map(([id,q]) => ({i: ITEMS.find((x) => x.id === id), q}));
+  const total = lines.reduce((t,l) => t + l.i.p * l.q, 0), rem = FREE_MIN - total, btn = $('redeemFree');
+  $('progBar').style.width = Math.min(100, total / FREE_MIN * 100) + '%';
+  $('cartTot').textContent = money(total);
+  $('progTxt').innerHTML = !total ? 'Add items to start' : rem > 0 ? `${money(rem)} away from a free ${FREE_EXTRA}` : `<span class="ok">Free ${FREE_EXTRA} unlocked!</span>`;
+  btn.disabled = rem > 0;
+  btn.textContent = !total ? 'Add items to start' : rem > 0 ? `Add ${money(rem)} more to unlock` : 'Redeem Free Item';
+}
+$('redeemFree').onclick = () => {
+  const items = Object.entries(S.cart).map(([id,q]) => { const i = ITEMS.find((x) => x.id === id); return {n:i.n, q, p:i.p}; });
+  placeOrder($('redeemFree'), 'Redeem Free Item', {kind:'own', title:'Your order', party:1, items});
+};
+renderBuild();
 function save(){ try { localStorage.setItem('foodol_order', JSON.stringify(S.order)); } catch {} }
 function showTicket(){
   const o = S.order;
   $('tkCode').textContent = '#' + o.code;
   $('tkTitle').textContent = o.title;
-  $('tkItems').innerHTML = o.items.map((i) => `<div class="it"><span class="q">${i.q}×</span><span class="n">${i.n}</span><span class="p">${money(i.p * i.q)}</span></div>`).join('') + freeRow(o.extra || FREE_EXTRA);
+  $('tkItems').innerHTML = o.items.map((i) => `<div class="it"><span class="q">${i.q}×</span><span class="n">${i.n}</span><span class="p">${money(i.p * i.q)}</span></div>`).join('') + (o.extra ? freeRow(o.extra) : '') + (!o.extra && o.total >= FREE_MIN ? `<div class="usednote">You've already had today's free item. Come back tomorrow for another!</div>` : '');
   $('tkTotal').textContent = money(o.total);
   setRedeemed(!!o.redeemedAt);
   go('ticket');
@@ -377,7 +457,7 @@ function setRedeemed(on){
   $('tk').classList.toggle('redeemed', on);
   $('cashier').style.display = on ? 'none' : 'flex';
   $('tkHead').textContent = on ? 'Enjoy your meal!' : 'Show this at the counter';
-  $('tkSub').textContent = on ? 'Come back soon. I have more to show you.' : 'The cashier will ring up your order and add your free item.';
+  $('tkSub').textContent = on ? 'Come back soon. I have more to show you.' : (S.order.extra ? 'The cashier will ring up your order and add your free item.' : 'The cashier will ring up your order.');
   if (on && S.order.redeemedAt) $('tkWhen').textContent = new Date(S.order.redeemedAt).toLocaleString([], {month:'short', day:'numeric', hour:'numeric', minute:'2-digit'});
 }
 $('redeemBtn').onclick = () => { $('redeemBtn').style.display = 'none'; $('confirm').classList.add('on'); };
@@ -389,13 +469,13 @@ $('yes').onclick = async () => {
     const j = await r.json();
     if (r.status === 409) { S.order = j.order; }
     else if (!r.ok) throw 0; else S.order = j;
+    if (S.order.extra) { try { localStorage.setItem('foodol_free_day', today()); } catch {} }
     save(); $('confirm').classList.remove('on'); $('redeemBtn').style.display = ''; setRedeemed(true);
   } catch { $('err').style.display = 'block'; }
 };
-$('again').onclick = () => { try { localStorage.removeItem('foodol_order'); } catch {} S.order = null; go('who'); };
+$('again').onclick = () => { try { localStorage.removeItem('foodol_order'); } catch {} S.order = null; S.cart = {}; renderBuild(); go('hello'); };
 
 /* full menu */
-const secs = [...new Set(ITEMS.map((i) => i.s))];
 $('menuList').innerHTML = secs.map((s) => `<h4>${s}</h4>` + ITEMS.filter((i) => i.s === s).map((i) => `<div class="mrow"><span>${i.n}<small>${i.d}</small></span><span>${money(i.p)}</span></div>`).join('')).join('');
 document.querySelectorAll('[data-menu]').forEach((b) => b.onclick = () => $('menu').classList.add('on'));
 $('menu').onclick = (e) => { if (e.target === $('menu') || e.target.hasAttribute('data-close')) $('menu').classList.remove('on'); };
