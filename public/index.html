@@ -316,7 +316,7 @@ $('whoGrid').querySelectorAll('.tile').forEach((b) => b.onclick = () => pickTile
 function syncCrave(){
   $('craveGrid').querySelectorAll('.tile').forEach((b) => { const on = S.craves.has(b.dataset.k); b.classList.toggle('sel', on); b.setAttribute('aria-pressed', on); });
   const n = S.craves.size, g = $('craveGo');
-  g.disabled = !n; g.textContent = !n ? 'Pick at least one' : S.craves.has('surprise') ? 'Surprise me, Foodol!' : `Show my combos (${n})`;
+  g.disabled = !n; g.textContent = !n ? 'Pick at least one' : S.craves.has('surprise') ? 'Surprise me, Foodol!' : 'Show my combos';
 }
 $('craveGrid').querySelectorAll('.tile').forEach((b) => b.onclick = () => {
   const k = b.dataset.k;
