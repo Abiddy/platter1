@@ -195,8 +195,8 @@ h1{font-size:38px;line-height:1.02;letter-spacing:-.03em;font-weight:800}
   <!-- 5. ticket -->
   <section class="screen" id="ticket">
     <img class="thumb" src="https://d2ol7oe51mr4n9.cloudfront.net/user_3GsbRE1t9hIx7tjNcLo5jEaZ8ao/fb01c05e-949a-4e50-86de-253056e50ede.webp" alt="Foodol giving a thumbs-up">
-    <h2 id="tkHead">Great pick!</h2>
-    <p class="sub" id="tkSub">Show this screen to the cashier.</p>
+    <h2 id="tkHead">Show this at the counter</h2>
+    <p class="sub" id="tkSub">The cashier will ring up your order and add your free item.</p>
     <div class="tk" id="tk">
       <div class="code">Foodol combo<b id="tkCode">0000</b></div>
       <div class="ttl" id="tkTitle"></div>
@@ -376,8 +376,8 @@ function showTicket(){
 function setRedeemed(on){
   $('tk').classList.toggle('redeemed', on);
   $('cashier').style.display = on ? 'none' : 'flex';
-  $('tkHead').textContent = on ? 'Enjoy your meal!' : 'Great pick!';
-  $('tkSub').textContent = on ? 'Come back soon. I have more to show you.' : 'Show this screen to the cashier.';
+  $('tkHead').textContent = on ? 'Enjoy your meal!' : 'Show this at the counter';
+  $('tkSub').textContent = on ? 'Come back soon. I have more to show you.' : 'The cashier will ring up your order and add your free item.';
   if (on && S.order.redeemedAt) $('tkWhen').textContent = new Date(S.order.redeemedAt).toLocaleString([], {month:'short', day:'numeric', hour:'numeric', minute:'2-digit'});
 }
 $('redeemBtn').onclick = () => { $('redeemBtn').style.display = 'none'; $('confirm').classList.add('on'); };
