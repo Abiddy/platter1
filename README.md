@@ -16,3 +16,10 @@ Foodol lives on a QR code at the restaurant. Guests answer two quick questions (
 - `OWNER_KEY`: password for the owner stats page
 - `DATA_DIR`: where orders are stored (default `./data`)
 - Free extra: `FREE_EXTRA` at the top of the script in `public/index.html`
+
+## Cloudflare (Workers)
+
+`wrangler.jsonc` + `src/worker.js` run the same app on Cloudflare Workers:
+static files from `public/`, orders in a SQLite-backed Durable Object.
+Set the `OWNER_KEY` secret in the Worker's settings for `/owner?key=...`.
+Local: `npx wrangler dev`. Deploy: connected GitHub repo, or `npx wrangler deploy`.

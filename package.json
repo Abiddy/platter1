@@ -8,5 +8,8 @@
   },
   "engines": {
     "node": ">=18"
+  },
+  "devDependencies": {
+    "wrangler": "^4.158.0"
   }
 }
