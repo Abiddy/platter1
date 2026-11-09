@@ -37,7 +37,6 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
 #hello{height:100vh;height:100dvh;min-height:0;padding:16px 22px 20px;gap:0;overflow:hidden}
 #hello .tag{flex:none;font-size:clamp(12px,1.8dvh,14px);padding:7px 14px}
 #hello .mid{flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:clamp(8px,2dvh,20px) 0}
-#hello img{height:clamp(150px,33dvh,300px);width:auto;max-width:78vw;margin:0 0 clamp(12px,2.4dvh,24px)}
 #hello h1{font-size:clamp(28px,5.2dvh,40px);line-height:1.04;margin:0 0 clamp(8px,1.4dvh,12px)}
 #hello .sub{font-size:clamp(15px,2.2dvh,17px);line-height:1.4;max-width:310px;margin:0}
 #hello .gift{margin-top:clamp(14px,2.4dvh,22px);font-size:clamp(13px,1.9dvh,15px);padding:9px 14px;border-radius:999px}
@@ -48,11 +47,11 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
 #hello .promise small{display:block;margin-top:3px;font-size:12.5px;font-weight:500;color:var(--butter-i)}
 .top{display:grid;grid-template-columns:1fr auto 1fr}.top>:last-child{justify-self:end}
 .own{font-size:14px;font-weight:600;color:var(--green-d);background:var(--green-soft);padding:10px 14px;border-radius:999px;white-space:nowrap}
-#hello .say{position:relative;background:var(--butter);border:2px solid #f3dc85;border-radius:22px;padding:clamp(12px,1.9dvh,16px) 18px;max-width:330px;font-size:clamp(17px,2.5dvh,20px);font-weight:700;line-height:1.28;letter-spacing:-.01em;color:var(--ink);text-wrap:balance;margin-bottom:clamp(16px,2.6dvh,24px)}
-#hello .say::after{content:"";position:absolute;left:50%;bottom:-9px;width:16px;height:16px;background:var(--butter);border-right:2px solid #f3dc85;border-bottom:2px solid #f3dc85;transform:translateX(-50%) rotate(45deg)}
+#hello .say{position:relative;background:#fff;border-radius:22px;padding:clamp(12px,1.9dvh,16px) 20px;max-width:320px;font-size:clamp(17px,2.5dvh,20px);font-weight:700;line-height:1.28;letter-spacing:-.01em;color:var(--ink);text-wrap:balance;box-shadow:0 10px 30px rgba(18,58,34,.10),0 1px 3px rgba(18,58,34,.06);margin-bottom:clamp(16px,2.6dvh,24px)}
+#hello .say::after{content:"";position:absolute;left:50%;bottom:-7px;width:16px;height:16px;background:#fff;border-radius:0 0 4px 0;transform:translateX(-50%) rotate(45deg);box-shadow:4px 4px 8px rgba(18,58,34,.06)}
 #hello .say b{color:var(--green-d);font-weight:800}
-#hello .say small{display:block;margin-top:4px;font-size:12.5px;font-weight:500;color:var(--butter-i)}
-#hello img{height:clamp(170px,38dvh,340px);margin:0}
+#hello .say small{display:block;margin-top:4px;font-size:12.5px;font-weight:500;color:var(--muted)}
+#hello .hero{display:block;height:clamp(170px,38dvh,340px);width:auto;max-width:78vw;margin:0;mix-blend-mode:multiply;pointer-events:none;background:#fff}
 #hello .ownlink{font-size:15px;font-weight:600;color:var(--muted);padding:6px;align-self:center;text-decoration:underline;text-underline-offset:3px}
 #hello .bottom{flex:none;gap:6px}
 #hello .btn{padding:clamp(13px,2.2dvh,18px);font-size:clamp(17px,2.4dvh,19px)}
@@ -194,7 +193,7 @@ h1{font-size:38px;line-height:1.02;letter-spacing:-.03em;font-weight:800}
     <span class="tag">Foodol has made it to Sausalido Cafe!</span>
     <div class="mid">
       <div class="say">I've tried everything here. I'll pick a combo <b>and give you a free item</b> with it!<small>On orders $20+</small></div>
-      <img src="https://d2ol7oe51mr4n9.cloudfront.net/user_3GsbRE1t9hIx7tjNcLo5jEaZ8ao/df63de88-2907-467e-a380-5fb8cbe80100.webp" alt="Foodol waving hello" width="386" height="428">
+      <video class="hero" src="https://d2ol7oe51mr4n9.cloudfront.net/user_3GsbRE1t9hIx7tjNcLo5jEaZ8ao/0cafc843-f246-44cb-a857-70f4ddad5b38.mp4" poster="https://d2ol7oe51mr4n9.cloudfront.net/user_3GsbRE1t9hIx7tjNcLo5jEaZ8ao/df63de88-2907-467e-a380-5fb8cbe80100.webp" width="386" height="428" autoplay muted loop playsinline disablepictureinpicture preload="auto" aria-label="Foodol waving hello"></video>
     </div>
     <div class="bottom">
       <button class="btn" data-go="who">Let me pick for you</button>
