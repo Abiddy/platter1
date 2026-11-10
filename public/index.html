@@ -435,12 +435,11 @@ function giftSvg(){ return '<svg width="18" height="18" viewBox="0 0 24 24" fill
 
 /* order + ticket */
 const today = () => new Date().toLocaleDateString('en-CA');
-function freeUsedToday(){ try { return localStorage.getItem('foodol_free_day') === today(); } catch { return false; } }
 async function placeOrder(btn, label, body){
   btn.disabled = true; btn.textContent = 'One sec…';
   try {
     const total = body.items.reduce((t,i) => t + i.p * i.q, 0);
-    body.extra = total >= FREE_MIN && !freeUsedToday() ? FREE_EXTRA : '';
+    body.extra = total >= FREE_MIN ? FREE_EXTRA : '';
     body.src = src;
     const r = await fetch('/api/order', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)});
     if (!r.ok) throw 0;
@@ -481,7 +480,7 @@ function showTicket(){
   const o = S.order;
   $('tkCode').textContent = '#' + o.code;
   $('tkTitle').textContent = o.title;
-  $('tkItems').innerHTML = o.items.map((i) => `<div class="it"><span class="q">${i.q}×</span><span class="n">${i.n}</span><span class="p">${money(i.p * i.q)}</span></div>`).join('') + (o.extra ? freeRow(o.extra) : '') + (!o.extra && o.total >= FREE_MIN ? `<div class="usednote">You've already had today's free item. Come back tomorrow for another!</div>` : '');
+  $('tkItems').innerHTML = o.items.map((i) => `<div class="it"><span class="q">${i.q}×</span><span class="n">${i.n}</span><span class="p">${money(i.p * i.q)}</span></div>`).join('') + (o.extra ? freeRow(o.extra) : '');
   $('tkTotal').textContent = money(o.total);
   setRedeemed(!!o.redeemedAt);
   go('ticket');
@@ -502,7 +501,6 @@ $('yes').onclick = async () => {
     const j = await r.json();
     if (r.status === 409) { S.order = j.order; }
     else if (!r.ok) throw 0; else S.order = j;
-    if (S.order.extra) { try { localStorage.setItem('foodol_free_day', today()); } catch {} }
     save(); $('confirm').classList.remove('on'); $('redeemBtn').style.display = ''; setRedeemed(true);
   } catch { $('err').style.display = 'block'; }
 };
