@@ -255,7 +255,7 @@ h1{font-size:38px;line-height:1.02;letter-spacing:-.03em;font-weight:800}
 
   <!-- 1. hello -->
   <section class="screen on" id="hello">
-    <span class="tag">Foodol has made it to Sausalido Cafe!</span>
+    <span class="tag">Foodol has made it to <span class="rName">Sausalido Cafe</span>!</span>
     <div class="mid">
       <div class="says">
         <div class="say s2">I'll pick the best items on the menu for you, <b>plus a FREE item</b> with your order!<small>On orders <span class="fmin">$20</span>+</small></div>
@@ -337,7 +337,7 @@ h1{font-size:38px;line-height:1.02;letter-spacing:-.03em;font-weight:800}
 
 </div>
 
-<div class="sheet" id="menu" role="dialog" aria-label="Full menu"><div class="in"><button class="close" data-close aria-label="Close">×</button><h3>Sausalido Cafe menu</h3><p class="hint">Prices from public listings, may differ in store.</p><div id="menuList"></div></div></div>
+<div class="sheet" id="menu" role="dialog" aria-label="Full menu"><div class="in"><button class="close" data-close aria-label="Close">×</button><h3><span class="rName">Sausalido Cafe</span> menu</h3><p class="hint">Prices from public listings, may differ in store.</p><div id="menuList"></div></div></div>
 
 <div class="sheet" id="ask" role="dialog" aria-modal="true" aria-labelledby="askTitle"><div class="in">
   <img class="peek2" src="https://d2ol7oe51mr4n9.cloudfront.net/user_3GsbRE1t9hIx7tjNcLo5jEaZ8ao/fe5e036c-785b-4e97-b270-c3a52036389d.svg" alt="">
@@ -391,7 +391,11 @@ const FALLBACK_ITEMS = [
  {id:'fries',s:'Sides',n:'French Fries',d:'Side order',p:5.50,c:['sandwich'],k:'side',pop:2},
  {id:'smoo',s:'Drinks',n:'Fruit Smoothie',d:'Strawberry, mango, mixed berry',p:6.99,c:['sweet','breakfast'],k:'side',pop:4},
 ];
-const MENU = window.FOODOL_MENU || {free:{on:true,name:'Thai iced tea',min:20,grace:.5}, items:FALLBACK_ITEMS};
+const MENU = window.FOODOL_MENU || {restaurant:{slug:'sausalido',name:'Sausalido Cafe'}, free:{on:true,name:'Thai iced tea',min:20,grace:.5}, items:FALLBACK_ITEMS};
+const REST = MENU.restaurant || {slug:'sausalido', name:'Sausalido Cafe'};
+const OKEY = 'foodol_order_' + REST.slug;
+document.title = 'Foodol · ' + REST.name;
+document.querySelectorAll('.rName').forEach((el) => { el.textContent = REST.name; });
 const FREE = MENU.free || {on:false};
 const FREE_EXTRA = FREE.name || 'free item';
 const FREE_MIN = FREE.on ? +FREE.min || 0 : Infinity;
@@ -560,7 +564,7 @@ async function sendOrder(tapped){
   const {btn, label, body} = pending, keep = tapped.textContent;
   tapped.disabled = true; tapped.textContent = 'One sec…';
   try {
-    const r = await fetch('/api/order', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)});
+    const r = await fetch('/api/order', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({...body, r: REST.slug})});
     if (!r.ok) throw 0;
     S.order = await r.json(); save(); $('ask').classList.remove('on'); if (S.order.extra) celebrate(); else showTicket();
   } catch { $('askErr').textContent = 'Hmm, Foodol could not connect. Please try again.'; }
@@ -594,7 +598,7 @@ $('redeemFree').onclick = () => {
   placeOrder($('redeemFree'), 'Redeem now', {kind:'own', title:'Your order', party:1, items});
 };
 renderBuild();
-function save(){ try { localStorage.setItem('foodol_order', JSON.stringify(S.order)); } catch {} }
+function save(){ try { localStorage.setItem(OKEY, JSON.stringify(S.order)); } catch {} }
 function showTicket(){
   const o = S.order;
   $('tkCode').textContent = '#' + o.code;
@@ -623,7 +627,7 @@ $('yes').onclick = async () => {
     save(); $('confirm').classList.remove('on'); $('redeemBtn').style.display = ''; setRedeemed(true);
   } catch { $('err').style.display = 'block'; }
 };
-$('again').onclick = () => { try { localStorage.removeItem('foodol_order'); } catch {} S.order = null; S.cart = {}; renderBuild(); go('hello'); };
+$('again').onclick = () => { try { localStorage.removeItem(OKEY); } catch {} S.order = null; S.cart = {}; renderBuild(); go('hello'); };
 
 /* full menu */
 $('menuList').innerHTML = secs.map((s) => `<h4>${esc(s)}</h4>` + ITEMS.filter((i) => i.s === s).map((i) => `<div class="mrow"><span>${esc(i.n)}<small>${esc(i.d)}</small></span><span>${money(i.p)}</span></div>`).join('')).join('');
@@ -632,7 +636,7 @@ $('menu').onclick = (e) => { if (e.target === $('menu') || e.target.hasAttribute
 
 /* resume an open ticket after refresh */
 (async () => {
-  let o = null; try { o = JSON.parse(localStorage.getItem('foodol_order')); } catch {}
+  let o = null; try { o = JSON.parse((localStorage.getItem(OKEY) || (REST.slug === 'sausalido' ? localStorage.getItem('foodol_order') : null))); } catch {}
   if (!o || !o.id) return;
   try { const r = await fetch('/api/order/' + o.id); if (r.ok) { S.order = await r.json(); save(); showTicket(); } } catch {}
 })();
