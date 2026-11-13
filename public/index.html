@@ -192,7 +192,7 @@ h1{font-size:38px;line-height:1.02;letter-spacing:-.03em;font-weight:800}
   <section class="screen on" id="hello">
     <span class="tag">Foodol has made it to Sausalido Cafe!</span>
     <div class="mid">
-      <div class="say">I've tried everything here. I'll pick a combo <b>and give you a free item</b> with it!<small>On orders $20+</small></div>
+      <div class="say">I've tried everything here. I'll pick a combo <b>and give you a free item</b> with it!<small>On orders <span class="fmin">$20</span>+</small></div>
       <img class="hero" src="https://d2ol7oe51mr4n9.cloudfront.net/user_3GsbRE1t9hIx7tjNcLo5jEaZ8ao/ef5762c4-ec59-4f1f-8adf-2f9ef89aa771.svg" width="1180" height="1395" alt="Foodol waving hello">
     </div>
     <div class="bottom">
@@ -271,13 +271,13 @@ h1{font-size:38px;line-height:1.02;letter-spacing:-.03em;font-weight:800}
 
 <div class="sheet" id="menu" role="dialog" aria-label="Full menu"><div class="in"><button class="close" data-close aria-label="Close">×</button><h3>Sausalido Cafe menu</h3><p class="hint">Prices from public listings, may differ in store.</p><div id="menuList"></div></div></div>
 
+<!--FOODOL_MENU-->
+<script src="/combos.js"></script>
 <script>
-const FREE_EXTRA = 'Thai iced tea';
-const FREE_MIN = 20;
 const IMG = 'https://d2ol7oe51mr4n9.cloudfront.net/user_3GsbRE1t9hIx7tjNcLo5jEaZ8ao/';
 const PEEK = IMG + '004b740a-d673-4d99-ba28-d5d1fcdc791b.webp';
 
-const ITEMS = [
+const FALLBACK_ITEMS = [
  {id:'bp',s:'Breakfast',n:'Breakfast Panini',d:'Eggs, cheese, protein, house sauce',p:10.99,c:['breakfast'],k:'main',pop:5},
  {id:'ubp',s:'Breakfast',n:'Ultimate Breakfast Panini',d:'Eggs, cheese, turkey or ham + bacon',p:11.99,c:['breakfast'],k:'main',pop:4},
  {id:'mbp',s:'Breakfast',n:'Meatless Panini',d:'Eggs, cheese, avocado, tomato',p:11.99,c:['breakfast'],k:'main',pop:2},
@@ -299,6 +299,12 @@ const ITEMS = [
  {id:'fries',s:'Sides',n:'French Fries',d:'Side order',p:5.50,c:['sandwich'],k:'side',pop:2},
  {id:'smoo',s:'Drinks',n:'Fruit Smoothie',d:'Strawberry, mango, mixed berry',p:6.99,c:['sweet','breakfast'],k:'side',pop:4},
 ];
+const MENU = window.FOODOL_MENU || {free:{on:true,name:'Thai iced tea',min:20,grace:.5}, items:FALLBACK_ITEMS};
+const FREE = MENU.free || {on:false};
+const FREE_EXTRA = FREE.name || 'free item';
+const FREE_MIN = FREE.on ? +FREE.min || 0 : Infinity;
+const ITEMS = MENU.items.filter((i) => i.on !== false && i.p > 0);
+const hasFree = (total) => FoodolCombos.qualifies(total, FREE);
 
 const WHO = [[1,'Just me','t1'],[2,'Two of us','t2'],[4,'Family','t3'],[6,'Big group','t4']];
 const CRAVE = [
@@ -308,18 +314,15 @@ const CRAVE = [
  ['sweet','Sweet & fresh','59e60bcd-83ce-45c7-9dad-044bda9f8425','t5'],
  ['surprise','Surprise me!','683fe273-a1dc-4057-aad1-5e229c7e08dc','t4'],
 ];
-const KINDS = {
-  fav:{badge:"Foodol's favorite",title:'The Crowd Pleaser',cls:'c-fav'},
-  deal:{badge:'Best value',title:'The Smart Deal',cls:'c-deal'},
-  adv:{badge:'Something new',title:'The Adventure',cls:'c-adv'},
-};
+const KINDS = FoodolCombos.KINDS;
 
 const S = {party:2, craves:new Set(), combos:[], idx:0, order:null, cart:{}};
 const $ = (id) => document.getElementById(id);
 const money = (v) => '$' + v.toFixed(2);
+const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const src = new URLSearchParams(location.search).get('src') || '';
 document.querySelectorAll('.xname').forEach((e) => e.textContent = FREE_EXTRA);
-document.querySelectorAll('.fmin').forEach((e) => e.textContent = '$' + FREE_MIN);
+document.querySelectorAll('.fmin').forEach((e) => e.textContent = '$' + (+FREE.min || 0));
 
 function go(id){
   document.querySelectorAll('.screen').forEach((s) => s.classList.toggle('on', s.id === id));
@@ -346,74 +349,29 @@ $('craveGrid').querySelectorAll('.tile').forEach((b) => b.onclick = () => {
 $('craveGo').onclick = () => { if (!S.craves.size) return; go('think'); setTimeout(() => { buildPicks(); go('picks'); }, 1100); };
 syncCrave();
 
-/* combo engine */
-function pool(){ return S.craves.has('surprise') ? ITEMS.filter((i) => !i.c.includes('breakfast') || i.id === 'acai') : ITEMS.filter((i) => i.c.some((c) => S.craves.has(c))); }
-function mix(list, how){
-  // round-robin across the chosen cravings so every craving shows up
-  const cats = S.craves.has('surprise') ? ['all'] : [...S.craves];
-  const per = cats.map((c) => list.filter((i) => c === 'all' || i.c.includes(c)).sort((a,b) => score(b,how) - score(a,how)));
-  const out = []; for (let r = 0; r < list.length; r++) for (const l of per) if (l[r] && !out.includes(l[r])) out.push(l[r]);
-  return out;
-}
-function score(i, how){
-  if (how === 'fav') return i.pop * 10 - i.p * .1;
-  if (how === 'deal') return -i.p + i.pop * .3;
-  return (6 - i.pop) * 4 + (i.id.charCodeAt(0) % 3);
-}
-function makeCombo(how){
-  const n = S.party, all = pool();
-  const mains = mix(all.filter((i) => i.k === 'main'), how);
-  const sides = all.filter((i) => i.k === 'side').sort((a,b) => score(b,how) - score(a,how));
-  const variety = Math.max(1, Math.min(mains.length, Math.max(n <= 2 ? n : Math.ceil(n * .7), S.craves.has('surprise') ? 1 : Math.min(S.craves.size, n))));
-  const counts = new Map();
-  for (let k = 0; k < n; k++){ const m = mains[k % variety]; counts.set(m, (counts.get(m) || 0) + 1); }
-  const ns = n === 1 ? (sides.length && how !== 'deal' ? 1 : 0) : Math.ceil(n / 2);
-  for (let k = 0; k < ns && sides.length; k++){ const s = sides[k % Math.min(sides.length, 2)]; counts.set(s, (counts.get(s) || 0) + 1); }
-  // keep each combo inside a normal per-person spend (about $14-20 a head)
-  const capPP = {fav:20, deal:16, adv:21}[how], cap = capPP * n;
-  const sum = () => [...counts].reduce((t,[i,q]) => t + i.p * q, 0);
-  const cheaperMains = [...mains].sort((a,b) => a.p - b.p);
-  for (let g = 0; g < 40 && sum() > cap; g++){
-    const sideIn = [...counts.keys()].filter((i) => i.k === 'side');
-    if (sideIn.length && (n < 4 || sideIn.reduce((t,i) => t + counts.get(i), 0) > 1)){
-      const sd = sideIn.sort((a,b) => b.p - a.p)[0]; counts.set(sd, counts.get(sd) - 1); if (!counts.get(sd)) counts.delete(sd); continue;
-    }
-    const top = [...counts.keys()].filter((i) => i.k === 'main').sort((a,b) => b.p - a.p)[0];
-    const alt = cheaperMains.find((c) => c.p < top.p);
-    if (!alt) break;
-    counts.set(top, counts.get(top) - 1); if (!counts.get(top)) counts.delete(top); counts.set(alt, (counts.get(alt) || 0) + 1);
-  }
-  const lines = [...counts].map(([i,q]) => ({i,q})).sort((a,b) => (a.i.k === 'main' ? 0 : 1) - (b.i.k === 'main' ? 0 : 1));
-  const total = lines.reduce((t,l) => t + l.i.p * l.q, 0);
-  return {how, lines, total, key: lines.map((l) => l.i.id + l.q).join()};
-}
+/* combo engine lives in /combos.js */
 function quote(c){
   const top = c.lines[0].i.n;
-  if (c.how === 'fav') return `“Trust me, the ${top} is what everyone comes back for.”`;
+  if (c.how === 'fav') return `“Trust me, the ${esc(top)} is what everyone comes back for.”`;
   if (c.how === 'deal') return S.party > 1 ? `“Most food for the money. Just ${money(c.total / S.party)} each!”` : `“A proper meal that won't empty your wallet.”`;
-  return `“Never had the ${top}? Today's the day. Trust me.”`;
+  return `“Never had the ${esc(top)}? Today's the day. Trust me.”`;
 }
 function buildPicks(){
-  const seen = new Set(); S.combos = [];
-  for (const how of ['fav','deal','adv']){ const c = makeCombo(how); if (!seen.has(c.key)){ seen.add(c.key); S.combos.push(c); } }
+  S.combos = FoodolCombos.build(ITEMS, S.party, [...S.craves], FREE.on ? +FREE.min : 0);
+  if (!S.combos.length) S.combos = FoodolCombos.build(ITEMS, S.party, ['surprise'], FREE.on ? +FREE.min : 0);
   S.idx = 0; renderPicks(); $('rail').scrollLeft = 0;
-}
-function topUp(c){
-  const rem = FREE_MIN - c.total;
-  const extras = ITEMS.filter((i) => i.k === 'side' || i.id === 'smoo').sort((a,b) => a.p - b.p);
-  return extras.find((i) => i.p >= rem) || extras[extras.length - 1];
 }
 function renderPicks(){
   const keep = $('rail').scrollLeft;
   $('rail').innerHTML = S.combos.map((c, ci) => {
-    const rem = FREE_MIN - c.total, add = rem > 0 ? topUp(c) : null;
+    const ok = hasFree(c.total), rem = Math.max(0, FREE_MIN - c.total), add = FREE.on && !ok ? FoodolCombos.topUp(ITEMS, c.total, FREE) : null;
     const K = KINDS[c.how];
     return `<div class="slide"><img class="peek" src="${PEEK}" alt="" width="220" height="149">
       <div class="card ${K.cls}">
         <span class="badge">${K.badge}</span>
         <h3>${K.title}</h3>
         <p class="quote">${quote(c)}</p>
-        <div class="items">${c.lines.map((l) => `<div class="it"><span class="q">${l.q}×</span><span class="n">${l.i.n}</span><span class="p">${money(l.i.p * l.q)}</span></div>`).join('')}${rem <= 0 ? freeRow(FREE_EXTRA) : `<div class="nudge"><span class="n">Add ${money(rem)} more for a free ${FREE_EXTRA}</span><button class="addb" data-ci="${ci}" data-id="${add.id}">+ ${add.n}</button></div>`}</div>
+        <div class="items">${c.lines.map((l) => `<div class="it"><span class="q">${l.q}×</span><span class="n">${esc(l.i.n)}</span><span class="p">${money(l.i.p * l.q)}</span></div>`).join('')}${ok ? freeRow(FREE_EXTRA) : !add ? '' : `<div class="nudge"><span class="n">Add ${money(rem)} more for a free ${esc(FREE_EXTRA)}</span><button class="addb" data-ci="${ci}" data-id="${add.id}">+ ${esc(add.n)}</button></div>`}</div>
         <div class="tot"><span class="l">Total${S.party > 1 ? `<div class="pp" style="text-align:left">${money(c.total / S.party)} per person</div>` : ''}</span><span class="v">${money(c.total)}</span></div>
       </div></div>`;
   }).join('');
@@ -430,7 +388,7 @@ $('rail').addEventListener('scroll', () => {
   S.idx = Math.max(0, Math.min(S.combos.length - 1, Math.round(r.scrollLeft / w)));
   [...$('pdots').children].forEach((d,i) => d.classList.toggle('on', i === S.idx));
 }, {passive:true});
-function freeRow(x){ return `<div class="it freeit"><span class="q">1×</span><span class="n">${x}</span><span class="freetag">FREE</span></div>`; }
+function freeRow(x){ return `<div class="it freeit"><span class="q">1×</span><span class="n">${esc(x)}</span><span class="freetag">FREE</span></div>`; }
 function giftSvg(){ return '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="8" width="18" height="13" rx="2"/><path d="M12 8v13M3 12h18M7.5 8a2.5 2.5 0 1 1 4.5-1.5V8M16.5 8A2.5 2.5 0 1 0 12 6.5V8"/></svg>'; }
 
 /* order + ticket */
@@ -439,7 +397,7 @@ async function placeOrder(btn, label, body){
   btn.disabled = true; btn.textContent = 'One sec…';
   try {
     const total = body.items.reduce((t,i) => t + i.p * i.q, 0);
-    body.extra = total >= FREE_MIN ? FREE_EXTRA : '';
+    body.extra = hasFree(total) ? FREE_EXTRA : '';
     body.src = src;
     const r = await fetch('/api/order', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)});
     if (!r.ok) throw 0;
@@ -455,20 +413,20 @@ $('choose').onclick = () => {
 /* build your own */
 const secs = [...new Set(ITEMS.map((i) => i.s))];
 function renderBuild(){
-  $('buildList').innerHTML = secs.map((sname) => `<div class="sec">${sname}</div>` + ITEMS.filter((i) => i.s === sname).map((i) => {
+  $('buildList').innerHTML = secs.map((sname) => `<div class="sec">${esc(sname)}</div>` + ITEMS.filter((i) => i.s === sname).map((i) => {
     const q = S.cart[i.id] || 0;
-    return `<div class="mi"><div class="x"><div class="a">${i.n}</div><div class="b">${i.d}</div><div class="pr">${money(i.p)}</div></div>
-      <div class="step">${q ? `<button class="sbtn" data-m="${i.id}" aria-label="Remove one ${i.n}">−</button><span class="qn">${q}</span><button class="sbtn" data-p="${i.id}" aria-label="Add one ${i.n}">+</button>` : `<button class="sbtn add" data-p="${i.id}">Add</button>`}</div></div>`;
+    return `<div class="mi"><div class="x"><div class="a">${esc(i.n)}</div><div class="b">${esc(i.d)}</div><div class="pr">${money(i.p)}</div></div>
+      <div class="step">${q ? `<button class="sbtn" data-m="${i.id}" aria-label="Remove one ${esc(i.n)}">−</button><span class="qn">${q}</span><button class="sbtn" data-p="${i.id}" aria-label="Add one ${esc(i.n)}">+</button>` : `<button class="sbtn add" data-p="${i.id}">Add</button>`}</div></div>`;
   }).join('')).join('');
   $('buildList').querySelectorAll('[data-p]').forEach((b) => b.onclick = () => { S.cart[b.dataset.p] = (S.cart[b.dataset.p] || 0) + 1; renderBuild(); });
   $('buildList').querySelectorAll('[data-m]').forEach((b) => b.onclick = () => { const k = b.dataset.m; S.cart[k]--; if (S.cart[k] <= 0) delete S.cart[k]; renderBuild(); });
   const lines = Object.entries(S.cart).map(([id,q]) => ({i: ITEMS.find((x) => x.id === id), q}));
-  const total = lines.reduce((t,l) => t + l.i.p * l.q, 0), rem = FREE_MIN - total, btn = $('redeemFree');
-  $('progBar').style.width = Math.min(100, total / FREE_MIN * 100) + '%';
+  const total = lines.reduce((t,l) => t + l.i.p * l.q, 0), ok = hasFree(total), rem = ok ? 0 : FREE_MIN - total, btn = $('redeemFree');
+  $('progBar').style.width = (FREE.on ? Math.min(100, total / FREE_MIN * 100) : (total ? 100 : 0)) + '%';
   $('cartTot').textContent = money(total);
-  $('progTxt').innerHTML = !total ? 'Add items to start' : rem > 0 ? `${money(rem)} away from a free ${FREE_EXTRA}` : `<span class="ok">Free ${FREE_EXTRA} unlocked!</span>`;
-  btn.disabled = rem > 0;
-  btn.textContent = !total ? 'Add items to start' : rem > 0 ? `Add ${money(rem)} more to unlock` : 'Redeem Free Item';
+  $('progTxt').innerHTML = !total ? 'Add items to start' : !FREE.on ? 'Ready when you are' : rem > 0 ? `${money(rem)} away from a free ${esc(FREE_EXTRA)}` : `<span class="ok">Free ${esc(FREE_EXTRA)} unlocked!</span>`;
+  btn.disabled = !total || (FREE.on && rem > 0);
+  btn.textContent = !total ? 'Add items to start' : !FREE.on ? 'Get my code' : rem > 0 ? `Add ${money(rem)} more to unlock` : 'Redeem Free Item';
 }
 $('redeemFree').onclick = () => {
   const items = Object.entries(S.cart).map(([id,q]) => { const i = ITEMS.find((x) => x.id === id); return {n:i.n, q, p:i.p}; });
@@ -480,7 +438,7 @@ function showTicket(){
   const o = S.order;
   $('tkCode').textContent = '#' + o.code;
   $('tkTitle').textContent = o.title;
-  $('tkItems').innerHTML = o.items.map((i) => `<div class="it"><span class="q">${i.q}×</span><span class="n">${i.n}</span><span class="p">${money(i.p * i.q)}</span></div>`).join('') + (o.extra ? freeRow(o.extra) : '');
+  $('tkItems').innerHTML = o.items.map((i) => `<div class="it"><span class="q">${i.q}×</span><span class="n">${esc(i.n)}</span><span class="p">${money(i.p * i.q)}</span></div>`).join('') + (o.extra ? freeRow(o.extra) : '');
   $('tkTotal').textContent = money(o.total);
   setRedeemed(!!o.redeemedAt);
   go('ticket');
@@ -507,7 +465,7 @@ $('yes').onclick = async () => {
 $('again').onclick = () => { try { localStorage.removeItem('foodol_order'); } catch {} S.order = null; S.cart = {}; renderBuild(); go('hello'); };
 
 /* full menu */
-$('menuList').innerHTML = secs.map((s) => `<h4>${s}</h4>` + ITEMS.filter((i) => i.s === s).map((i) => `<div class="mrow"><span>${i.n}<small>${i.d}</small></span><span>${money(i.p)}</span></div>`).join('')).join('');
+$('menuList').innerHTML = secs.map((s) => `<h4>${esc(s)}</h4>` + ITEMS.filter((i) => i.s === s).map((i) => `<div class="mrow"><span>${esc(i.n)}<small>${esc(i.d)}</small></span><span>${money(i.p)}</span></div>`).join('')).join('');
 document.querySelectorAll('[data-menu]').forEach((b) => b.onclick = () => $('menu').classList.add('on'));
 $('menu').onclick = (e) => { if (e.target === $('menu') || e.target.hasAttribute('data-close')) $('menu').classList.remove('on'); };
 

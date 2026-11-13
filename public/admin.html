@@ -1,0 +1,366 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Foodol · Restaurant portal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--g:#3dbe6e;--gd:#259a52;--ink:#123a22;--ink2:#4c6656;--mut:#7d8f84;--line:#e6eee9;--soft:#eef8f1;--bg:#f6f8f6;--peach:#fde9dd;--butter:#fdf3cf;--sky:#e3f1fb;--org:#f07a1a;--red:#d1453b}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Outfit,system-ui,sans-serif;color:var(--ink);background:var(--bg);-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none}
+.hide{display:none!important}
+/* login */
+#login{min-height:100vh;display:grid;place-items:center;padding:24px}
+.lcard{background:#fff;border-radius:28px;padding:40px 36px;width:100%;max-width:400px;text-align:center;box-shadow:0 1px 2px rgba(18,58,34,.05),0 20px 50px rgba(18,58,34,.08)}
+.lcard img{height:120px;margin-bottom:8px}
+.lcard h1{font-size:28px;font-weight:800;letter-spacing:-.02em}
+.lcard p{color:var(--ink2);margin:6px 0 24px}
+.in{width:100%;border:1.5px solid var(--line);border-radius:14px;padding:13px 14px;background:#fff;outline:none;transition:border-color .15s}
+.in:focus{border-color:var(--g)}
+.btn{background:var(--g);color:#fff;font-weight:700;border-radius:14px;padding:13px 20px;box-shadow:0 3px 0 var(--gd);transition:transform .1s}
+.btn:active{transform:translateY(2px);box-shadow:0 1px 0 var(--gd)}
+.btn:disabled{opacity:.5;cursor:default}
+.btn.w{width:100%;margin-top:12px}
+.btn2{background:#fff;border:1.5px solid var(--line);font-weight:600;border-radius:12px;padding:9px 14px}
+.err{color:var(--red);font-size:14px;margin-top:10px;min-height:18px}
+/* shell */
+header{background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:10}
+.hin{max-width:1080px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;gap:14px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:19px}
+.brand img{height:34px}
+.rest{color:var(--mut);font-weight:500;font-size:15px}
+.sp{flex:1}
+nav{max-width:1080px;margin:0 auto;padding:0 24px;display:flex;gap:4px;overflow-x:auto}
+nav button{padding:12px 14px;font-weight:600;color:var(--mut);border-bottom:2.5px solid transparent;white-space:nowrap}
+nav button.on{color:var(--ink);border-color:var(--g)}
+main{max-width:1080px;margin:0 auto;padding:28px 24px 120px}
+h2{font-size:30px;font-weight:800;letter-spacing:-.025em}
+.sub{color:var(--ink2);margin:4px 0 22px}
+.card{background:#fff;border-radius:20px;padding:22px;box-shadow:0 1px 2px rgba(18,58,34,.04)}
+/* overview */
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px;margin-bottom:18px}
+.stat{border-radius:18px;padding:18px}
+.stat b{display:block;font-size:32px;font-weight:800;letter-spacing:-.02em}
+.stat span{color:var(--ink2);font-size:14px}
+.quick{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+.quick .card{display:flex;gap:14px;align-items:center}
+.quick .card img{height:56px}
+.quick a{color:var(--gd);font-weight:600;text-decoration:none}
+/* free item */
+.free{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+@media(max-width:760px){.free{grid-template-columns:1fr}}
+.fld{margin-bottom:16px}
+.fld label{display:block;font-weight:600;font-size:14px;margin-bottom:6px}
+.fld small{display:block;color:var(--mut);font-size:13px;margin-top:6px}
+.money{position:relative}.money:before{content:'$';position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--mut)}
+.money .in{padding-left:26px}
+.tgl{display:flex;align-items:center;gap:12px;font-weight:600}
+.sw{width:46px;height:28px;border-radius:99px;background:#d6e0da;position:relative;transition:background .15s;flex:none}
+.sw:after{content:'';position:absolute;left:3px;top:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:left .15s}
+.sw.on{background:var(--g)}.sw.on:after{left:21px}
+.prev{background:#fff6e4;border-radius:20px;padding:26px;text-align:center}
+.prev .f{font-weight:800;font-size:54px;color:var(--org);letter-spacing:-.04em;line-height:1}
+.prev .n{font-weight:800;font-size:26px;margin-top:4px}
+.prev .c{color:var(--ink2);margin-top:6px}
+.prev.off{opacity:.45}
+/* menu */
+.mtools{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap}
+.mtools .in{max-width:280px}
+.sec{margin-bottom:18px}
+.sech{display:flex;align-items:center;gap:10px;margin:0 2px 8px}
+.sech h3{font-size:18px;font-weight:700}
+.sech .cnt{color:var(--mut);font-size:14px}
+.row{background:#fff;border-radius:16px;padding:14px 16px;display:grid;grid-template-columns:auto 1fr 110px 110px auto;gap:14px;align-items:center;margin-bottom:8px;box-shadow:0 1px 2px rgba(18,58,34,.04)}
+.row.off{opacity:.55}
+.row .nm{font-weight:600;border:0;padding:4px 6px;margin:-4px -6px;border-radius:8px;width:100%;background:transparent;outline:none}
+.row .ds{color:var(--mut);font-size:14px;border:0;padding:3px 6px;margin:0 -6px -3px;border-radius:8px;width:100%;background:transparent;outline:none}
+.row .nm:focus,.row .ds:focus{background:var(--soft)}
+.row .pr{position:relative}.row .pr:before{content:'$';position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--mut);font-size:14px}
+.row .pr input{width:100%;border:1.5px solid var(--line);border-radius:10px;padding:8px 8px 8px 22px;outline:none}
+.row .pr input:focus{border-color:var(--g)}
+.row select{border:1.5px solid var(--line);border-radius:10px;padding:8px;background:#fff;outline:none}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.chip{font-size:12.5px;font-weight:600;padding:4px 10px;border-radius:99px;background:#f0f3f1;color:var(--mut)}
+.chip.on{background:var(--soft);color:var(--gd)}
+.stars{display:flex;gap:1px;margin-left:6px}
+.stars button{font-size:15px;color:#d6e0da;padding:0 1px}.stars button.on{color:#f2b33d}
+.del{color:var(--mut);padding:6px;border-radius:8px}.del:hover{color:var(--red);background:#fdeceb}
+.flag{font-size:12px;font-weight:600;color:var(--org);margin-left:8px}
+@media(max-width:760px){.row{grid-template-columns:auto 1fr;}.row .pr,.row select{grid-column:2}.row .del{grid-column:2;justify-self:start}}
+.addrow{color:var(--gd);font-weight:600;padding:8px 4px}
+/* combos */
+.pickers{display:flex;gap:18px;flex-wrap:wrap;margin-bottom:18px}
+.seg{display:flex;background:#fff;border-radius:14px;padding:4px;gap:4px;box-shadow:0 1px 2px rgba(18,58,34,.04)}
+.seg button{padding:8px 14px;border-radius:10px;font-weight:600;color:var(--ink2)}
+.seg button.on{background:var(--ink);color:#fff}
+.combos{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+.cb{border-radius:22px;padding:22px}
+.cb.c-fav{background:var(--peach)}.cb.c-deal{background:var(--butter)}.cb.c-adv{background:var(--sky)}
+.cb .bd{display:inline-block;background:rgba(255,255,255,.75);border-radius:99px;padding:4px 12px;font-size:13px;font-weight:700}
+.cb h4{font-size:24px;font-weight:800;letter-spacing:-.02em;margin:10px 0 12px}
+.cb .its{background:rgba(255,255,255,.7);border-radius:14px;padding:6px 12px}
+.cb .it{display:flex;gap:10px;padding:8px 0;border-bottom:1px dashed rgba(18,58,34,.12);font-size:15px}
+.cb .it:last-child{border:0}
+.cb .it .q{font-weight:700;width:26px}.cb .it .n{flex:1}
+.cb .free{color:var(--gd);font-weight:700}
+.cb .tot{display:flex;justify-content:space-between;align-items:flex-end;margin-top:14px}
+.cb .tot b{font-size:28px;font-weight:800}
+.cb .tot small{color:var(--ink2);display:block}
+.empty{color:var(--mut);padding:30px;text-align:center}
+.note{color:var(--mut);font-size:14px;margin-top:16px}
+/* orders */
+table{width:100%;border-collapse:collapse;font-size:15px}
+th{text-align:left;font-size:13px;color:var(--mut);font-weight:600;padding:10px 12px;border-bottom:1px solid var(--line)}
+td{padding:12px;border-bottom:1px solid var(--line);vertical-align:top}
+.tag{font-size:12.5px;font-weight:700;padding:3px 9px;border-radius:99px;white-space:nowrap}
+.tag.ok{background:var(--soft);color:var(--gd)}.tag.wait{background:#fff3e6;color:#b55d10}
+.tw{overflow-x:auto}
+/* save bar */
+#bar{position:fixed;left:50%;bottom:22px;transform:translate(-50%,140%);background:var(--ink);color:#fff;border-radius:18px;padding:12px 12px 12px 20px;display:flex;align-items:center;gap:16px;box-shadow:0 14px 40px rgba(18,58,34,.3);transition:transform .25s;z-index:20;width:calc(100% - 32px);max-width:520px}
+#bar.on{transform:translate(-50%,0)}
+#bar span{flex:1;font-weight:600}
+#bar .btn2{background:transparent;border-color:rgba(255,255,255,.25);color:#fff}
+#toast{position:fixed;left:50%;top:18px;transform:translate(-50%,-150%);background:var(--g);color:#fff;font-weight:700;padding:10px 18px;border-radius:12px;transition:transform .25s;z-index:30}
+#toast.on{transform:translate(-50%,0)}
+</style>
+</head>
+<body>
+
+<section id="login" class="hide">
+  <form class="lcard" id="lf">
+    <img src="https://d2ol7oe51mr4n9.cloudfront.net/user_3GsbRE1t9hIx7tjNcLo5jEaZ8ao/fe5e036c-785b-4e97-b270-c3a52036389d.svg" alt="">
+    <h1>Restaurant portal</h1>
+    <p>Log in to manage your menu, free item and Foodol combos.</p>
+    <input class="in" id="key" type="password" placeholder="Access key" autocomplete="current-password" required>
+    <button class="btn w" type="submit">Log in</button>
+    <div class="err" id="lerr"></div>
+  </form>
+</section>
+
+<div id="app" class="hide">
+  <header>
+    <div class="hin">
+      <div class="brand"><img src="https://d2ol7oe51mr4n9.cloudfront.net/user_3GsbRE1t9hIx7tjNcLo5jEaZ8ao/fe5e036c-785b-4e97-b270-c3a52036389d.svg" alt="">Foodol</div>
+      <span class="rest" id="rname"></span>
+      <span class="sp"></span>
+      <a class="btn2" href="/" target="_blank" rel="noopener" style="text-decoration:none">Open guest app</a>
+      <button class="btn2" id="out">Log out</button>
+    </div>
+    <nav id="tabs">
+      <button data-t="overview" class="on">Overview</button>
+      <button data-t="menu">Menu</button>
+      <button data-t="free">Free item</button>
+      <button data-t="combos">Foodol combos</button>
+      <button data-t="orders">Orders</button>
+    </nav>
+  </header>
+
+  <main>
+    <section data-p="overview">
+      <h2>Good to see you</h2>
+      <p class="sub">How Foodol is doing at your restaurant.</p>
+      <div class="stats" id="stats"></div>
+      <div class="quick">
+        <div class="card"><img src="https://d2ol7oe51mr4n9.cloudfront.net/user_3GsbRE1t9hIx7tjNcLo5jEaZ8ao/fe5e036c-785b-4e97-b270-c3a52036389d.svg" alt=""><div><b>Your free item</b><div id="qfree" style="color:var(--ink2);font-size:15px;margin:2px 0 4px"></div><a href="#" data-go="free">Change it →</a></div></div>
+        <div class="card"><div><b>Your menu</b><div id="qmenu" style="color:var(--ink2);font-size:15px;margin:2px 0 4px"></div><a href="#" data-go="menu">Edit menu →</a></div></div>
+        <div class="card"><div><b>Foodol combos</b><div style="color:var(--ink2);font-size:15px;margin:2px 0 4px">See what Foodol suggests to guests.</div><a href="#" data-go="combos">Preview combos →</a></div></div>
+      </div>
+    </section>
+
+    <section data-p="menu" class="hide">
+      <h2>Menu</h2>
+      <p class="sub">Turn items on or off, fix prices, and tell Foodol what each item is. Changes go live for guests when you save.</p>
+      <div class="mtools">
+        <input class="in" id="q" placeholder="Search the menu">
+        <button class="btn2" id="addsec">+ New section</button>
+      </div>
+      <div id="menuList"></div>
+    </section>
+
+    <section data-p="free" class="hide">
+      <h2>Free item</h2>
+      <p class="sub">The reward guests unlock when their Foodol order reaches your minimum.</p>
+      <div class="free">
+        <div class="card">
+          <div class="fld"><div class="tgl"><button class="sw" id="fon" type="button" aria-label="Free item on or off"></button><span id="fonl"></span></div></div>
+          <div class="fld"><label for="fname">Free item</label><input class="in" id="fname" maxlength="40" placeholder="Thai iced tea"><small>Pick something cheap for you that guests love, ideally under $1 to make.</small></div>
+          <div class="fld"><label for="fmin">Minimum order</label><div class="money"><input class="in" id="fmin" type="number" min="0" step="0.5"></div><small>Set it a little above your usual order, so guests add one more thing to get it.</small></div>
+          <div class="fld"><label for="fgr">Rounding allowance</label><div class="money"><input class="in" id="fgr" type="number" min="0" max="5" step="0.25"></div><small>Orders this close to the minimum still qualify, so nobody sees “add 2 cents”.</small></div>
+        </div>
+        <div>
+          <div class="prev" id="fprev"><div class="f">FREE</div><div class="n" id="pn"></div><div class="c" id="pc"></div></div>
+          <p class="note">This is how the offer reads on your poster and in the app.</p>
+        </div>
+      </div>
+    </section>
+
+    <section data-p="combos" class="hide">
+      <h2>Foodol combos</h2>
+      <p class="sub">What Foodol suggests to a guest, built live from your current menu. Pick a group size and cravings to see the combos.</p>
+      <div class="pickers">
+        <div class="seg" id="party"></div>
+        <div class="seg" id="crave"></div>
+      </div>
+      <div class="combos" id="combos"></div>
+      <p class="note">Combos follow your menu: items you turn off disappear here, and popularity stars decide what Foodol recommends first.</p>
+    </section>
+
+    <section data-p="orders" class="hide">
+      <h2>Orders</h2>
+      <p class="sub">Every order Foodol built, newest first.</p>
+      <div class="card tw"><table><thead><tr><th>Code</th><th>When</th><th>Order</th><th>People</th><th>Total</th><th>Free item</th><th>Status</th></tr></thead><tbody id="orows"></tbody></table></div>
+    </section>
+  </main>
+</div>
+
+<div id="bar"><span id="barTxt">You have unsaved changes</span><button class="btn2" id="discard">Discard</button><button class="btn" id="save">Save changes</button></div>
+<div id="toast">Saved</div>
+
+<script src="/combos.js"></script>
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const money = (v) => '$' + (+v || 0).toFixed(2);
+const CR = [['breakfast','Breakfast'],['thai','Thai plates'],['sandwich','Sandwiches'],['sweet','Sweet & fresh']];
+const PARTY = [[1,'Just me'],[2,'Two'],[4,'Family'],[6,'Big group']];
+const KIND = {main:'Main', side:'Side', drink:'Drink only'};
+let saved = null, M = null, D = null, tab = 'overview', pv = {party:2, craves:new Set(['thai'])};
+
+async function api(path, opts){ const r = await fetch(path, opts); if (r.status === 401) { showLogin(); throw new Error('auth'); } if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || 'error'); return r.json(); }
+function showLogin(){ $('app').classList.add('hide'); $('login').classList.remove('hide'); $('key').focus(); }
+$('lf').onsubmit = async (e) => {
+  e.preventDefault(); $('lerr').textContent = '';
+  const r = await fetch('/api/admin/login', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({key: $('key').value})});
+  if (!r.ok) { $('lerr').textContent = 'That key didn’t work. Try again.'; return; }
+  $('key').value = ''; load();
+};
+$('out').onclick = async () => { await fetch('/api/admin/logout', {method:'POST'}); showLogin(); };
+
+async function load(){
+  try { D = await api('/api/admin/data'); } catch { return; }
+  saved = JSON.stringify(D.menu); M = JSON.parse(saved);
+  $('login').classList.add('hide'); $('app').classList.remove('hide');
+  $('rname').textContent = M.restaurant || '';
+  renderAll();
+}
+function dirty(){ const d = JSON.stringify(M) !== saved; $('bar').classList.toggle('on', d); return d; }
+function renderAll(){ renderOverview(); renderMenu(); renderFree(); renderCombos(); renderOrders(); dirty(); }
+
+/* tabs */
+function setTab(t){ tab = t; document.querySelectorAll('#tabs button').forEach((b) => b.classList.toggle('on', b.dataset.t === t)); document.querySelectorAll('main > section').forEach((s) => s.classList.toggle('hide', s.dataset.p !== t)); if (t === 'combos') renderCombos(); window.scrollTo(0,0); }
+$('tabs').onclick = (e) => { const b = e.target.closest('button'); if (b) setTab(b.dataset.t); };
+document.addEventListener('click', (e) => { const a = e.target.closest('[data-go]'); if (a) { e.preventDefault(); setTab(a.dataset.go); } });
+
+/* overview */
+function renderOverview(){
+  const o = D.orders, red = o.filter((x) => x.redeemedAt), sum = (a) => a.reduce((t,x) => t + (x.total || 0), 0);
+  const freeGiven = red.filter((x) => x.extra).length;
+  const st = [[D.totalOrders,'combos & orders built','var(--soft)'],[red.length,'redeemed at the counter','var(--butter)'],[money(sum(red)),'Foodol sales','var(--peach)'],[money(red.length ? sum(red) / red.length : 0),'average redeemed order','var(--sky)'],[freeGiven,'free items given','#f3eefb']];
+  $('stats').innerHTML = st.map(([v,l,bg]) => `<div class="stat" style="background:${bg}"><b>${esc(v)}</b><span>${l}</span></div>`).join('');
+  $('qfree').textContent = M.free.on ? `Free ${M.free.name} on orders over ${money(M.free.min)}` : 'Off right now';
+  const on = M.items.filter((i) => i.on !== false).length;
+  $('qmenu').textContent = `${on} of ${M.items.length} items showing to guests`;
+}
+
+/* menu */
+const sections = () => [...new Set(M.items.map((i) => i.s))];
+function renderMenu(){
+  const q = $('q').value.trim().toLowerCase();
+  $('menuList').innerHTML = sections().map((s) => {
+    const its = M.items.map((i, idx) => [i, idx]).filter(([i]) => i.s === s && (!q || (i.n + ' ' + i.d).toLowerCase().includes(q)));
+    if (q && !its.length) return '';
+    return `<div class="sec"><div class="sech"><h3>${esc(s)}</h3><span class="cnt">${its.length} items</span></div>` +
+      its.map(([i, idx]) => `<div class="row ${i.on === false ? 'off' : ''}" data-i="${idx}">
+        <button class="sw ${i.on !== false ? 'on' : ''}" data-a="on" aria-label="Show ${esc(i.n)} to guests" title="${i.on !== false ? 'Showing to guests' : 'Hidden from guests'}"></button>
+        <div><input class="nm" data-f="n" value="${esc(i.n)}" aria-label="Name"><input class="ds" data-f="d" value="${esc(i.d)}" placeholder="Short description" aria-label="Description">
+          <div class="chips">${CR.map(([k,l]) => `<button class="chip ${i.c.includes(k) ? 'on' : ''}" data-a="c" data-k="${k}">${l}</button>`).join('')}
+          <span class="stars" title="How popular it is. Foodol suggests popular items first.">${[1,2,3,4,5].map((n) => `<button data-a="pop" data-n="${n}" class="${n <= i.pop ? 'on' : ''}" aria-label="Popularity ${n}">★</button>`).join('')}</span>
+          ${!(+i.p > 0) ? '<span class="flag">Needs a price</span>' : ''}</div></div>
+        <div class="pr"><input type="number" min="0" step="0.01" data-f="p" value="${(+i.p || 0).toFixed(2)}" aria-label="Price"></div>
+        <select data-f="k" aria-label="Type">${Object.entries(KIND).map(([k,l]) => `<option value="${k}" ${i.k === k ? 'selected' : ''}>${l}</option>`).join('')}</select>
+        <button class="del" data-a="del" aria-label="Delete ${esc(i.n)}" title="Delete">✕</button>
+      </div>`).join('') + (q ? '' : `<button class="addrow" data-add="${esc(s)}">+ Add item to ${esc(s)}</button>`) + '</div>';
+  }).join('') || '<div class="empty">No items match.</div>';
+}
+$('q').oninput = renderMenu;
+$('menuList').addEventListener('input', (e) => {
+  const r = e.target.closest('.row'); if (!r) return; const i = M.items[+r.dataset.i], f = e.target.dataset.f;
+  if (!f) return; i[f] = f === 'p' ? Math.round((+e.target.value || 0) * 100) / 100 : e.target.value; dirty(); renderOverview();
+});
+$('menuList').addEventListener('change', (e) => { if (e.target.dataset.f === 'k') renderMenu(); });
+$('menuList').addEventListener('click', (e) => {
+  const add = e.target.closest('[data-add]');
+  if (add) { const s = add.dataset.add; let n = 1; while (M.items.some((i) => i.id === 'new' + n)) n++; const at = M.items.map((i) => i.s).lastIndexOf(s) + 1;
+    M.items.splice(at, 0, {id:'new' + n, s, n:'New item', d:'', p:0, c:[], k:'main', pop:3, on:true}); renderMenu(); dirty();
+    const row = document.querySelector(`.row[data-i="${at}"] .nm`); if (row) { row.focus(); row.select(); } return; }
+  const b = e.target.closest('[data-a]'); if (!b) return; const r = b.closest('.row'); const idx = +r.dataset.i, i = M.items[idx];
+  if (b.dataset.a === 'on') i.on = i.on === false;
+  if (b.dataset.a === 'c') { const k = b.dataset.k; i.c = i.c.includes(k) ? i.c.filter((x) => x !== k) : [...i.c, k]; }
+  if (b.dataset.a === 'pop') i.pop = +b.dataset.n;
+  if (b.dataset.a === 'del') { if (!confirm(`Delete “${i.n}” from your menu?`)) return; M.items.splice(idx, 1); }
+  renderMenu(); renderOverview(); dirty();
+});
+$('addsec').onclick = () => { const s = prompt('Name of the new section'); if (!s || !s.trim()) return; M.items.push({id:'new' + Date.now().toString(36), s:s.trim().slice(0,40), n:'New item', d:'', p:0, c:[], k:'main', pop:3, on:true}); renderMenu(); dirty(); };
+
+/* free item */
+function renderFree(){
+  const f = M.free;
+  $('fon').classList.toggle('on', !!f.on); $('fonl').textContent = f.on ? 'Free item is on' : 'Free item is off';
+  if (document.activeElement !== $('fname')) $('fname').value = f.name;
+  if (document.activeElement !== $('fmin')) $('fmin').value = f.min;
+  if (document.activeElement !== $('fgr')) $('fgr').value = f.grace ?? 0.5;
+  $('pn').textContent = f.name || 'Your free item'; $('pc').textContent = `with any order of ${money(f.min).replace('.00','')} or more`;
+  $('fprev').classList.toggle('off', !f.on);
+}
+$('fon').onclick = () => { M.free.on = !M.free.on; renderFree(); renderOverview(); dirty(); };
+$('fname').oninput = () => { M.free.name = $('fname').value; renderFree(); renderOverview(); dirty(); };
+$('fmin').oninput = () => { M.free.min = Math.max(0, +$('fmin').value || 0); renderFree(); renderOverview(); dirty(); };
+$('fgr').oninput = () => { M.free.grace = Math.min(5, Math.max(0, +$('fgr').value || 0)); dirty(); };
+
+/* combos */
+$('party').innerHTML = PARTY.map(([n,l]) => `<button data-n="${n}">${l}</button>`).join('');
+$('crave').innerHTML = CR.map(([k,l]) => `<button data-k="${k}">${l}</button>`).join('') + '<button data-k="surprise">Surprise</button>';
+$('party').onclick = (e) => { const b = e.target.closest('button'); if (b) { pv.party = +b.dataset.n; renderCombos(); } };
+$('crave').onclick = (e) => { const b = e.target.closest('button'); if (!b) return; const k = b.dataset.k;
+  if (k === 'surprise') pv.craves = new Set(['surprise']); else { pv.craves.delete('surprise'); pv.craves.has(k) ? pv.craves.delete(k) : pv.craves.add(k); if (!pv.craves.size) pv.craves.add(k); }
+  renderCombos(); };
+function renderCombos(){
+  if (!M) return;
+  $('party').querySelectorAll('button').forEach((b) => b.classList.toggle('on', +b.dataset.n === pv.party));
+  $('crave').querySelectorAll('button').forEach((b) => b.classList.toggle('on', pv.craves.has(b.dataset.k)));
+  const items = M.items.filter((i) => i.on !== false && +i.p > 0);
+  const cs = FoodolCombos.build(items, pv.party, [...pv.craves], M.free.on ? +M.free.min : 0);
+  $('combos').innerHTML = cs.length ? cs.map((c) => { const K = FoodolCombos.KINDS[c.how], ok = FoodolCombos.qualifies(c.total, M.free);
+    return `<div class="cb ${K.cls}"><span class="bd">${K.badge}</span><h4>${K.title}</h4><div class="its">${c.lines.map((l) => `<div class="it"><span class="q">${l.q}×</span><span class="n">${esc(l.i.n)}</span><span>${money(l.i.p * l.q)}</span></div>`).join('')}${ok ? `<div class="it free"><span class="q">1×</span><span class="n">${esc(M.free.name)}</span><span>FREE</span></div>` : ''}</div>
+      <div class="tot"><span>${pv.party > 1 ? `<small>${money(c.total / pv.party)} per person</small>` : ''}${M.free.on ? (ok ? '<small style="color:var(--gd);font-weight:600">Earns the free item</small>' : `<small>${money(Math.max(0, M.free.min - c.total))} short of the free item</small>`) : ''}</span><b>${money(c.total)}</b></div></div>`; }).join('')
+    : '<div class="empty">No combos yet. Turn on some mains for these cravings in your menu.</div>';
+}
+
+/* orders */
+function renderOrders(){
+  const fmt = (t) => new Date(t).toLocaleString([], {month:'short', day:'numeric', hour:'numeric', minute:'2-digit'});
+  $('orows').innerHTML = D.orders.length ? D.orders.map((o) => `<tr><td><b>#${esc(o.code)}</b></td><td>${fmt(o.createdAt)}</td><td>${esc(o.title)}<div style="color:var(--mut);font-size:13px">${o.items.map((i) => esc(i.q + '× ' + i.n)).join(', ')}</div></td><td>${o.party}</td><td>${money(o.total)}</td><td>${o.extra ? esc(o.extra) : '<span style="color:var(--mut)">—</span>'}</td><td>${o.redeemedAt ? '<span class="tag ok">Redeemed</span>' : '<span class="tag wait">Not redeemed</span>'}</td></tr>`).join('')
+    : '<tr><td colspan="7" class="empty">No orders yet. They’ll show up here as guests use Foodol.</td></tr>';
+}
+
+/* save */
+$('discard').onclick = () => { M = JSON.parse(saved); renderAll(); };
+$('save').onclick = async () => {
+  const missing = M.items.filter((i) => i.on !== false && !(+i.p > 0));
+  if (missing.length && !confirm(`${missing.length} item(s) showing to guests have no price, so guests won’t see them until you add one. Save anyway?`)) return;
+  $('save').disabled = true;
+  try { const m = await api('/api/admin/menu', {method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(M)});
+    saved = JSON.stringify(m); M = JSON.parse(saved); D.menu = M; renderAll(); toast('Saved. Guests see the new menu now.'); }
+  catch (e) { if (e.message !== 'auth') toast('Could not save: ' + e.message, true); }
+  $('save').disabled = false;
+};
+function toast(t, bad){ const el = $('toast'); el.textContent = t; el.style.background = bad ? 'var(--red)' : 'var(--g)'; el.classList.add('on'); setTimeout(() => el.classList.remove('on'), 2600); }
+window.addEventListener('beforeunload', (e) => { if (M && dirty()) { e.preventDefault(); e.returnValue = ''; } });
+load();
+</script>
+</body>
+</html>

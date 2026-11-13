@@ -28,6 +28,42 @@ if (fs.existsSync(LOG)) {
 }
 const append = (ev) => fs.appendFileSync(LOG, JSON.stringify(ev) + '\n');
 
+// Menu + free item: stored on the volume, seeded from menu.default.json.
+const MENU_FILE = path.join(DATA_DIR, 'menu.json');
+let menu = JSON.parse(fs.readFileSync(path.join(__dirname, 'menu.default.json'), 'utf8'));
+try { if (fs.existsSync(MENU_FILE)) menu = JSON.parse(fs.readFileSync(MENU_FILE, 'utf8')); } catch { /* keep default */ }
+function saveMenu(m) {
+  const tmp = MENU_FILE + '.tmp';
+  fs.writeFileSync(tmp, JSON.stringify(m, null, 1));
+  fs.renameSync(tmp, MENU_FILE);
+  menu = m;
+}
+const num = (v, lo, hi) => Math.min(hi, Math.max(lo, Math.round((+v || 0) * 100) / 100));
+const CRAVES = ['breakfast', 'thai', 'sandwich', 'sweet'];
+function cleanMenu(b) {
+  const f = b.free || {};
+  const seen = new Set();
+  const items = (Array.isArray(b.items) ? b.items : []).slice(0, 300).map((i, n) => {
+    let id = String(i.id || '').replace(/[^\w-]/g, '').slice(0, 24) || 'i' + n;
+    while (seen.has(id)) id += 'x';
+    seen.add(id);
+    return {
+      id, s: clean(i.s, 40) || 'Menu', n: clean(i.n, 60), d: clean(i.d, 140), p: num(i.p, 0, 500),
+      c: (Array.isArray(i.c) ? i.c : []).filter((c) => CRAVES.includes(c)),
+      k: ['main', 'side', 'drink'].includes(i.k) ? i.k : 'main', pop: Math.min(5, Math.max(1, Math.round(+i.pop || 3))), on: i.on !== false,
+    };
+  }).filter((i) => i.n);
+  return {
+    restaurant: clean(b.restaurant, 60) || menu.restaurant,
+    free: { on: !!f.on, name: clean(f.name, 40) || 'free item', min: num(f.min, 0, 500), grace: num(f.grace ?? 0.5, 0, 5) },
+    items,
+  };
+}
+
+// Admin login: a cookie holding a hash of OWNER_KEY.
+const ADMIN_TOKEN = crypto.createHash('sha256').update('foodol-admin:' + OWNER_KEY).digest('hex');
+const isAdmin = (req) => (req.headers.cookie || '').split(/;\s*/).includes('fd_admin=' + ADMIN_TOKEN);
+
 function newCode() {
   for (;;) {
     const c = String(crypto.randomInt(1000, 10000));
@@ -45,7 +81,7 @@ function send(res, status, body, type = 'application/json') {
 function readBody(req) {
   return new Promise((resolve) => {
     let b = '';
-    req.on('data', (c) => { b += c; if (b.length > 20000) req.destroy(); });
+    req.on('data', (c) => { b += c; if (b.length > 300000) req.destroy(); });
     req.on('end', () => { try { resolve(JSON.parse(b || '{}')); } catch { resolve({}); } });
   });
 }
@@ -102,18 +138,53 @@ http.createServer(async (req, res) => {
     return send(res, 200, o);
   }
 
+  if (p === '/api/menu') return send(res, 200, menu);
+
+  if (p === '/api/admin/login' && req.method === 'POST') {
+    const b = await readBody(req);
+    if (String(b.key || '') !== OWNER_KEY) return send(res, 401, { error: 'wrong key' });
+    res.setHeader('Set-Cookie', `fd_admin=${ADMIN_TOKEN}; Path=/; HttpOnly; SameSite=Lax; Max-Age=2592000${req.headers['x-forwarded-proto'] === 'https' ? '; Secure' : ''}`);
+    return send(res, 200, { ok: true });
+  }
+  if (p === '/api/admin/logout' && req.method === 'POST') {
+    res.setHeader('Set-Cookie', 'fd_admin=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0');
+    return send(res, 200, { ok: true });
+  }
+  if (p.startsWith('/api/admin/')) {
+    if (!isAdmin(req)) return send(res, 401, { error: 'login needed' });
+    if (p === '/api/admin/data') {
+      const all = [...orders.values()].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+      return send(res, 200, { menu, orders: all.slice(0, 200), totalOrders: all.length });
+    }
+    if (p === '/api/admin/menu' && req.method === 'PUT') {
+      const m = cleanMenu(await readBody(req));
+      if (!m.items.length) return send(res, 400, { error: 'menu is empty' });
+      saveMenu(m);
+      return send(res, 200, menu);
+    }
+    return send(res, 404, { error: 'not found' });
+  }
+
+  if (p === '/admin') {
+    return fs.readFile(path.join(PUBLIC, 'admin.html'), 'utf8', (e, d) => (e ? send(res, 404, 'Not found', 'text/plain') : send(res, 200, d, MIME['.html'])));
+  }
+
   if (p === '/owner') {
     if (url.searchParams.get('key') !== OWNER_KEY) return send(res, 403, 'Not allowed', 'text/plain');
     return send(res, 200, ownerPage(), 'text/html; charset=utf-8');
   }
 
-  // static files
-  let file = path.normalize(path.join(PUBLIC, p === '/' ? 'index.html' : p));
+  // static files; the app page gets the live menu baked in
+  const appPage = () => fs.readFile(path.join(PUBLIC, 'index.html'), 'utf8', (e, html) => {
+    if (e) return send(res, 404, 'Not found', 'text/plain');
+    const live = { ...menu, items: menu.items.filter((i) => i.on !== false && i.p > 0) };
+    send(res, 200, html.replace('<!--FOODOL_MENU-->', '<script>window.FOODOL_MENU=' + JSON.stringify(live).replace(/</g, '\\u003c') + ';</script>'), MIME['.html']);
+  });
+  if (p === '/' || p === '/index.html') return appPage();
+  let file = path.normalize(path.join(PUBLIC, p));
   if (!file.startsWith(PUBLIC)) return send(res, 403, 'no', 'text/plain');
   fs.readFile(file, (err, data) => {
-    if (err) {
-      return fs.readFile(path.join(PUBLIC, 'index.html'), (e2, d2) => (e2 ? send(res, 404, 'Not found', 'text/plain') : send(res, 200, d2, MIME['.html'])));
-    }
+    if (err) return appPage();
     res.writeHead(200, { 'Content-Type': MIME[path.extname(file)] || 'application/octet-stream', 'Cache-Control': 'public, max-age=300' });
     res.end(data);
   });
