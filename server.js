@@ -60,6 +60,66 @@ function cleanMenu(b) {
   };
 }
 
+// Guests: everyone who left an email when redeeming.
+const GUESTS_LOG = path.join(DATA_DIR, 'guests.jsonl');
+const guests = new Map();
+if (fs.existsSync(GUESTS_LOG)) {
+  for (const line of fs.readFileSync(GUESTS_LOG, 'utf8').split('\n')) {
+    if (!line.trim()) continue;
+    try { const g = JSON.parse(line); guests.set(g.email, { ...(guests.get(g.email) || {}), ...g }); } catch { /* skip */ }
+  }
+}
+function upsertGuest(email, patch) {
+  const now = new Date().toISOString();
+  const g = { email, firstSeen: now, orders: 0, consent: false, unsub: false, ...(guests.get(email) || {}), ...patch, lastSeen: now };
+  guests.set(email, g);
+  fs.appendFileSync(GUESTS_LOG, JSON.stringify(g) + '\n');
+  return g;
+}
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+const cleanEmail = (e) => { const v = String(e || '').trim().toLowerCase().slice(0, 120); return EMAIL_RE.test(v) ? v : ''; };
+const APP_URL = (process.env.APP_URL || 'https://www.foodol.app').replace(/\/$/, '');
+const unsubToken = (email) => crypto.createHmac('sha256', 'foodol-unsub:' + OWNER_KEY).update(email).digest('hex').slice(0, 24);
+const escH = (t) => String(t ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+// Code email through Resend (only when RESEND_API_KEY is set).
+async function sendCodeEmail(order) {
+  const key = process.env.RESEND_API_KEY;
+  if (!key || !order.email) return;
+  const rest = menu.restaurant || 'the restaurant';
+  const unsub = `${APP_URL}/unsubscribe?e=${encodeURIComponent(order.email)}&t=${unsubToken(order.email)}`;
+  const rows = order.items.map((i) => `<tr><td style="padding:8px 0;color:#123a22">${i.q}× ${escH(i.n)}</td><td style="padding:8px 0;text-align:right;color:#123a22">$${(i.p * i.q).toFixed(2)}</td></tr>`).join('')
+    + (order.extra ? `<tr><td style="padding:8px 0;color:#259a52;font-weight:700">1× ${escH(order.extra)}</td><td style="padding:8px 0;text-align:right;color:#259a52;font-weight:700">FREE</td></tr>` : '');
+  const html = `<!doctype html><html><body style="margin:0;background:#f6f8f6;font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f6f8f6;padding:28px 12px"><tr><td align="center">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:440px;background:#ffffff;border-radius:22px;padding:28px">
+<tr><td align="center"><img src="https://d2ol7oe51mr4n9.cloudfront.net/user_3GsbRE1t9hIx7tjNcLo5jEaZ8ao/fb01c05e-949a-4e50-86de-253056e50ede.webp" width="110" alt="Foodol" style="display:block"></td></tr>
+<tr><td align="center" style="font-size:22px;font-weight:800;color:#123a22;padding-top:8px">Show this at the counter</td></tr>
+<tr><td align="center" style="font-size:15px;color:#4c6656;padding-top:4px">${escH(rest)}</td></tr>
+<tr><td align="center" style="font-size:52px;font-weight:800;color:#123a22;letter-spacing:-1px;padding:14px 0 4px">#${escH(order.code)}</td></tr>
+<tr><td align="center" style="font-size:15px;font-weight:700;color:#123a22;padding-bottom:14px">${escH(order.title)}</td></tr>
+<tr><td><table role="presentation" width="100%" style="border-top:1px dashed #d6e0da;border-bottom:1px dashed #d6e0da;font-size:15px">${rows}</table></td></tr>
+<tr><td style="padding-top:12px;font-size:17px;font-weight:800;color:#123a22;text-align:right">Total $${order.total.toFixed(2)}</td></tr>
+${order.extra ? `<tr><td align="center" style="padding-top:18px"><span style="display:inline-block;background:#fff6e4;color:#b55d10;font-weight:700;border-radius:999px;padding:8px 16px;font-size:14px">Your free ${escH(order.extra)} is included</span></td></tr>` : ''}
+<tr><td align="center" style="font-size:13px;color:#7d8f84;padding-top:20px">The cashier rings up your order and marks the code as used.</td></tr>
+</table>
+<p style="font-size:12px;color:#7d8f84;max-width:440px;margin:16px auto 0;text-align:center">You got this because you redeemed a Foodol code at ${escH(rest)}. <a href="${unsub}" style="color:#7d8f84">Unsubscribe</a> · <a href="${APP_URL}/privacy" style="color:#7d8f84">Privacy</a></p>
+</td></tr></table></body></html>`;
+  const text = `Show this at the counter at ${rest}.\nYour Foodol code: #${order.code} (${order.title})\n` + order.items.map((i) => `${i.q}x ${i.n}  $${(i.p * i.q).toFixed(2)}`).join('\n') + (order.extra ? `\n1x ${order.extra}  FREE` : '') + `\nTotal $${order.total.toFixed(2)}\n\nUnsubscribe: ${unsub}`;
+  try {
+    const r = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ from: process.env.FROM_EMAIL || 'Foodol <codes@foodol.app>', to: [order.email], subject: `Your Foodol code #${order.code}${order.extra ? ' + free ' + order.extra : ''}`, html, text, headers: { 'List-Unsubscribe': `<${unsub}>` } }),
+    });
+    if (!r.ok) console.error('resend failed', r.status, (await r.text()).slice(0, 300));
+  } catch (e) { console.error('resend error', e.message); }
+}
+
+function simplePage(title, body) {
+  return `<!doctype html><meta name=viewport content="width=device-width,initial-scale=1"><title>${escH(title)}</title><style>body{font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;max-width:620px;margin:40px auto;padding:0 22px;color:#123a22;line-height:1.55}h1{font-size:26px}a{color:#259a52}</style><img src="https://d2ol7oe51mr4n9.cloudfront.net/user_3GsbRE1t9hIx7tjNcLo5jEaZ8ao/fe5e036c-785b-4e97-b270-c3a52036389d.svg" height="70" alt=""><h1>${escH(title)}</h1>${body}`;
+}
+
 // Admin login: a cookie holding a hash of OWNER_KEY.
 const ADMIN_TOKEN = crypto.createHash('sha256').update('foodol-admin:' + OWNER_KEY).digest('hex');
 const isAdmin = (req) => (req.headers.cookie || '').split(/;\s*/).includes('fd_admin=' + ADMIN_TOKEN);
@@ -120,9 +180,15 @@ http.createServer(async (req, res) => {
       items, extra: clean(b.extra, 40),
       total: Math.round(items.reduce((t, i) => t + i.p * i.q, 0) * 100) / 100,
       src: clean(url.searchParams.get('src') || b.src, 20),
+      email: cleanEmail(b.email),
       createdAt: new Date().toISOString(), redeemedAt: null,
     };
     orders.set(order.id, order); append({ type: 'order', order });
+    if (order.email) {
+      const prev = guests.get(order.email);
+      upsertGuest(order.email, { orders: (prev ? prev.orders : 0) + 1, consent: !!b.consent || !!(prev && prev.consent), unsub: prev ? prev.unsub && !b.consent : false });
+      sendCodeEmail(order);
+    }
     return send(res, 200, order);
   }
 
@@ -140,6 +206,21 @@ http.createServer(async (req, res) => {
 
   if (p === '/api/menu') return send(res, 200, menu);
 
+  if (p === '/unsubscribe') {
+    const em = cleanEmail(url.searchParams.get('e'));
+    const ok = em && url.searchParams.get('t') === unsubToken(em);
+    if (ok && guests.has(em)) upsertGuest(em, { consent: false, unsub: true });
+    return send(res, ok ? 200 : 400, simplePage(ok ? 'You’re unsubscribed' : 'Link not valid', ok ? `<p>${escH(em)} won’t get Foodol deals anymore. You’ll still get a copy of any code you redeem yourself.</p>` : '<p>This unsubscribe link looks broken. Reply to any Foodol email and we’ll remove you.</p>'), 'text/html; charset=utf-8');
+  }
+  if (p === '/privacy') {
+    return send(res, 200, simplePage('Foodol privacy', `<p>Foodol helps you pick an order at participating restaurants. Here’s what we collect and why.</p>
+<p><b>What we collect.</b> When you redeem a code, the items in your order, your order total, and the email address you give us. We don’t collect payment details; you pay the restaurant directly.</p>
+<p><b>How we use it.</b> To send you a copy of your code, to show the restaurant which orders came through Foodol, and, if you agree, to send occasional Foodol and restaurant deals.</p>
+<p><b>Who sees it.</b> Foodol and the restaurant where you redeemed. We don’t sell your information.</p>
+<p><b>Your choices.</b> Every email has an unsubscribe link. To see or delete your information, email us and we’ll take care of it.</p>
+<p>California residents: you can ask what personal information we hold about you and ask us to delete it. We don’t sell or share personal information for cross-context advertising.</p>`), 'text/html; charset=utf-8');
+  }
+
   if (p === '/api/admin/login' && req.method === 'POST') {
     const b = await readBody(req);
     if (String(b.key || '') !== OWNER_KEY) return send(res, 401, { error: 'wrong key' });
@@ -154,7 +235,8 @@ http.createServer(async (req, res) => {
     if (!isAdmin(req)) return send(res, 401, { error: 'login needed' });
     if (p === '/api/admin/data') {
       const all = [...orders.values()].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-      return send(res, 200, { menu, orders: all.slice(0, 200), totalOrders: all.length });
+      const gl = [...guests.values()].sort((a, b) => b.lastSeen.localeCompare(a.lastSeen));
+      return send(res, 200, { menu, orders: all.slice(0, 200), totalOrders: all.length, guests: gl, emailOn: !!process.env.RESEND_API_KEY });
     }
     if (p === '/api/admin/menu' && req.method === 'PUT') {
       const m = cleanMenu(await readBody(req));

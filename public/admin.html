@@ -156,6 +156,7 @@ td{padding:12px;border-bottom:1px solid var(--line);vertical-align:top}
       <button data-t="free">Free item</button>
       <button data-t="combos">Foodol combos</button>
       <button data-t="orders">Orders</button>
+      <button data-t="guests">Guests</button>
     </nav>
   </header>
 
@@ -209,6 +210,14 @@ td{padding:12px;border-bottom:1px solid var(--line);vertical-align:top}
       <p class="note">Combos follow your menu: items you turn off disappear here, and popularity stars decide what Foodol recommends first.</p>
     </section>
 
+    <section data-p="guests" class="hide">
+      <h2>Guests</h2>
+      <p class="sub">Everyone who left their email when redeeming. Only guests marked “Yes” agreed to get deals.</p>
+      <div class="mtools"><span id="gsum" style="align-self:center;color:var(--ink2)"></span><span class="sp" style="flex:1"></span><button class="btn2" id="gcsv">Download CSV</button></div>
+      <div id="emailNote" class="card" style="margin-bottom:14px;display:none"></div>
+      <div class="card tw"><table><thead><tr><th>Email</th><th>Deals</th><th>Orders</th><th>First visit</th><th>Last visit</th></tr></thead><tbody id="grows"></tbody></table></div>
+    </section>
+
     <section data-p="orders" class="hide">
       <h2>Orders</h2>
       <p class="sub">Every order Foodol built, newest first.</p>
@@ -248,7 +257,7 @@ async function load(){
   renderAll();
 }
 function dirty(){ const d = JSON.stringify(M) !== saved; $('bar').classList.toggle('on', d); return d; }
-function renderAll(){ renderOverview(); renderMenu(); renderFree(); renderCombos(); renderOrders(); dirty(); }
+function renderAll(){ renderOverview(); renderMenu(); renderFree(); renderCombos(); renderOrders(); renderGuests(); dirty(); }
 
 /* tabs */
 function setTab(t){ tab = t; document.querySelectorAll('#tabs button').forEach((b) => b.classList.toggle('on', b.dataset.t === t)); document.querySelectorAll('main > section').forEach((s) => s.classList.toggle('hide', s.dataset.p !== t)); if (t === 'combos') renderCombos(); window.scrollTo(0,0); }
@@ -259,7 +268,7 @@ document.addEventListener('click', (e) => { const a = e.target.closest('[data-go
 function renderOverview(){
   const o = D.orders, red = o.filter((x) => x.redeemedAt), sum = (a) => a.reduce((t,x) => t + (x.total || 0), 0);
   const freeGiven = red.filter((x) => x.extra).length;
-  const st = [[D.totalOrders,'combos & orders built','var(--soft)'],[red.length,'redeemed at the counter','var(--butter)'],[money(sum(red)),'Foodol sales','var(--peach)'],[money(red.length ? sum(red) / red.length : 0),'average redeemed order','var(--sky)'],[freeGiven,'free items given','#f3eefb']];
+  const st = [[D.totalOrders,'combos & orders built','var(--soft)'],[red.length,'redeemed at the counter','var(--butter)'],[money(sum(red)),'Foodol sales','var(--peach)'],[money(red.length ? sum(red) / red.length : 0),'average redeemed order','var(--sky)'],[freeGiven,'free items given','#f3eefb'],[(D.guests || []).length,'guest emails','#eef8f1']];
   $('stats').innerHTML = st.map(([v,l,bg]) => `<div class="stat" style="background:${bg}"><b>${esc(v)}</b><span>${l}</span></div>`).join('');
   $('qfree').textContent = M.free.on ? `Free ${M.free.name} on orders over ${money(M.free.min)}` : 'Off right now';
   const on = M.items.filter((i) => i.on !== false).length;
@@ -343,9 +352,25 @@ function renderCombos(){
 /* orders */
 function renderOrders(){
   const fmt = (t) => new Date(t).toLocaleString([], {month:'short', day:'numeric', hour:'numeric', minute:'2-digit'});
-  $('orows').innerHTML = D.orders.length ? D.orders.map((o) => `<tr><td><b>#${esc(o.code)}</b></td><td>${fmt(o.createdAt)}</td><td>${esc(o.title)}<div style="color:var(--mut);font-size:13px">${o.items.map((i) => esc(i.q + '× ' + i.n)).join(', ')}</div></td><td>${o.party}</td><td>${money(o.total)}</td><td>${o.extra ? esc(o.extra) : '<span style="color:var(--mut)">—</span>'}</td><td>${o.redeemedAt ? '<span class="tag ok">Redeemed</span>' : '<span class="tag wait">Not redeemed</span>'}</td></tr>`).join('')
+  $('orows').innerHTML = D.orders.length ? D.orders.map((o) => `<tr><td><b>#${esc(o.code)}</b></td><td>${fmt(o.createdAt)}</td><td>${esc(o.title)}<div style="color:var(--mut);font-size:13px">${o.items.map((i) => esc(i.q + '× ' + i.n)).join(', ')}</div></td><td>${o.party}</td><td>${money(o.total)}${o.email ? `<div style="color:var(--mut);font-size:13px">${esc(o.email)}</div>` : ''}</td><td>${o.extra ? esc(o.extra) : '<span style="color:var(--mut)">—</span>'}</td><td>${o.redeemedAt ? '<span class="tag ok">Redeemed</span>' : '<span class="tag wait">Not redeemed</span>'}</td></tr>`).join('')
     : '<tr><td colspan="7" class="empty">No orders yet. They’ll show up here as guests use Foodol.</td></tr>';
 }
+
+/* guests */
+function renderGuests(){
+  const G = D.guests || [], fmt = (t) => new Date(t).toLocaleDateString([], {month:'short', day:'numeric'});
+  const yes = G.filter((g) => g.consent && !g.unsub).length;
+  $('gsum').textContent = `${G.length} guests · ${yes} want deals`;
+  $('emailNote').style.display = D.emailOn ? 'none' : '';
+  $('emailNote').innerHTML = 'Code emails are <b>off</b>: emails are being collected, but none are sent until the Resend key is added.';
+  $('grows').innerHTML = G.length ? G.map((g) => `<tr><td>${esc(g.email)}</td><td>${g.unsub ? '<span class="tag wait">Unsubscribed</span>' : g.consent ? '<span class="tag ok">Yes</span>' : '<span style="color:var(--mut)">No</span>'}</td><td>${g.orders}</td><td>${fmt(g.firstSeen)}</td><td>${fmt(g.lastSeen)}</td></tr>`).join('')
+    : '<tr><td colspan="5" class="empty">No guests yet. Emails show up here as guests redeem.</td></tr>';
+}
+$('gcsv').onclick = () => {
+  const q = (v) => '"' + String(v ?? '').replace(/"/g, '""') + '"';
+  const rows = [['email','wants_deals','unsubscribed','orders','first_visit','last_visit'], ...(D.guests || []).map((g) => [g.email, g.consent && !g.unsub ? 'yes' : 'no', g.unsub ? 'yes' : 'no', g.orders, g.firstSeen, g.lastSeen])];
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([rows.map((r) => r.map(q).join(',')).join('\n')], {type:'text/csv'})); a.download = 'foodol-guests.csv'; a.click();
+};
 
 /* save */
 $('discard').onclick = () => { M = JSON.parse(saved); renderAll(); };

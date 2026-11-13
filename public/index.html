@@ -149,6 +149,21 @@ h1{font-size:38px;line-height:1.02;letter-spacing:-.03em;font-weight:800}
 #picks{padding-bottom:0}
 
 /* ticket */
+/* email ask */
+#ask .in{padding:26px 22px 28px;text-align:center;overflow:visible}
+#ask .peek2{position:absolute;left:50%;top:-74px;transform:translateX(-50%);height:96px}
+#ask h3{font-size:24px;letter-spacing:-.02em;margin-top:18px}
+#ask .lead{color:var(--muted);font-size:15px;margin:2px auto 16px;max-width:320px}
+#ask .lead b{color:var(--green-d)}
+#ask input[type=email]{width:100%;font:inherit;font-size:18px;padding:15px 16px;border:2px solid #e3ece6;border-radius:16px;outline:none;text-align:center;background:#fff}
+#ask input[type=email]:focus{border-color:var(--green)}
+#ask .opt{display:flex;gap:10px;align-items:flex-start;text-align:left;font-size:13.5px;color:var(--muted);margin:12px 2px 0;cursor:pointer}
+#ask .opt input{width:18px;height:18px;margin-top:1px;accent-color:var(--green);flex:none}
+#ask .btn{width:100%;margin-top:16px}
+#ask .skip{margin-top:12px;font-size:14px;color:var(--muted);text-decoration:underline;text-underline-offset:3px}
+#ask .aerr{color:#c0392b;font-size:14px;min-height:18px;margin-top:8px}
+#ask .fine{font-size:12px;color:var(--muted);margin-top:10px}
+#ask .fine a{color:inherit}
 /* reward celebration */
 #reward{position:fixed;inset:0;z-index:60;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:28px 26px 34px;color:#fff;overflow:hidden;background:radial-gradient(120% 80% at 50% 38%,#4fd17f 0%,#3dbe6e 45%,#259a52 100%)}
 #reward.on{display:flex}
@@ -324,6 +339,19 @@ h1{font-size:38px;line-height:1.02;letter-spacing:-.03em;font-weight:800}
 
 <div class="sheet" id="menu" role="dialog" aria-label="Full menu"><div class="in"><button class="close" data-close aria-label="Close">×</button><h3>Sausalido Cafe menu</h3><p class="hint">Prices from public listings, may differ in store.</p><div id="menuList"></div></div></div>
 
+<div class="sheet" id="ask" role="dialog" aria-modal="true" aria-labelledby="askTitle"><div class="in">
+  <img class="peek2" src="https://d2ol7oe51mr4n9.cloudfront.net/user_3GsbRE1t9hIx7tjNcLo5jEaZ8ao/fe5e036c-785b-4e97-b270-c3a52036389d.svg" alt="">
+  <h3 id="askTitle">Where should I send your code?</h3>
+  <p class="lead" id="askLead"></p>
+  <form id="askForm" novalidate>
+    <input type="email" id="askEmail" placeholder="you@email.com" autocomplete="email" inputmode="email" autocapitalize="off" spellcheck="false" required>
+    <label class="opt"><input type="checkbox" id="askOpt" checked><span>Send me Foodol deals and free-item offers. Unsubscribe anytime.</span></label>
+    <div class="aerr" id="askErr"></div>
+    <button class="btn" type="submit" id="askGo">Redeem now</button>
+  </form>
+  <button class="skip" id="askSkip" type="button">Skip, just show my code</button>
+  <p class="fine">Your code also shows on this screen. <a href="/privacy" target="_blank" rel="noopener">Privacy</a></p>
+</div></div>
 <div id="reward" role="dialog" aria-modal="true" aria-labelledby="rwTitle">
   <div class="rays"></div>
   <canvas id="confetti"></canvas>
@@ -503,18 +531,40 @@ $('rwGo').onclick = () => { $('reward').classList.remove('on'); showTicket(); };
 
 /* order + ticket */
 const today = () => new Date().toLocaleDateString('en-CA');
-async function placeOrder(btn, label, body){
+let pending = null;
+function placeOrder(btn, label, body){
+  const total = body.items.reduce((t,i) => t + i.p * i.q, 0);
+  body.extra = hasFree(total) ? FREE_EXTRA : '';
+  body.src = src;
+  pending = {btn, label, body};
+  let saved = ''; try { saved = localStorage.getItem('foodol_email') || ''; } catch {}
+  $('askEmail').value = saved; $('askErr').textContent = '';
+  $('askLead').innerHTML = body.extra ? `Enter your email to unlock your <b>free ${esc(FREE_EXTRA)}</b>. I'll send a copy of your code too.` : `I'll email you a copy of your code so you have it handy.`;
+  $('askSkip').style.display = body.extra ? 'none' : '';
+  $('ask').classList.add('on');
+  setTimeout(() => { if (!saved) $('askEmail').focus(); }, 250);
+}
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+$('askForm').onsubmit = (e) => {
+  e.preventDefault();
+  const em = $('askEmail').value.trim().toLowerCase();
+  if (!EMAIL_RE.test(em)) { $('askErr').textContent = 'That email doesn’t look right. Mind checking it?'; $('askEmail').focus(); return; }
+  try { localStorage.setItem('foodol_email', em); } catch {}
+  pending.body.email = em; pending.body.consent = $('askOpt').checked;
+  sendOrder($('askGo'));
+};
+$('askSkip').onclick = () => { delete pending.body.email; sendOrder($('askSkip')); };
+$('ask').addEventListener('click', (e) => { if (e.target === $('ask')) $('ask').classList.remove('on'); });
+async function sendOrder(tapped){
   Fx.unlock();
-  btn.disabled = true; btn.textContent = 'One sec…';
+  const {btn, label, body} = pending, keep = tapped.textContent;
+  tapped.disabled = true; tapped.textContent = 'One sec…';
   try {
-    const total = body.items.reduce((t,i) => t + i.p * i.q, 0);
-    body.extra = hasFree(total) ? FREE_EXTRA : '';
-    body.src = src;
     const r = await fetch('/api/order', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)});
     if (!r.ok) throw 0;
-    S.order = await r.json(); save(); if (S.order.extra) celebrate(); else showTicket();
-  } catch { alert('Hmm, Foodol could not connect. Please try again.'); }
-  btn.disabled = false; btn.textContent = label;
+    S.order = await r.json(); save(); $('ask').classList.remove('on'); if (S.order.extra) celebrate(); else showTicket();
+  } catch { $('askErr').textContent = 'Hmm, Foodol could not connect. Please try again.'; }
+  tapped.disabled = false; tapped.textContent = keep;
 }
 $('choose').onclick = () => {
   const c = S.combos[S.idx];
