@@ -62,7 +62,7 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
 #hello .walker .hero{transform-origin:50% 100%}
 #hello:not(.seen) .walker{animation:fdWalk 1.25s cubic-bezier(.25,.9,.35,1) both}
 #hello:not(.seen) .walker .hero{animation:fdWaddle .3s ease-in-out 4 alternate both,fdLand .35s ease-out 1.2s forwards}
-#hello:not(.seen) .say.s1{animation:fdPop1 .45s cubic-bezier(.2,1.6,.4,1) 1.35s both,fdOut .3s ease-in 3.3s both}
+#hello:not(.seen) .say.s1{animation:fdPop1 .45s cubic-bezier(.2,1.6,.4,1) 1.35s both,fdOut .3s ease-in 3.3s forwards}
 #hello:not(.seen) .say.s2{animation:fdPop .5s cubic-bezier(.2,1.6,.4,1) 3.55s both}
 #hello.seen .say.s1{display:none}
 @keyframes fdWalk{from{transform:translateX(-115vw)}to{transform:none}}
