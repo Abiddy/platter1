@@ -53,6 +53,25 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
 #hello .say small{display:block;margin-top:4px;font-size:12.5px;font-weight:500;color:var(--muted)}
 #hello .hero{display:block;height:clamp(170px,38dvh,340px);width:auto;max-width:78vw;margin:0;pointer-events:none}
 #hello .ownlink{font-size:15px;font-weight:600;color:var(--muted);padding:6px;align-self:center;text-decoration:underline;text-underline-offset:3px}
+/* welcome: Foodol walks in, then talks */
+#hello .says{position:relative;display:flex;justify-content:center;margin-bottom:clamp(16px,2.6dvh,24px)}
+#hello .says .say{margin-bottom:0}
+#hello .say.s1{position:absolute;bottom:0;left:50%;width:max-content;max-width:none;transform:translateX(-50%);font-size:clamp(20px,2.9dvh,24px)}
+#hello .say.s1,#hello .say.s2{transform-origin:50% 100%}
+#hello .walker{display:inline-block}
+#hello .walker .hero{transform-origin:50% 100%}
+#hello:not(.seen) .walker{animation:fdWalk 1.25s cubic-bezier(.25,.9,.35,1) both}
+#hello:not(.seen) .walker .hero{animation:fdWaddle .3s ease-in-out 4 alternate both,fdLand .35s ease-out 1.2s forwards}
+#hello:not(.seen) .say.s1{animation:fdPop1 .45s cubic-bezier(.2,1.6,.4,1) 1.35s both,fdOut .3s ease-in 3.3s both}
+#hello:not(.seen) .say.s2{animation:fdPop .5s cubic-bezier(.2,1.6,.4,1) 3.55s both}
+#hello.seen .say.s1{display:none}
+@keyframes fdWalk{from{transform:translateX(-115vw)}to{transform:none}}
+@keyframes fdWaddle{0%{transform:rotate(-7deg) translateY(0)}50%{transform:rotate(0) translateY(-10px)}100%{transform:rotate(7deg) translateY(0)}}
+@keyframes fdLand{0%{transform:scale(1.06,.92)}60%{transform:scale(.97,1.04)}100%{transform:none}}
+@keyframes fdPop{from{opacity:0;transform:scale(.4)}to{opacity:1;transform:none}}
+@keyframes fdPop1{from{opacity:0;transform:translateX(-50%) scale(.4)}to{opacity:1;transform:translateX(-50%)}}
+@keyframes fdOut{from{opacity:1;transform:translateX(-50%)}to{opacity:0;transform:translateX(-50%) scale(.85)}}
+@media (prefers-reduced-motion:reduce){#hello .walker,#hello .walker .hero,#hello .say{animation:none!important}#hello .say.s1{display:none}}
 #hello .bottom{flex:none;gap:6px}
 #hello .btn{padding:clamp(13px,2.2dvh,18px);font-size:clamp(17px,2.4dvh,19px)}
 #hello .btn2{padding:clamp(12px,2dvh,16px);margin-top:0!important}
@@ -223,8 +242,11 @@ h1{font-size:38px;line-height:1.02;letter-spacing:-.03em;font-weight:800}
   <section class="screen on" id="hello">
     <span class="tag">Foodol has made it to Sausalido Cafe!</span>
     <div class="mid">
-      <div class="say">I've tried everything here. I'll pick a combo <b>and give you a free item</b> with it!<small>On orders <span class="fmin">$20</span>+</small></div>
-      <img class="hero" src="https://d2ol7oe51mr4n9.cloudfront.net/user_3GsbRE1t9hIx7tjNcLo5jEaZ8ao/ef5762c4-ec59-4f1f-8adf-2f9ef89aa771.svg" width="1180" height="1395" alt="Foodol waving hello">
+      <div class="says">
+        <div class="say s2">I'll pick the best items on the menu for you, <b>plus a FREE item</b> with your order!<small>On orders <span class="fmin">$20</span>+</small></div>
+        <div class="say s1" aria-hidden="true">Hi, I'm Foodol! 👋</div>
+      </div>
+      <div class="walker"><img class="hero" src="https://d2ol7oe51mr4n9.cloudfront.net/user_3GsbRE1t9hIx7tjNcLo5jEaZ8ao/ef5762c4-ec59-4f1f-8adf-2f9ef89aa771.svg" width="1180" height="1395" alt="Foodol waving hello"></div>
     </div>
     <div class="bottom">
       <button class="btn" data-go="who">Let me pick for you</button>
@@ -366,6 +388,7 @@ const src = new URLSearchParams(location.search).get('src') || '';
 document.querySelectorAll('.xname').forEach((e) => e.textContent = FREE_EXTRA);
 document.querySelectorAll('.fmin').forEach((e) => e.textContent = '$' + (+FREE.min || 0));
 
+setTimeout(() => $('hello').classList.add('seen'), 4200);
 function go(id){
   document.querySelectorAll('.screen').forEach((s) => s.classList.toggle('on', s.id === id));
   window.scrollTo(0,0);
