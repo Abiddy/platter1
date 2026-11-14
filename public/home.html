@@ -42,13 +42,13 @@ h1 em{font-style:normal;color:var(--g)}
 .ctas{display:flex;flex-wrap:wrap;gap:12px;margin-top:28px}
 .stage{position:relative;display:grid;place-items:center;min-height:460px}
 .blob{position:absolute;width:420px;height:420px;border-radius:50%;background:radial-gradient(circle at 40% 40%,#e3f6ea,#f4fbf6 70%);z-index:0}
-.phone{position:relative;z-index:1;width:290px;height:600px;border-radius:44px;background:#0f2a19;padding:11px;box-shadow:0 30px 70px rgba(18,58,34,.25)}
-.phone iframe{width:100%;height:100%;border:0;border-radius:34px;background:#fff}
-.notch{position:absolute;top:18px;left:50%;transform:translateX(-50%);width:90px;height:24px;background:#0f2a19;border-radius:14px;z-index:2}
+.phone{position:relative;z-index:1;width:290px;height:610px;border-radius:44px;background:#0f2a19;padding:40px 11px 14px;box-shadow:0 30px 70px rgba(18,58,34,.25)}
+.phone iframe{width:100%;height:100%;border:0;border-radius:10px 10px 32px 32px;background:#fff}
+.notch{position:absolute;top:13px;left:50%;transform:translateX(-50%);width:90px;height:24px;background:#0f2a19;border-radius:14px;z-index:2}
 .float{position:absolute;z-index:3;background:#fff;border-radius:18px;padding:10px 14px;font-weight:700;font-size:15px;box-shadow:0 12px 30px rgba(18,58,34,.12);display:flex;align-items:center;gap:8px;animation:bob 4s ease-in-out infinite}
 .float b{color:var(--g)}
-.f1{left:-10px;top:80px}
-.f2{right:-14px;bottom:110px;animation-delay:-2s}
+.f1{left:-36px;bottom:250px}
+.f2{right:-30px;bottom:120px;animation-delay:-2s}
 .f2 span{background:var(--butter);color:#a3620b;border-radius:999px;padding:3px 9px;font-size:13px}
 @keyframes bob{50%{transform:translateY(-8px)}}
 /* sections */
@@ -96,7 +96,7 @@ footer .sp{flex:1}
   .band img{margin:0 auto;width:140px}
   nav .lk{display:none}
   .stage{min-height:0;padding:10px 0}
-  .f1{left:0}.f2{right:0}
+  .float{display:none}
 }
 @media (max-width:480px){.form .g{grid-template-columns:1fr}.phone{width:260px;height:540px}.form{padding:24px}}
 @media (prefers-reduced-motion:reduce){.float{animation:none}.rv{opacity:1;transform:none;transition:none}}
