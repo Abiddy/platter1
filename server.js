@@ -18,6 +18,7 @@ const APP_URL = (process.env.APP_URL || 'https://www.foodol.app').replace(/\/$/,
 const PUBLIC = path.join(__dirname, 'public');
 const LOG = path.join(DATA_DIR, 'orders.jsonl');
 const GUESTS_LOG = path.join(DATA_DIR, 'guests.jsonl');
+const LEADS_LOG = path.join(DATA_DIR, 'leads.jsonl');
 const REST_FILE = path.join(DATA_DIR, 'restaurants.json');
 const FIRST = 'sausalido'; // the original restaurant; old data and old QR codes belong to it
 
@@ -257,6 +258,18 @@ http.createServer(async (req, res) => {
     return send(res, 200, o);
   }
 
+  /* restaurant sign-ups from the landing page */
+  if (p === '/api/lead' && req.method === 'POST') {
+    if (tooMany(req)) return send(res, 429, { error: 'Too many tries. Wait a few minutes.' });
+    const b = await readBody(req);
+    if (b.website) return send(res, 200, { ok: true }); // bot trap
+    const lead = { at: new Date().toISOString(), name: clean(b.name, 60).trim(), restaurant: clean(b.restaurant, 80).trim(), email: cleanEmail(b.email), phone: clean(b.phone, 30).trim(), city: clean(b.city, 60).trim() };
+    if (!lead.name || !lead.restaurant) return send(res, 400, { error: 'Please add your name and restaurant.' });
+    if (!lead.email) return send(res, 400, { error: 'That email doesn’t look right.' });
+    fs.appendFileSync(LEADS_LOG, JSON.stringify(lead) + '\n');
+    return send(res, 200, { ok: true });
+  }
+
   /* Foodol admin (password only) */
   if (p === '/api/admin/login' && req.method === 'POST') {
     if (tooMany(req)) return send(res, 429, { error: 'Too many tries. Wait a few minutes.' });
@@ -268,7 +281,10 @@ http.createServer(async (req, res) => {
   if (p === '/api/admin/logout' && req.method === 'POST') { res.setHeader('Set-Cookie', cookieStr(req, 'fd_admin', '', 0)); return send(res, 200, { ok: true }); }
   if (p.startsWith('/api/admin/')) {
     if (!isAdmin(req)) return send(res, 401, { error: 'login needed' });
-    if (p === '/api/admin/restaurants' && req.method === 'GET') return send(res, 200, { restaurants: restaurants.map(publicRest), appUrl: APP_URL, emailOn: !!process.env.RESEND_API_KEY });
+    if (p === '/api/admin/restaurants' && req.method === 'GET') {
+      const leads = fs.existsSync(LEADS_LOG) ? fs.readFileSync(LEADS_LOG, 'utf8').split('\n').filter(Boolean).map((l) => { try { return JSON.parse(l); } catch { return null; } }).filter(Boolean).reverse() : [];
+      return send(res, 200, { restaurants: restaurants.map(publicRest), leads, appUrl: APP_URL, emailOn: !!process.env.RESEND_API_KEY });
+    }
     if (p === '/api/admin/restaurants' && req.method === 'POST') {
       const b = await readBody(req);
       const name = clean(b.name, 60).trim(), slug = slugify(b.slug || name);
@@ -360,10 +376,10 @@ http.createServer(async (req, res) => {
 <p>California residents: you can ask what personal information we hold about you and ask us to delete it. We don’t sell or share personal information for cross-context advertising.</p>`), 'text/html; charset=utf-8');
   }
 
-  // The root: old QR codes (and the bare domain for now) go to Sausalido.
+  // The root is the Foodol landing page. Old QR codes (/?src=poster|sticker) still go to Sausalido.
   if (p === '/' || p === '/index.html') {
-    if (fs.existsSync(path.join(PUBLIC, 'home.html')) && !url.search) return send(res, 200, file('home.html'), MIME['.html']);
-    return redirect(res, '/' + FIRST + url.search);
+    if (url.searchParams.has('src') || p === '/index.html') return redirect(res, '/' + FIRST + url.search);
+    return send(res, 200, file('home.html'), MIME['.html']);
   }
 
   // Guest app for a restaurant: foodol.app/<slug>
@@ -377,7 +393,7 @@ http.createServer(async (req, res) => {
 
   // static files
   const f = path.normalize(path.join(PUBLIC, p));
-  if (!f.startsWith(PUBLIC + path.sep) || /\/(index|admin|portal)\.html$/.test(f)) return send(res, 404, simplePage('Not found', '<p>That page doesn’t exist. <a href="/">Go to Foodol</a></p>'), 'text/html; charset=utf-8');
+  if (!f.startsWith(PUBLIC + path.sep) || /\/(index|admin|portal|home)\.html$/.test(f)) return send(res, 404, simplePage('Not found', '<p>That page doesn’t exist. <a href="/">Go to Foodol</a></p>'), 'text/html; charset=utf-8');
   fs.readFile(f, (err, data) => {
     if (err) return send(res, 404, simplePage('Not found', '<p>That page doesn’t exist. <a href="/">Go to Foodol</a></p>'), 'text/html; charset=utf-8');
     res.writeHead(200, { 'Content-Type': MIME[path.extname(f)] || 'application/octet-stream', 'Cache-Control': 'public, max-age=300' });

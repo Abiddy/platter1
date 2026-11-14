@@ -90,6 +90,9 @@ dialog .in{margin-bottom:8px}
     <p class="sub">Every restaurant on Foodol. Each one lives at its own link and has its own login.</p>
     <div class="stats" id="stats"></div>
     <div class="rgrid" id="list"></div>
+    <h2 style="margin-top:40px">Sign-ups</h2>
+    <p class="sub">Restaurants that asked for a free trial on foodol.app.</p>
+    <div class="stat" style="padding:0;overflow:auto"><table id="leads" style="width:100%;border-collapse:collapse;font-size:15px"></table></div>
   </main>
 </div>
 
@@ -171,6 +174,8 @@ function render(){
     </div>
   </form>`;
 
+  const L = D.leads || [];
+  $('leads').innerHTML = L.length ? '<tr style="text-align:left;color:var(--mut)"><th style="padding:12px 16px">When</th><th>Restaurant</th><th>Name</th><th>Email</th><th>Phone</th><th>City</th></tr>' + L.map((l) => `<tr style="border-top:1px solid var(--line)"><td style="padding:12px 16px;white-space:nowrap">${new Date(l.at).toLocaleString([], {month:'short', day:'numeric', hour:'numeric', minute:'2-digit'})}</td><td><b>${esc(l.restaurant)}</b></td><td>${esc(l.name)}</td><td><a href="mailto:${esc(l.email)}">${esc(l.email)}</a></td><td>${l.phone ? `<a href="tel:${esc(l.phone)}">${esc(l.phone)}</a>` : ''}</td><td>${esc(l.city)}</td></tr>`).join('') : '<tr><td style="padding:16px;color:var(--mut)">No sign-ups yet.</td></tr>';
   let slugTouched = false;
   $('nSlug').oninput = () => { slugTouched = true; };
   $('nName').oninput = () => { if (!slugTouched) $('nSlug').value = slugify($('nName').value); };
