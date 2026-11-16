@@ -152,7 +152,7 @@ async function sendCodeEmail(order, rest) {
   const html = `<!doctype html><html><body style="margin:0;background:#f6f8f6;font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f6f8f6;padding:28px 12px"><tr><td align="center">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:440px;background:#ffffff;border-radius:22px;padding:28px">
-<tr><td align="center"><img src="https://d2ol7oe51mr4n9.cloudfront.net/user_3GsbRE1t9hIx7tjNcLo5jEaZ8ao/fb01c05e-949a-4e50-86de-253056e50ede.webp" width="110" alt="Foodol" style="display:block"></td></tr>
+<tr><td align="center"><img src="https://d2ol7oe51mr4n9.cloudfront.net/user_3GsbRE1t9hIx7tjNcLo5jEaZ8ao/ee71f398-e40a-43c4-bd33-bd2c1871094c.png" width="104" height="104" alt="Foodol" style="display:block;border:0"></td></tr>
 <tr><td align="center" style="font-size:22px;font-weight:800;color:#123a22;padding-top:8px">Show this at the counter</td></tr>
 <tr><td align="center" style="font-size:15px;color:#4c6656;padding-top:4px">${escH(name)}</td></tr>
 <tr><td align="center" style="font-size:52px;font-weight:800;color:#123a22;letter-spacing:-1px;padding:14px 0 4px">#${escH(order.code)}</td></tr>
@@ -169,7 +169,7 @@ ${order.extra ? `<tr><td align="center" style="padding-top:18px"><span style="di
     const r = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ from: process.env.FROM_EMAIL || 'Foodol <codes@foodol.app>', to: [order.email], subject: `Your Foodol code #${order.code}${order.extra ? ' + free ' + order.extra : ''}`, html, text, headers: { 'List-Unsubscribe': `<${unsub}>` } }),
+      body: JSON.stringify({ from: process.env.FROM_EMAIL || 'Foodol <codes@foodol.app>', to: [order.email], subject: `Your order code for ${name}: #${order.code}`, html, text, headers: { 'List-Unsubscribe': `<${unsub}>` } }),
     });
     if (!r.ok) console.error('resend failed', r.status, (await r.text()).slice(0, 300));
   } catch (e) { console.error('resend error', e.message); }
