@@ -454,8 +454,9 @@ function quote(c){
   return `“Never had the ${esc(top)}? Today's the day. Trust me.”`;
 }
 function buildPicks(){
-  S.combos = FoodolCombos.build(ITEMS, S.party, [...S.craves], FREE.on ? +FREE.min : 0);
-  if (!S.combos.length) S.combos = FoodolCombos.build(ITEMS, S.party, ['surprise'], FREE.on ? +FREE.min : 0);
+  const OPT = {popular: MENU.popular, grace: FREE.grace};
+  S.combos = FoodolCombos.build(ITEMS, S.party, [...S.craves], FREE.on ? +FREE.min : 0, OPT);
+  if (!S.combos.length) S.combos = FoodolCombos.build(ITEMS, S.party, ['surprise'], FREE.on ? +FREE.min : 0, OPT);
   S.idx = 0; renderPicks(); $('rail').scrollLeft = 0;
 }
 function renderPicks(){

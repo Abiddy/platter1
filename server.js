@@ -88,7 +88,9 @@ function cleanMenu(b) {
       k: ['main', 'side', 'drink'].includes(i.k) ? i.k : 'main', pop: Math.min(5, Math.max(1, Math.round(+i.pop || 3))), on: i.on !== false,
     };
   }).filter((i) => i.n);
-  return { free: { on: !!f.on, name: clean(f.name, 40) || 'free item', min: num(f.min, 0, 500), grace: num(f.grace ?? 0.5, 0, 5) }, items };
+  const ids = new Set(items.filter((i) => i.k !== 'drink').map((i) => i.id));
+  const popular = (Array.isArray(b.popular) ? b.popular : []).map((x) => String(x)).filter((x, k, a) => ids.has(x) && a.indexOf(x) === k).slice(0, 30);
+  return { free: { on: !!f.on, name: clean(f.name, 40) || 'free item', min: num(f.min, 0, 500), grace: num(f.grace ?? 0.5, 0, 5) }, items, popular };
 }
 
 let restaurants = [];
@@ -385,7 +387,7 @@ http.createServer(async (req, res) => {
   // Guest app for a restaurant: foodol.app/<slug>
   const rest = /^\/[a-z0-9-]+$/.test(p) ? findR(p.slice(1)) : null;
   if (rest) {
-    const live = { restaurant: { slug: rest.slug, name: rest.name }, free: rest.menu.free, items: rest.menu.items.filter((i) => i.on !== false && i.p > 0) };
+    const live = { restaurant: { slug: rest.slug, name: rest.name }, free: rest.menu.free, popular: rest.menu.popular, items: rest.menu.items.filter((i) => i.on !== false && i.p > 0) };
     if (live.items.filter((i) => i.k !== 'drink').length < 2) return send(res, 200, simplePage(`Foodol is coming to ${rest.name}`, '<p>Foodol is setting up the menu here. Check back soon!</p>'), MIME['.html']);
     const html = file('index.html').replace('<!--FOODOL_MENU-->', '<script>window.FOODOL_MENU=' + JSON.stringify(live).replace(/</g, '\\u003c') + ';</script>');
     return send(res, 200, html, MIME['.html']);
