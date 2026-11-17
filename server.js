@@ -120,6 +120,7 @@ if (fs.existsSync(LOG)) {
       const ev = JSON.parse(line);
       if (ev.type === 'order') orders.set(ev.order.id, { ...ev.order, r: go(ev.order.r || FIRST) });
       if (ev.type === 'redeem' && orders.has(ev.id)) orders.get(ev.id).redeemedAt = ev.at;
+      if (ev.type === 'wipe') for (const [id, o] of orders) if (o.r === go(ev.r)) orders.delete(id);
     } catch { /* skip bad line */ }
   }
 }
@@ -136,7 +137,7 @@ const guests = new Map(); // key "slug:email"
 if (fs.existsSync(GUESTS_LOG)) {
   for (const line of fs.readFileSync(GUESTS_LOG, 'utf8').split('\n')) {
     if (!line.trim()) continue;
-    try { const raw = JSON.parse(line); const g = { ...raw, r: go(raw.r || FIRST) }; const k = g.r + ':' + g.email; const prev = guests.get(k); guests.set(k, prev ? { ...prev, ...g, orders: Math.max(prev.orders || 0, g.orders || 0), firstSeen: prev.firstSeen < g.firstSeen ? prev.firstSeen : g.firstSeen } : g); } catch { /* skip */ }
+    try { const raw = JSON.parse(line); if (raw.wipe) { for (const [k, x] of guests) if (x.r === go(raw.wipe)) guests.delete(k); continue; } const g = { ...raw, r: go(raw.r || FIRST) }; const k = g.r + ':' + g.email; const prev = guests.get(k); guests.set(k, prev ? { ...prev, ...g, orders: Math.max(prev.orders || 0, g.orders || 0), firstSeen: prev.firstSeen < g.firstSeen ? prev.firstSeen : g.firstSeen } : g); } catch { /* skip */ }
   }
 }
 function upsertGuest(r, email, patch) {
@@ -313,6 +314,17 @@ http.createServer(async (req, res) => {
       if (String(b.password || '').length < 8) return send(res, 400, { error: 'Password needs at least 8 characters.' });
       r.owner = { email: em, ...hashPassword(b.password), ver: ((r.owner && r.owner.ver) || 0) + 1 };
       saveRestaurants();
+      return send(res, 200, publicRest(r));
+    }
+    // Start a restaurant over at zero: clears its orders and guest emails (menu and login stay).
+    const wp = p.match(/^\/api\/admin\/restaurants\/([a-z0-9-]+)\/reset$/);
+    if (wp && req.method === 'POST') {
+      const r = findR(wp[1]); if (!r) return send(res, 404, { error: 'not found' });
+      const at = new Date().toISOString();
+      append({ type: 'wipe', r: r.slug, at });
+      for (const [id, o] of orders) if (o.r === r.slug) orders.delete(id);
+      fs.appendFileSync(GUESTS_LOG, JSON.stringify({ wipe: r.slug, at }) + '\n');
+      for (const [k, g] of guests) if (g.r === r.slug) guests.delete(k);
       return send(res, 200, publicRest(r));
     }
     // Merge one restaurant into another: its menu (if the other has none), orders and guests move over,

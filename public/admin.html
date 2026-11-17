@@ -160,6 +160,7 @@ function render(){
       <a class="btn2" href="/portal?r=${encodeURIComponent(r.slug)}">Open portal</a>
       <button class="btn2" data-login="${esc(r.slug)}">${r.owner ? 'Reset login' : 'Set login'}</button>
       <button class="btn2" data-copy="${esc(r.slug)}">Copy link</button>
+      <button class="btn2" data-reset="${esc(r.slug)}" style="color:#b3261e">Reset data</button>
     </div>
   </div>`).join('') + `<form class="new" id="nf">
     <h3>Add a restaurant</h3>
@@ -186,6 +187,12 @@ function render(){
     if (!r.ok) { $('nErr').textContent = j.error || 'Could not create.'; return; }
     toast(j.name + ' is live at /' + j.slug); load();
   };
+  document.querySelectorAll('[data-reset]').forEach((b) => b.onclick = async () => {
+    const r = D.restaurants.find((x) => x.slug === b.dataset.reset);
+    if (!confirm(`Clear all orders and guest emails for ${r.name}? Their menu and login stay. This can’t be undone.`)) return;
+    const x = await post('/api/admin/restaurants/' + r.slug + '/reset', {});
+    if (x.ok) { toast(r.name + ' is back to zero'); load(); } else toast('Could not reset');
+  });
   document.querySelectorAll('[data-login]').forEach((b) => b.onclick = () => openLogin(b.dataset.login));
   document.querySelectorAll('[data-copy]').forEach((b) => b.onclick = async () => {
     const u = (D.appUrl || location.origin) + '/' + b.dataset.copy;
