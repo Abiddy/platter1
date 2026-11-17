@@ -16,14 +16,19 @@
    The three combos:
    - fav  "Crowd Pleaser": the most popular dishes.
    - deal "Smart Deal":    the cheapest well-liked order that still gets the free item.
-   - adv  "Something new": the next-best dishes, different from the Crowd Pleaser. */
+   - adv  "Something new": the next-best dishes, different from the Crowd Pleaser.
+   - feast "Extra hungry": the favorites plus an extra side (and a drink for one person).
+   - wild "Wildcard":      dishes none of the other combos used. */
 (function (root) {
   const KINDS = {
     fav: { badge: "Foodol's favorite", title: 'The Crowd Pleaser', cls: 'c-fav' },
     deal: { badge: 'Best value', title: 'The Smart Deal', cls: 'c-deal' },
     adv: { badge: 'Something new', title: 'The Adventure', cls: 'c-adv' },
+    feast: { badge: 'Extra hungry', title: 'The Feast', cls: 'c-feast' },
+    wild: { badge: 'Wildcard', title: 'The Wildcard', cls: 'c-wild' },
   };
-  const CAP_PP = { fav: 27, deal: 22, adv: 25 }; // soft per-person ceiling
+  const ORDER = ['fav', 'deal', 'adv', 'feast', 'wild'];
+  const CAP_PP = { fav: 27, deal: 22, adv: 25, feast: 34, wild: 25 }; // soft per-person ceiling
   const r2 = (v) => Math.round(v * 100) / 100;
 
   function scorer(popular) {
@@ -70,7 +75,7 @@
     if (n === 1) return solo(how, ctx, used);
 
     const pool = how === 'deal' ? mains.filter(liked) : mains;
-    const skip = how === 'adv' ? used : new Set();
+    const skip = how === 'adv' || how === 'wild' ? used : new Set();
     counts = pickMains(pool.length ? pool : mains, cats, n, how === 'deal' ? byValue : byScore, skip)
       || pickMains(mains, cats, n, byScore, new Set());
     if (!counts) return null;
@@ -78,9 +83,9 @@
     // shared sides that go with the chosen mains
     const chosen = [...counts.keys()];
     const sideList = sides.filter((sd) => chosen.some((m) => goesWith(sd, m, sweet))).sort(how === 'deal' ? byValue : byScore);
-    const sideOrder = how === 'adv' ? sideList.filter((s) => !used.has(s.id)).concat(sideList.filter((s) => used.has(s.id))) : sideList;
-    const ns = n === 1 ? 0 : n <= 3 ? 1 : n <= 5 ? 2 : 3;
-    for (let k = 0; k < ns && sideOrder.length; k++) { const s = sideOrder[k % Math.min(sideOrder.length, 2)]; counts.set(s, (counts.get(s) || 0) + 1); }
+    const sideOrder = how === 'adv' || how === 'wild' ? sideList.filter((s) => !used.has(s.id)).concat(sideList.filter((s) => used.has(s.id))) : sideList;
+    const ns = (n === 1 ? 0 : n <= 3 ? 1 : n <= 5 ? 2 : 3) + (how === 'feast' ? 1 : 0);
+    for (let k = 0; k < ns && sideOrder.length; k++) { const s = sideOrder[k % Math.min(sideOrder.length, how === 'feast' ? 3 : 2)]; counts.set(s, (counts.get(s) || 0) + 1); }
 
     // keep it a normal spend per person: drop extra sides, then swap the priciest main for a cheaper liked one
     const cap = CAP_PP[how] * n;
@@ -126,17 +131,28 @@
   function solo(how, ctx, used) {
     const { mains, sides, drinks, cats, sweet, sc, freeLine } = ctx;
     const cap = Math.max(CAP_PP[how], freeLine + 5);
-    const ms = mains.filter((m) => fits(m, cats) && (how !== 'deal' || sc(m) >= ctx.likedBar) && (how !== 'adv' || !used.has(m.id)));
+    const ms = mains.filter((m) => fits(m, cats) && (how !== 'deal' || sc(m) >= ctx.likedBar) && ((how !== 'adv' && how !== 'wild') || !used.has(m.id)));
     const cands = [];
     for (const m of ms) {
       const adds = [null].concat(sides.filter((sd) => goesWith(sd, m, sweet)));
       const qualifiesAlone = !freeLine || m.p >= freeLine || adds.some((a) => a && m.p + a.p >= freeLine);
       if (!qualifiesAlone) adds.push(...drinks);
+      if (how === 'feast') {
+        // main + a side that goes with it + a popular drink
+        let extras = adds.filter((a) => a && a.k === 'side');
+        if (!extras.length) extras = mains.filter((x) => x.s !== m.s && fits(x, cats) && x.c[0] !== m.c[0] || (x.s !== m.s && fits(x, cats) && x.c.includes('sweet') !== m.c.includes('sweet'))).slice(0, 6); // no side fits: a second dish
+        for (const sd of extras) for (const d of extras[0] && extras[0].k === 'main' ? [null] : drinks) {
+          const t = r2(m.p + sd.p + (d ? d.p : 0));
+          cands.push({ m, a: sd, d, t, ok: !freeLine || t >= freeLine, v: sc(m) + sc(sd) * 0.15 + (d ? sc(d) * 0.1 : 0), over: t > cap });
+        }
+        continue;
+      }
       for (const a of adds) {
         const t = r2(m.p + (a ? a.p : 0));
         const ok = !freeLine || t >= freeLine;
         let v = sc(m) + (a ? sc(a) * 0.15 : 0) - (a && a.k === 'drink' ? 12 : 0) - (a && freeLine && m.p >= freeLine ? 10 : 0);
-        if (how === 'adv' && a && used.has(a.id)) v -= 4;
+        if ((how === 'adv' || how === 'wild') && a && used.has(a.id)) v -= 4;
+        if (ctx.surprise && ctx.hour < 11 && m.c.includes('breakfast')) v += 25; // mornings lean breakfast
         if (how === 'deal' && ctx.favKey === m.id + '|' + (a ? a.id : '')) continue;
         cands.push({ m, a, t, ok, v, over: t > cap });
       }
@@ -148,7 +164,7 @@
       ? pool.sort((x, y) => x.t - y.t || y.v - x.v)[0]
       : pool.sort((x, y) => y.v - x.v || x.t - y.t)[0];
     if (how === 'fav') ctx.favKey = pick.m.id + '|' + (pick.a ? pick.a.id : '');
-    const counts = new Map([[pick.m, 1]]); if (pick.a) counts.set(pick.a, 1);
+    const counts = new Map([[pick.m, 1]]); if (pick.a) counts.set(pick.a, 1); if (pick.d) counts.set(pick.d, 1);
     return finish(how, counts);
   }
 
@@ -172,7 +188,7 @@
     if (!cats.length) cats = cravingsFor(mains, ['surprise'], sc, hour);
     const scores = mains.map(sc).sort((a, b) => a - b);
     const ctx = {
-      n, sc, cats, mains: craves.includes('surprise') ? mains.filter((m) => fits(m, cats)) : mains,
+      n, sc, cats, hour, mains: craves.includes('surprise') ? mains.filter((m) => fits(m, cats)) : mains,
       sides: live.filter((i) => i.k === 'side'),
       drinks: live.filter((i) => i.k === 'drink' && sc(i) >= 24).sort((a, b) => sc(b) - sc(a)).slice(0, 4),
       sweet: craves.includes('sweet'), surprise: craves.includes('surprise'),
@@ -180,11 +196,11 @@
       freeLine: freeMin ? freeMin - (opts.grace ?? 0.5) : 0,
     };
     const out = [], seen = new Set(), used = new Set();
-    for (const how of ['fav', 'deal', 'adv']) {
+    for (const how of ORDER) {
       const c = make(how, ctx, used);
       if (!c || seen.has(c.key)) continue;
       seen.add(c.key); out.push(c);
-      if (how !== 'adv') c.lines.filter((l) => l.i.k === 'main' || how === 'fav').forEach((l) => used.add(l.i.id));
+      if (how !== 'feast') c.lines.filter((l) => l.i.k === 'main' || how === 'fav').forEach((l) => used.add(l.i.id));
     }
     return out;
   }

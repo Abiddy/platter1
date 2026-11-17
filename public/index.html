@@ -13,7 +13,7 @@
 :root{
   --ink:#123a22;--ink2:#3d5a47;--muted:#6b8073;--line:#e3ece6;--bg:#ffffff;--soft:#f4f9f5;
   --green:#3dbe6e;--green-d:#259a52;--green-soft:#e6f6ec;
-  --peach:#ffe9db;--peach-i:#a5481a;--butter:#fff3c4;--butter-i:#7a5a00;--sky:#ddefff;--sky-i:#1d5a8f;
+  --peach:#ffe9db;--peach-i:#a5481a;--butter:#fff3c4;--butter-i:#7a5a00;--sky:#ddefff;--sky-i:#1d5a8f;--lav:#ece8fb;--lav-i:#5b3f8f;--mintc:#dcf6e6;--mintc-i:#1d6b3e;
   --r:24px;
 }
 *{box-sizing:border-box;margin:0;-webkit-tap-highlight-color:transparent}
@@ -124,9 +124,9 @@ h1{font-size:38px;line-height:1.02;letter-spacing:-.03em;font-weight:800}
 .slide{flex:0 0 86%;scroll-snap-align:center;position:relative;padding-top:132px}
 .slide .peek{position:absolute;top:0;left:50%;transform:translateX(-50%);width:220px;z-index:2;pointer-events:none}
 .card{border-radius:28px;padding:30px 20px 20px;position:relative}
-.c-fav{background:var(--peach)}.c-deal{background:var(--butter)}.c-adv{background:var(--sky)}
+.c-fav{background:var(--peach)}.c-deal{background:var(--butter)}.c-adv{background:var(--sky)}.c-feast{background:var(--lav)}.c-wild{background:var(--mintc)}
 .badge{display:inline-block;font-size:13px;font-weight:700;letter-spacing:.02em;padding:6px 12px;border-radius:999px;background:rgba(255,255,255,.7)}
-.c-fav .badge{color:var(--peach-i)}.c-deal .badge{color:var(--butter-i)}.c-adv .badge{color:var(--sky-i)}
+.c-fav .badge{color:var(--peach-i)}.c-deal .badge{color:var(--butter-i)}.c-adv .badge{color:var(--sky-i)}.c-feast .badge{color:var(--lav-i)}.c-wild .badge{color:var(--mintc-i)}
 .card h3{font-size:27px;font-weight:800;letter-spacing:-.03em;margin:10px 0 6px}
 .quote{font-size:15px;line-height:1.4;color:var(--ink2);margin-bottom:14px}
 .items{background:rgba(255,255,255,.75);border-radius:18px;padding:6px 14px}
@@ -451,6 +451,8 @@ function quote(c){
   const top = c.lines[0].i.n;
   if (c.how === 'fav') return `“Trust me, the ${esc(top)} is what everyone comes back for.”`;
   if (c.how === 'deal') return S.party > 1 ? `“Most food for the money. Just ${money(c.total / S.party)} each!”` : `“A proper meal that won't empty your wallet.”`;
+  if (c.how === 'feast') return S.party > 1 ? `“Really hungry? This is the full spread for the table.”` : `“Really hungry? The ${esc(top)} with all the extras.”`;
+  if (c.how === 'wild') return `“Feeling lucky? The ${esc(top)} is a hidden gem here.”`;
   return `“Never had the ${esc(top)}? Today's the day. Trust me.”`;
 }
 function buildPicks(){
