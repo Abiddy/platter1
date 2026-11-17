@@ -21,6 +21,8 @@ const GUESTS_LOG = path.join(DATA_DIR, 'guests.jsonl');
 const LEADS_LOG = path.join(DATA_DIR, 'leads.jsonl');
 const REST_FILE = path.join(DATA_DIR, 'restaurants.json');
 const FIRST = 'sausalido'; // the original restaurant; old data and old QR codes belong to it
+// Old link names that now point at another restaurant (after a merge or rename).
+const ALIAS_FILE = path.join(DATA_DIR, 'aliases.json');
 
 fs.mkdirSync(DATA_DIR, { recursive: true });
 
@@ -93,6 +95,9 @@ function cleanMenu(b) {
   return { free: { on: !!f.on, name: clean(f.name, 40) || 'free item', min: num(f.min, 0, 500), grace: num(f.grace ?? 0.5, 0, 5) }, items, popular };
 }
 
+let aliases = {};
+try { if (fs.existsSync(ALIAS_FILE)) aliases = JSON.parse(fs.readFileSync(ALIAS_FILE, 'utf8')); } catch { aliases = {}; }
+const go = (slug) => { let x = slug; for (let k = 0; k < 8 && aliases[x]; k++) x = aliases[x]; return x; };
 let restaurants = [];
 if (fs.existsSync(REST_FILE)) {
   restaurants = JSON.parse(fs.readFileSync(REST_FILE, 'utf8'));
@@ -104,7 +109,7 @@ if (fs.existsSync(REST_FILE)) {
   writeJSON(REST_FILE, restaurants);
 }
 const saveRestaurants = () => writeJSON(REST_FILE, restaurants);
-const findR = (slug) => restaurants.find((r) => r.slug === slug);
+const findR = (slug) => { const s2 = go(slug); return restaurants.find((r) => r.slug === s2); };
 
 /* ---------- orders ---------- */
 const orders = new Map();
@@ -113,7 +118,7 @@ if (fs.existsSync(LOG)) {
     if (!line.trim()) continue;
     try {
       const ev = JSON.parse(line);
-      if (ev.type === 'order') orders.set(ev.order.id, { r: FIRST, ...ev.order });
+      if (ev.type === 'order') orders.set(ev.order.id, { ...ev.order, r: go(ev.order.r || FIRST) });
       if (ev.type === 'redeem' && orders.has(ev.id)) orders.get(ev.id).redeemedAt = ev.at;
     } catch { /* skip bad line */ }
   }
@@ -131,7 +136,7 @@ const guests = new Map(); // key "slug:email"
 if (fs.existsSync(GUESTS_LOG)) {
   for (const line of fs.readFileSync(GUESTS_LOG, 'utf8').split('\n')) {
     if (!line.trim()) continue;
-    try { const g = { r: FIRST, ...JSON.parse(line) }; const k = g.r + ':' + g.email; guests.set(k, { ...(guests.get(k) || {}), ...g }); } catch { /* skip */ }
+    try { const raw = JSON.parse(line); const g = { ...raw, r: go(raw.r || FIRST) }; const k = g.r + ':' + g.email; const prev = guests.get(k); guests.set(k, prev ? { ...prev, ...g, orders: Math.max(prev.orders || 0, g.orders || 0), firstSeen: prev.firstSeen < g.firstSeen ? prev.firstSeen : g.firstSeen } : g); } catch { /* skip */ }
   }
 }
 function upsertGuest(r, email, patch) {
@@ -292,7 +297,7 @@ http.createServer(async (req, res) => {
       const name = clean(b.name, 60).trim(), slug = slugify(b.slug || name);
       if (!name) return send(res, 400, { error: 'Give the restaurant a name.' });
       if (!validSlug(slug)) return send(res, 400, { error: 'That link name isn’t allowed. Use letters, numbers and dashes.' });
-      if (findR(slug)) return send(res, 400, { error: `foodol.app/${slug} is already taken.` });
+      if (findR(slug) || aliases[slug]) return send(res, 400, { error: `foodol.app/${slug} is already taken.` });
       const r = { slug, name, menu: { free: { on: true, name: 'Iced tea', min: 20, grace: 0.5 }, items: [] }, owner: null, createdAt: new Date().toISOString() };
       const em = cleanEmail(b.email);
       if (em && String(b.password || '').length >= 8) r.owner = { email: em, ...hashPassword(b.password), ver: 1 };
@@ -309,6 +314,26 @@ http.createServer(async (req, res) => {
       r.owner = { email: em, ...hashPassword(b.password), ver: ((r.owner && r.owner.ver) || 0) + 1 };
       saveRestaurants();
       return send(res, 200, publicRest(r));
+    }
+    // Merge one restaurant into another: its menu (if the other has none), orders and guests move over,
+    // the old one is removed, and its link forwards to the new one.
+    const mg = p.match(/^\/api\/admin\/restaurants\/([a-z0-9-]+)\/merge$/);
+    if (mg && req.method === 'POST') {
+      const from = restaurants.find((r) => r.slug === mg[1]), b = await readBody(req), to = restaurants.find((r) => r.slug === String(b.into || ''));
+      if (!from || !to || from === to) return send(res, 400, { error: 'Pick two different restaurants.' });
+      if (!to.menu.items.length || b.menu === 'replace') to.menu = JSON.parse(JSON.stringify(from.menu));
+      if (!to.owner && from.owner) to.owner = from.owner;
+      let moved = 0;
+      for (const o of orders.values()) if (o.r === from.slug) { o.r = to.slug; moved++; }
+      for (const [k, g] of [...guests]) if (g.r === from.slug) {
+        guests.delete(k); const nk = to.slug + ':' + g.email, prev = guests.get(nk);
+        guests.set(nk, prev ? { ...g, ...prev, r: to.slug, orders: (prev.orders || 0) + (g.orders || 0) } : { ...g, r: to.slug });
+      }
+      for (const a of Object.keys(aliases)) if (aliases[a] === from.slug) aliases[a] = to.slug;
+      aliases[from.slug] = to.slug;
+      writeJSON(ALIAS_FILE, aliases);
+      restaurants = restaurants.filter((r) => r !== from); saveRestaurants();
+      return send(res, 200, { ok: true, into: publicRest(to), ordersMoved: moved });
     }
     const nm = p.match(/^\/api\/admin\/restaurants\/([a-z0-9-]+)$/);
     if (nm && req.method === 'PATCH') {
@@ -363,9 +388,9 @@ http.createServer(async (req, res) => {
   if (p === '/portal') return send(res, 200, file('portal.html'), MIME['.html']);
   if (p === '/owner') return redirect(res, '/portal');
   if (p === '/unsubscribe') {
-    const r = findR(url.searchParams.get('r')) ? url.searchParams.get('r') : FIRST;
+    const raw = url.searchParams.get('r') || FIRST, r = go(raw);
     const em = cleanEmail(url.searchParams.get('e'));
-    const ok = em && url.searchParams.get('t') === unsubToken(r, em);
+    const ok = em && (url.searchParams.get('t') === unsubToken(raw, em) || url.searchParams.get('t') === unsubToken(r, em));
     if (ok && guests.has(r + ':' + em)) upsertGuest(r, em, { consent: false, unsub: true });
     return send(res, ok ? 200 : 400, simplePage(ok ? 'You’re unsubscribed' : 'Link not valid', ok ? `<p>${escH(em)} won’t get Foodol deals anymore. You’ll still get a copy of any code you redeem yourself.</p>` : '<p>This unsubscribe link looks broken. Reply to any Foodol email and we’ll remove you.</p>'), 'text/html; charset=utf-8');
   }
@@ -380,11 +405,12 @@ http.createServer(async (req, res) => {
 
   // The root is the Foodol landing page. Old QR codes (/?src=poster|sticker) still go to Sausalido.
   if (p === '/' || p === '/index.html') {
-    if (url.searchParams.has('src') || p === '/index.html') return redirect(res, '/' + FIRST + url.search);
+    if (url.searchParams.has('src') || p === '/index.html') return redirect(res, '/' + go(FIRST) + url.search);
     return send(res, 200, file('home.html'), MIME['.html']);
   }
 
-  // Guest app for a restaurant: foodol.app/<slug>
+  // Guest app for a restaurant: foodol.app/<slug>. Old link names forward to the new one.
+  if (/^\/[a-z0-9-]+$/.test(p) && aliases[p.slice(1)]) return redirect(res, '/' + go(p.slice(1)) + url.search);
   const rest = /^\/[a-z0-9-]+$/.test(p) ? findR(p.slice(1)) : null;
   if (rest) {
     const live = { restaurant: { slug: rest.slug, name: rest.name }, free: rest.menu.free, popular: rest.menu.popular, items: rest.menu.items.filter((i) => i.on !== false && i.p > 0) };
