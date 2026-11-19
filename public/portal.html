@@ -439,7 +439,7 @@ function renderCombos(){
   $('party').querySelectorAll('button').forEach((b) => b.classList.toggle('on', +b.dataset.n === pv.party));
   $('crave').querySelectorAll('button').forEach((b) => b.classList.toggle('on', pv.craves.has(b.dataset.k)));
   const items = M.items.filter((i) => i.on !== false && +i.p > 0);
-  const cs = FoodolCombos.build(items, pv.party, [...pv.craves], M.free.on ? +M.free.min : 0, {popular: M.popular, grace: M.free.grace});
+  const cs = FoodolCombos.build(items, pv.party, [...pv.craves], M.free.on ? +M.free.min : 0, {popular: M.popular, grace: M.free.grace, freeName: M.free.on ? M.free.name : ''});
   $('combos').innerHTML = cs.length ? cs.map((c) => { const K = FoodolCombos.KINDS[c.how], ok = FoodolCombos.qualifies(c.total, M.free);
     return `<div class="cb ${K.cls}"><span class="bd">${K.badge}</span><h4>${K.title}</h4><div class="its">${c.lines.map((l) => `<div class="it"><span class="q">${l.q}×</span><span class="n">${esc(l.i.n)}</span><span>${money(l.i.p * l.q)}</span></div>`).join('')}${ok ? `<div class="it free"><span class="q">1×</span><span class="n">${esc(M.free.name)}</span><span>FREE</span></div>` : ''}</div>
       <div class="tot"><span>${pv.party > 1 ? `<small>${money(c.total / pv.party)} per person</small>` : ''}${M.free.on ? (ok ? '<small style="color:var(--gd);font-weight:600">Earns the free item</small>' : `<small>${money(Math.max(0, M.free.min - c.total))} short of the free item</small>`) : ''}</span><b>${money(c.total)}</b></div></div>`; }).join('')

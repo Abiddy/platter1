@@ -491,6 +491,15 @@ http.createServer(async (req, res) => {
           return send(res, 200, { ...publicRest(r), locations: active.map((l) => ({ id: l.id, name: l.name })) });
         } catch (e) { return send(res, 400, { error: e.status === 401 ? 'Square didn’t accept that access token.' : e.message }); }
       }
+      if (!sqm[2] && req.method === 'POST' && url.searchParams.get('applepay') === '1') {
+        if (!r.square) return send(res, 400, { error: 'Connect Square first.' });
+        try {
+          const host = new URL(APP_URL).hostname;
+          const out = await sq(r, '/v2/apple-pay/domains', { method: 'POST', body: JSON.stringify({ domain_name: host }) });
+          r.square.applePay = host; saveRestaurants();
+          return send(res, 200, { ok: true, domain: host, status: out.status });
+        } catch (e) { return send(res, 400, { error: e.message }); }
+      }
       if (sqm[2] && req.method === 'POST') {
         if (!r.square) return send(res, 400, { error: 'Connect Square first.' });
         try {
@@ -578,6 +587,14 @@ http.createServer(async (req, res) => {
       return send(res, 200, { ok: true });
     }
     return send(res, 404, { error: 'not found' });
+  }
+
+  // Apple Pay domain verification for Square's Web Payments SDK (Square's own file, fetched and cached)
+  if (p === '/.well-known/apple-developer-merchantid-domain-association') {
+    try {
+      if (!global.APPLE_ASSOC) { const r = await fetch('https://app.squareup.com/digital-wallets/apple-pay/apple-developer-merchantid-domain-association'); if (!r.ok) throw 0; global.APPLE_ASSOC = Buffer.from(await r.arrayBuffer()); }
+      res.writeHead(200, { 'Content-Type': 'application/octet-stream', 'Cache-Control': 'public, max-age=86400' }); return res.end(global.APPLE_ASSOC);
+    } catch { return send(res, 502, 'unavailable', 'text/plain'); }
   }
 
   /* pages */

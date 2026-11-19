@@ -176,7 +176,8 @@
   // build(items, party, cravings, freeMin, opts) — opts: { popular: [ids], grace, hour }
   function build(items, party, craveList, freeMin, opts = {}) {
     const n = Math.max(1, Math.min(20, +party || 1));
-    const live = items.filter((i) => i.on !== false && i.p > 0);
+    const freeName = String(opts.freeName || '').trim().toLowerCase();
+    const live = items.filter((i) => i.on !== false && i.p > 0 && (!freeName || i.n.trim().toLowerCase() !== freeName)); // never sell the free item
     const popular = opts.popular && opts.popular.length ? opts.popular
       : live.filter((i) => (+i.pop || 0) >= 5).map((i) => i.id); // older menus: top-rated items stand in
     const sc = scorer(popular);
