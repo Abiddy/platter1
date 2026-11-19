@@ -197,6 +197,10 @@ td{padding:12px;border-bottom:1px solid var(--line);vertical-align:top}
       <p class="sub">Your best sellers, in order. Foodol builds its combos around these first, so put the dishes you want every guest to try at the top.</p>
       <div class="plist" id="plist"></div>
       <div class="padd"><select id="padd"></select><button class="btn" id="paddGo" type="button">Add to popular</button></div>
+      <h2 style="margin-top:34px">What guests can crave</h2>
+      <p class="sub">The choices on Foodol’s “What are you craving?” screen (up to 6, plus “Surprise me”). Tag each dish with these in your Menu tab.</p>
+      <div class="plist" id="crlist"></div>
+      <div class="padd"><button class="btn" id="crAdd" type="button">Add a craving</button></div>
       <div class="how"><b>How Foodol picks combos</b>
         <ol>
           <li>Each guest gets a main from what they’re craving. Your popular dishes come first, in the order above.</li>
@@ -271,7 +275,9 @@ td{padding:12px;border-bottom:1px solid var(--line);vertical-align:top}
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const money = (v) => '$' + (+v || 0).toFixed(2);
-const CR = [['breakfast','Breakfast'],['thai','Thai plates'],['sandwich','Sandwiches'],['sweet','Sweet & fresh']];
+const DEFAULT_CR = [{id:'breakfast',label:'Breakfast',img:'41101946-0e96-4010-b8b0-b3ed77a520e9'},{id:'thai',label:'Thai plates',img:'ef1348d1-72d0-4ed7-8f84-505475182206'},{id:'sandwich',label:'Sandwiches',img:'c59bdaf3-865d-4654-8242-a22608ab3560'},{id:'sweet',label:'Sweet & fresh',img:'59e60bcd-83ce-45c7-9dad-044bda9f8425'}];
+const crList = () => (M && M.cravings && M.cravings.length ? M.cravings : DEFAULT_CR);
+const cr = () => crList().map((c) => [c.id, c.label]);
 const PARTY = [[1,'Just me'],[2,'Two'],[4,'Family'],[6,'Big group']];
 const KIND = {main:'Main', side:'Side', drink:'Drink only'};
 let saved = null, M = null, D = null, tab = 'overview', pv = {party:2, craves:new Set(['thai'])};
@@ -308,7 +314,7 @@ async function load(){
   renderAll();
 }
 function dirty(){ const d = JSON.stringify(M) !== saved; $('bar').classList.toggle('on', d); return d; }
-function renderAll(){ if (!Array.isArray(M.popular)) M.popular = M.items.filter((i) => i.k !== 'drink' && (+i.pop || 0) >= 5).map((i) => i.id); renderOverview(); renderMenu(); renderPopular(); renderFree(); renderCombos(); renderOrders(); renderGuests(); dirty(); }
+function renderAll(){ if (!Array.isArray(M.popular)) M.popular = M.items.filter((i) => i.k !== 'drink' && (+i.pop || 0) >= 5).map((i) => i.id); renderOverview(); renderMenu(); renderPopular(); renderCravings(); renderFree(); renderCombos(); renderOrders(); renderGuests(); dirty(); }
 
 /* tabs */
 function setTab(t){ tab = t; document.querySelectorAll('#tabs button').forEach((b) => b.classList.toggle('on', b.dataset.t === t)); document.querySelectorAll('main > section').forEach((s) => s.classList.toggle('hide', s.dataset.p !== t)); if (t === 'combos') renderCombos(); window.scrollTo(0,0); }
@@ -337,7 +343,7 @@ function renderMenu(){
       its.map(([i, idx]) => `<div class="row ${i.on === false ? 'off' : ''}" data-i="${idx}">
         <button class="sw ${i.on !== false ? 'on' : ''}" data-a="on" aria-label="Show ${esc(i.n)} to guests" title="${i.on !== false ? 'Showing to guests' : 'Hidden from guests'}"></button>
         <div><input class="nm" data-f="n" value="${esc(i.n)}" aria-label="Name"><input class="ds" data-f="d" value="${esc(i.d)}" placeholder="Short description" aria-label="Description">
-          <div class="chips">${CR.map(([k,l]) => `<button class="chip ${i.c.includes(k) ? 'on' : ''}" data-a="c" data-k="${k}">${l}</button>`).join('')}
+          <div class="chips">${cr().map(([k,l]) => `<button class="chip ${i.c.includes(k) ? 'on' : ''}" data-a="c" data-k="${k}">${l}</button>`).join('')}
           ${i.k !== 'drink' ? `<button class="popb ${M.popular.includes(i.id) ? 'on' : ''}" data-a="popular" title="Popular dishes are what Foodol recommends first">🔥 ${M.popular.includes(i.id) ? 'Popular #' + (M.popular.indexOf(i.id) + 1) : 'Mark popular'}</button>` : ''}
           ${!(+i.p > 0) ? '<span class="flag">Needs a price</span>' : ''}</div></div>
         <div class="pr"><input type="number" min="0" step="0.01" data-f="p" value="${(+i.p || 0).toFixed(2)}" aria-label="Price"></div>
@@ -386,6 +392,26 @@ $('plist').addEventListener('click', (e) => {
 });
 $('paddGo').onclick = () => { const id = $('padd').value; if (!id) return; M.popular.push(id); renderPopular(); renderMenu(); renderCombos(); dirty(); };
 
+/* cravings */
+const slug = (t) => String(t || '').toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 20);
+function renderCravings(){
+  const L = crList();
+  $('crlist').innerHTML = L.map((c, k) => `<div class="prow" data-k="${k}" style="grid-template-columns:64px 1fr auto"><input class="in" data-f="emoji" value="${esc(c.emoji || '')}" placeholder="${c.img ? '🖼️' : '🍽️'}" maxlength="4" style="text-align:center;font-size:22px;padding:6px" aria-label="Emoji"><input class="in" data-f="label" value="${esc(c.label)}" maxlength="24" aria-label="Craving name"><button class="del" data-x="1" aria-label="Remove craving">✕</button></div>`).join('');
+  $('crAdd').disabled = L.length >= 6;
+}
+function setCravings(L){ M.cravings = L.map((c) => ({...c})); renderCravings(); renderMenu(); renderCombos(); dirty(); }
+$('crlist').addEventListener('input', (e) => {
+  const row = e.target.closest('.prow'); if (!row) return; const L = crList().map((c) => ({...c})), c = L[+row.dataset.k];
+  c[e.target.dataset.f] = e.target.value; if (e.target.dataset.f === 'emoji' && e.target.value) delete c.img;
+  M.cravings = L; renderMenu(); renderCombos(); dirty();
+});
+$('crlist').addEventListener('click', (e) => {
+  if (!e.target.closest('[data-x]')) return; const k = +e.target.closest('.prow').dataset.k, L = crList().filter((_, j) => j !== k);
+  if (!L.length) return toast('Keep at least one craving');
+  const gone = crList()[k].id; M.items.forEach((i) => { i.c = i.c.filter((x) => x !== gone); }); setCravings(L);
+});
+$('crAdd').onclick = () => { const L = crList(); if (L.length >= 6) return; let id = 'new', n = 1; while (L.some((c) => c.id === id)) id = 'new' + (++n); setCravings([...L, {id, label: 'New craving', emoji: '🍽️'}]); };
+
 /* free item */
 function renderFree(){
   const f = M.free;
@@ -403,7 +429,7 @@ $('fgr').oninput = () => { M.free.grace = Math.min(5, Math.max(0, +$('fgr').valu
 
 /* combos */
 $('party').innerHTML = PARTY.map(([n,l]) => `<button data-n="${n}">${l}</button>`).join('');
-$('crave').innerHTML = CR.map(([k,l]) => `<button data-k="${k}">${l}</button>`).join('') + '<button data-k="surprise">Surprise</button>';
+$('crave').innerHTML = cr().map(([k,l]) => `<button data-k="${k}">${l}</button>`).join('') + '<button data-k="surprise">Surprise</button>';
 $('party').onclick = (e) => { const b = e.target.closest('button'); if (b) { pv.party = +b.dataset.n; renderCombos(); } };
 $('crave').onclick = (e) => { const b = e.target.closest('button'); if (!b) return; const k = b.dataset.k;
   if (k === 'surprise') pv.craves = new Set(['surprise']); else { pv.craves.delete('surprise'); pv.craves.has(k) ? pv.craves.delete(k) : pv.craves.add(k); if (!pv.craves.size) pv.craves.add(k); }

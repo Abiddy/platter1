@@ -76,9 +76,30 @@ function tooMany(req) {
 }
 
 /* ---------- restaurants ---------- */
-const CRAVES = ['breakfast', 'thai', 'sandwich', 'sweet'];
+// What guests can pick on the "What are you craving?" screen. Each restaurant can set its own;
+// menus without a list use Sausalido's original four.
+const DEFAULT_CRAVINGS = [
+  { id: 'breakfast', label: 'Breakfast', img: '41101946-0e96-4010-b8b0-b3ed77a520e9' },
+  { id: 'thai', label: 'Thai plates', img: 'ef1348d1-72d0-4ed7-8f84-505475182206' },
+  { id: 'sandwich', label: 'Sandwiches', img: 'c59bdaf3-865d-4654-8242-a22608ab3560' },
+  { id: 'sweet', label: 'Sweet & fresh', img: '59e60bcd-83ce-45c7-9dad-044bda9f8425' },
+];
+function cleanCravings(list) {
+  if (!Array.isArray(list)) return null;
+  const seen = new Set();
+  const out = list.slice(0, 6).map((c) => ({
+    id: String(c.id || slugify(c.label)).toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 20),
+    label: clean(c.label, 24).trim(),
+    emoji: clean(c.emoji, 8).trim() || undefined,
+    img: /^[0-9a-f-]{36}$/.test(String(c.img || '')) ? c.img : undefined,
+  })).filter((c) => c.id && c.label && c.id !== 'surprise' && !seen.has(c.id) && seen.add(c.id));
+  return out.length ? out : null;
+}
+const cravingsOf = (menu) => menu.cravings || DEFAULT_CRAVINGS;
 function cleanMenu(b) {
   const f = b.free || {};
+  const cravings = cleanCravings(b.cravings);
+  const CRAVES = (cravings || DEFAULT_CRAVINGS).map((c) => c.id);
   const seen = new Set();
   const items = (Array.isArray(b.items) ? b.items : []).slice(0, 300).map((i, n) => {
     let id = String(i.id || '').replace(/[^\w-]/g, '').slice(0, 24) || 'i' + n;
@@ -88,11 +109,14 @@ function cleanMenu(b) {
       id, s: clean(i.s, 40) || 'Menu', n: clean(i.n, 60), d: clean(i.d, 140), p: num(i.p, 0, 500),
       c: (Array.isArray(i.c) ? i.c : []).filter((c) => CRAVES.includes(c)),
       k: ['main', 'side', 'drink'].includes(i.k) ? i.k : 'main', pop: Math.min(5, Math.max(1, Math.round(+i.pop || 3))), on: i.on !== false,
+      ...(i.sq ? { sq: String(i.sq).replace(/[^A-Za-z0-9_-]/g, '').slice(0, 64) } : {}),
     };
   }).filter((i) => i.n);
   const ids = new Set(items.filter((i) => i.k !== 'drink').map((i) => i.id));
   const popular = (Array.isArray(b.popular) ? b.popular : []).map((x) => String(x)).filter((x, k, a) => ids.has(x) && a.indexOf(x) === k).slice(0, 30);
-  return { free: { on: !!f.on, name: clean(f.name, 40) || 'free item', min: num(f.min, 0, 500), grace: num(f.grace ?? 0.5, 0, 5) }, items, popular };
+  const menu = { free: { on: !!f.on, name: clean(f.name, 40) || 'free item', min: num(f.min, 0, 500), grace: num(f.grace ?? 0.5, 0, 5) }, items, popular };
+  if (cravings) menu.cravings = cravings;
+  return menu;
 }
 
 let aliases = {};
@@ -161,14 +185,14 @@ async function sendCodeEmail(order, rest) {
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f6f8f6;padding:28px 12px"><tr><td align="center">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:440px;background:#ffffff;border-radius:22px;padding:28px">
 <tr><td align="center"><img src="https://d2ol7oe51mr4n9.cloudfront.net/user_3GsbRE1t9hIx7tjNcLo5jEaZ8ao/ee71f398-e40a-43c4-bd33-bd2c1871094c.png" width="104" height="104" alt="Foodol" style="display:block;border:0"></td></tr>
-<tr><td align="center" style="font-size:22px;font-weight:800;color:#123a22;padding-top:8px">Show this at the counter</td></tr>
+<tr><td align="center" style="font-size:22px;font-weight:800;color:#123a22;padding-top:8px">${order.paid ? 'Your order is in!' : 'Show this at the counter'}</td></tr>
 <tr><td align="center" style="font-size:15px;color:#4c6656;padding-top:4px">${escH(name)}</td></tr>
 <tr><td align="center" style="font-size:52px;font-weight:800;color:#123a22;letter-spacing:-1px;padding:14px 0 4px">#${escH(order.code)}</td></tr>
 <tr><td align="center" style="font-size:15px;font-weight:700;color:#123a22;padding-bottom:14px">${escH(order.title)}</td></tr>
 <tr><td><table role="presentation" width="100%" style="border-top:1px dashed #d6e0da;border-bottom:1px dashed #d6e0da;font-size:15px">${rows}</table></td></tr>
-<tr><td style="padding-top:12px;font-size:17px;font-weight:800;color:#123a22;text-align:right">Total $${order.total.toFixed(2)}</td></tr>
+<tr><td style="padding-top:12px;font-size:17px;font-weight:800;color:#123a22;text-align:right">${order.paid ? `Paid $${(order.charged || order.total).toFixed(2)} <span style="font-weight:500;font-size:13px;color:#7d8f84">incl. tax</span>` : `Total $${order.total.toFixed(2)}`}</td></tr>
 ${order.extra ? `<tr><td align="center" style="padding-top:18px"><span style="display:inline-block;background:#fff6e4;color:#b55d10;font-weight:700;border-radius:999px;padding:8px 16px;font-size:14px">Your free ${escH(order.extra)} is included</span></td></tr>` : ''}
-<tr><td align="center" style="font-size:13px;color:#7d8f84;padding-top:20px">The cashier rings up your order and marks the code as used.</td></tr>
+<tr><td align="center" style="font-size:13px;color:#7d8f84;padding-top:20px">${order.paid ? `Pick it up at the counter in about 20 minutes. Give the name ${escH(order.pickupName || '')}.${order.receiptUrl ? ` <a href="${escH(order.receiptUrl)}" style="color:#259a52">Receipt</a>` : ''}` : 'The cashier rings up your order and marks the code as used.'}</td></tr>
 </table>
 <p style="font-size:12px;color:#7d8f84;max-width:440px;margin:16px auto 0;text-align:center">You got this because you redeemed a Foodol code at ${escH(name)}. <a href="${unsub}" style="color:#7d8f84">Unsubscribe</a> · <a href="${APP_URL}/privacy" style="color:#7d8f84">Privacy</a></p>
 </td></tr></table></body></html>`;
@@ -222,7 +246,91 @@ function stats(r) {
   const last = os.reduce((m, o) => (o.createdAt > m ? o.createdAt : m), '');
   return { orders: os.length, redeemed: red.length, sales: Math.round(sales * 100) / 100, guests: gs.length, freeGiven: red.filter((o) => o.extra).length, lastOrder: last || null };
 }
-const publicRest = (r) => ({ slug: r.slug, name: r.name, createdAt: r.createdAt, owner: r.owner ? { email: r.owner.email } : null, stats: stats(r), items: r.menu.items.length });
+const publicRest = (r) => ({ slug: r.slug, name: r.name, createdAt: r.createdAt, owner: r.owner ? { email: r.owner.email } : null, stats: stats(r), items: r.menu.items.length,
+  square: r.square ? { env: r.square.env, locationId: r.square.locationId, locationName: r.square.locationName || '', appId: r.square.appId, linked: r.menu.items.filter((i) => i.sq).length } : null });
+
+/* ---------- Square: online ordering straight into the restaurant's POS ---------- */
+// Each restaurant's access token stays on the server; the browser only gets the public app id + location.
+const SQ_VERSION = '2026-09-16';
+class SqError extends Error { constructor(msg, status, codes) { super(msg); this.status = status; this.codes = codes || []; } }
+async function sq(rest, pathname, init = {}) {
+  const c = rest.square;
+  if (!c || !c.token) throw new SqError('Square is not connected for this restaurant', 503);
+  const base = process.env.SQUARE_TEST_BASE || (c.env === 'production' ? 'https://connect.squareup.com' : 'https://connect.squareupsandbox.com');
+  const r = await fetch(base + pathname, { ...init, headers: { 'Square-Version': SQ_VERSION, Authorization: `Bearer ${c.token}`, 'Content-Type': 'application/json' } });
+  const body = await r.json().catch(() => ({}));
+  if (!r.ok) {
+    console.error('[square]', rest.slug, pathname, r.status, JSON.stringify(body.errors || '').slice(0, 400));
+    throw new SqError((body.errors && body.errors[0] && body.errors[0].detail) || 'Square request failed', r.status, (body.errors || []).map((e) => e.code));
+  }
+  return body;
+}
+async function sqCatalog(rest) {
+  const objects = []; let cursor;
+  do {
+    const page = await sq(rest, `/v2/catalog/list?types=ITEM,CATEGORY,TAX${cursor ? '&cursor=' + encodeURIComponent(cursor) : ''}`);
+    objects.push(...(page.objects || [])); cursor = page.cursor;
+  } while (cursor);
+  return objects.filter((o) => !o.is_deleted);
+}
+const sqTaxCache = new Map();
+async function sqTaxIds(rest) {
+  const hit = sqTaxCache.get(rest.slug);
+  if (hit && Date.now() - hit.at < 10 * 60e3) return hit.ids;
+  const ids = (await sqCatalog(rest)).filter((o) => o.type === 'TAX' && (!o.present_at_location_ids || o.present_at_all_locations !== false || o.present_at_location_ids.includes(rest.square.locationId))).map((o) => o.id);
+  sqTaxCache.set(rest.slug, { at: Date.now(), ids });
+  return ids;
+}
+const DRINK_RE = /drink|beverage|coffee|espresso|latte|tea\b|teas\b|boba|smoothie|juice|soda|lemonade|frapp|shake/i;
+const SIDE_RE = /side|extra|add[- ]?on|topping|dessert|snack|appetizer|starter/i;
+// Turn the Square catalog into a Foodol menu (first priced variation of each item).
+function menuFromCatalog(objects, keep) {
+  const cats = new Map(objects.filter((o) => o.type === 'CATEGORY').map((o) => [o.id, (o.category_data && o.category_data.name) || '']));
+  const prev = new Map((keep.items || []).filter((i) => i.sq).map((i) => [i.sq, i]));
+  const items = [];
+  for (const o of objects) {
+    const d = o.item_data; if (o.type !== 'ITEM' || !d || d.is_archived) continue;
+    const v = (d.variations || []).find((x) => x.item_variation_data && x.item_variation_data.price_money);
+    if (!v) continue;
+    const catId = (d.categories && d.categories[0] && d.categories[0].id) || d.category_id || (d.reporting_category && d.reporting_category.id);
+    const sname = cats.get(catId) || 'Menu';
+    const old = prev.get(v.id);
+    const k = old ? old.k : DRINK_RE.test(sname + ' ' + d.name) ? 'drink' : SIDE_RE.test(sname) ? 'side' : 'main';
+    items.push({ id: v.id.slice(0, 24), sq: v.id, s: sname, n: d.name, d: (d.description_plaintext || d.description || '').replace(/\s+/g, ' ').trim().slice(0, 140),
+      p: v.item_variation_data.price_money.amount / 100, c: old ? old.c : [slugify(sname).slice(0, 20)], k, pop: old ? old.pop : 3, on: old ? old.on : true });
+  }
+  // cravings: one per food category (up to 6), unless the restaurant already set its own
+  let cravings = keep.cravings;
+  if (!cravings) {
+    const counts = new Map();
+    items.filter((i) => i.k !== 'drink').forEach((i) => counts.set(i.s, (counts.get(i.s) || 0) + 1));
+    cravings = [...counts].sort((a, b) => b[1] - a[1]).slice(0, 6).map(([sname]) => ({ id: slugify(sname).slice(0, 20), label: sname.slice(0, 24), emoji: '🍽️' }));
+  }
+  return cleanMenu({ free: keep.free || { on: true, name: 'Iced tea', min: 20, grace: 0.5 }, popular: keep.popular || [], cravings, items });
+}
+// Build the Square order for a Foodol cart. Prices always come from Square's catalog, never the browser.
+async function sqOrderFor(rest, lines, extra) {
+  const byId = new Map(rest.menu.items.map((i) => [i.id, i]));
+  const picked = [];
+  for (const l of Array.isArray(lines) ? lines.slice(0, 30) : []) {
+    const it = byId.get(String(l.id)); const q = Math.min(20, Math.max(1, Math.round(+l.q || 1)));
+    if (!it || it.on === false || !it.sq) throw new SqError(`“${it ? it.n : 'An item'}” can’t be ordered online right now.`, 409);
+    picked.push({ it, q });
+  }
+  if (!picked.length) throw new SqError('Your order is empty.', 400);
+  const taxIds = await sqTaxIds(rest);
+  const order = {
+    location_id: rest.square.locationId,
+    line_items: picked.map(({ it, q }) => ({ catalog_object_id: it.sq, quantity: String(q) })),
+    taxes: taxIds.map((id) => ({ uid: 'tax-' + id, catalog_object_id: id, scope: 'ORDER' })),
+  };
+  const calc = await sq(rest, '/v2/orders/calculate', { method: 'POST', body: JSON.stringify({ order }) });
+  const total = calc.order.total_money.amount, tax = (calc.order.total_tax_money || {}).amount || 0;
+  const subtotal = total - tax, free = rest.menu.free;
+  const qualifies = !!(extra && free && free.on && subtotal / 100 >= free.min - (free.grace || 0));
+  if (qualifies) order.line_items.push({ name: `FREE ${free.name} (Foodol)`, quantity: '1', base_price_money: { amount: 0, currency: 'USD' }, note: 'Free with a Foodol combo' });
+  return { order, picked, subtotal, tax, total, qualifies };
+}
 
 /* ---------- server ---------- */
 http.createServer(async (req, res) => {
@@ -264,6 +372,51 @@ http.createServer(async (req, res) => {
       return send(res, 200, o);
     }
     return send(res, 200, o);
+  }
+
+  /* Square: price a cart, then pay and send it to the restaurant's POS */
+  if (p === '/api/pay/quote' && req.method === 'POST') {
+    const b = await readBody(req), rest = findR(clean(b.r, 40));
+    if (!rest || !rest.square) return send(res, 404, { error: 'Online ordering isn’t set up here.' });
+    try { const q = await sqOrderFor(rest, b.items, b.extra); return send(res, 200, { subtotal: q.subtotal, tax: q.tax, total: q.total, free: q.qualifies }); }
+    catch (e) { return send(res, e.status && e.status < 500 ? e.status : 502, { error: e.message }); }
+  }
+  if (p === '/api/pay' && req.method === 'POST') {
+    if (tooMany(req)) return send(res, 429, { error: 'Too many tries. Wait a few minutes.' });
+    const b = await readBody(req), rest = findR(clean(b.r, 40));
+    if (!rest || !rest.square) return send(res, 404, { error: 'Online ordering isn’t set up here.' });
+    const name = clean(b.name, 60).trim(), phone = clean(b.phone, 30).replace(/[^\d+]/g, ''), email = cleanEmail(b.email);
+    if (!name) return send(res, 400, { error: 'Add a name for the pickup order.' });
+    if (phone.replace(/\D/g, '').length < 10) return send(res, 400, { error: 'Add a phone number so the restaurant can reach you.' });
+    if (!b.sourceId) return send(res, 400, { error: 'Payment details are missing.' });
+    const idem = clean(b.idem, 40).replace(/[^\w-]/g, '') || crypto.randomUUID();
+    try {
+      const q = await sqOrderFor(rest, b.items, b.extra);
+      if (q.qualifies && !email) return send(res, 400, { error: 'Add your email to get the free item.' });
+      const code = newCode(rest.slug);
+      const { order: created } = await sq(rest, '/v2/orders', { method: 'POST', body: JSON.stringify({ idempotency_key: idem + '-order', order: { ...q.order, reference_id: 'foodol-' + code, source: { name: 'Foodol' },
+        fulfillments: [{ type: 'PICKUP', state: 'PROPOSED', pickup_details: { schedule_type: 'ASAP', prep_time_duration: 'PT20M', note: `Foodol #${code}${q.qualifies ? ' · includes FREE ' + rest.menu.free.name : ''}`, recipient: { display_name: name, phone_number: phone, email_address: email || undefined } } }] } }) });
+      const { payment } = await sq(rest, '/v2/payments', { method: 'POST', body: JSON.stringify({ idempotency_key: idem + '-pay', source_id: String(b.sourceId), verification_token: b.verificationToken || undefined,
+        amount_money: created.total_money, order_id: created.id, location_id: rest.square.locationId, autocomplete: true, buyer_email_address: email || undefined, buyer_phone_number: phone, note: `Foodol pickup for ${name}` }) });
+      const order = {
+        id: crypto.randomBytes(9).toString('base64url'), r: rest.slug, code,
+        kind: clean(b.kind, 20), title: clean(b.title, 40), party: Math.min(20, +b.party || 1),
+        items: q.picked.map(({ it, q: n }) => ({ n: it.n, q: n, p: it.p })), extra: q.qualifies ? rest.menu.free.name : '',
+        total: q.subtotal / 100, tax: q.tax / 100, charged: created.total_money.amount / 100,
+        paid: true, pickupName: name, squareOrderId: created.id, paymentStatus: payment.status, receiptUrl: payment.receipt_url || null,
+        src: clean(b.src, 20), email, createdAt: new Date().toISOString(), redeemedAt: new Date().toISOString(),
+      };
+      orders.set(order.id, order); append({ type: 'order', order });
+      if (email) {
+        const prev = guests.get(rest.slug + ':' + email);
+        upsertGuest(rest.slug, email, { orders: (prev ? prev.orders : 0) + 1, consent: !!b.consent || !!(prev && prev.consent), unsub: prev ? prev.unsub && !b.consent : false });
+        sendCodeEmail(order, rest);
+      }
+      return send(res, 200, order);
+    } catch (e) {
+      const declined = (e.codes || []).some((c) => /CARD|CVV|DECLINED|INSUFFICIENT|EXPIR|ADDRESS|POSTAL|VERIFY/.test(c));
+      return send(res, e.status && e.status < 500 ? e.status : 502, { error: declined ? 'Your card was declined. Try another card.' : e.message });
+    }
   }
 
   /* restaurant sign-ups from the landing page */
@@ -315,6 +468,38 @@ http.createServer(async (req, res) => {
       r.owner = { email: em, ...hashPassword(b.password), ver: ((r.owner && r.owner.ver) || 0) + 1 };
       saveRestaurants();
       return send(res, 200, publicRest(r));
+    }
+    // Connect a restaurant's Square account (access token stays on the server)
+    const sqm = p.match(/^\/api\/admin\/restaurants\/([a-z0-9-]+)\/square(\/import)?$/);
+    if (sqm) {
+      const r = findR(sqm[1]); if (!r) return send(res, 404, { error: 'not found' });
+      if (!sqm[2] && req.method === 'DELETE') { delete r.square; saveRestaurants(); return send(res, 200, publicRest(r)); }
+      if (!sqm[2] && req.method === 'PUT') {
+        const b = await readBody(req);
+        const env = b.env === 'production' ? 'production' : 'sandbox';
+        const next = { env, token: String(b.token || (r.square && r.square.token) || '').trim(), appId: String(b.appId || '').trim(), locationId: String(b.locationId || '').trim() };
+        if (!next.token) return send(res, 400, { error: 'Paste the Square access token.' });
+        if (!/^(sandbox-)?sq0idp-[\w-]+$|^sandbox-sq0idb-[\w-]+$/.test(next.appId)) return send(res, 400, { error: 'That application ID doesn’t look right. It starts with sq0idp- (or sandbox-sq0idb- for test mode).' });
+        if (env === 'sandbox' !== next.appId.startsWith('sandbox-')) return send(res, 400, { error: 'Test mode needs the sandbox application ID, live mode needs the production one.' });
+        try {
+          const { locations = [] } = await sq({ slug: r.slug, square: next }, '/v2/locations');
+          const active = locations.filter((l) => l.status === 'ACTIVE');
+          const loc = active.find((l) => l.id === next.locationId) || active[0];
+          if (!loc) return send(res, 400, { error: 'That Square account has no active locations.' });
+          r.square = { ...next, locationId: loc.id, locationName: loc.name };
+          sqTaxCache.delete(r.slug); saveRestaurants();
+          return send(res, 200, { ...publicRest(r), locations: active.map((l) => ({ id: l.id, name: l.name })) });
+        } catch (e) { return send(res, 400, { error: e.status === 401 ? 'Square didn’t accept that access token.' : e.message }); }
+      }
+      if (sqm[2] && req.method === 'POST') {
+        if (!r.square) return send(res, 400, { error: 'Connect Square first.' });
+        try {
+          const menu = menuFromCatalog(await sqCatalog(r), r.menu);
+          if (!menu.items.length) return send(res, 400, { error: 'No priced items found in the Square catalog.' });
+          r.menu = menu; saveRestaurants();
+          return send(res, 200, publicRest(r));
+        } catch (e) { return send(res, 502, { error: e.message }); }
+      }
     }
     // Start a restaurant over at zero: clears its orders and guest emails (menu and login stay).
     const wp = p.match(/^\/api\/admin\/restaurants\/([a-z0-9-]+)\/reset$/);
@@ -425,7 +610,8 @@ http.createServer(async (req, res) => {
   if (/^\/[a-z0-9-]+$/.test(p) && aliases[p.slice(1)]) return redirect(res, '/' + go(p.slice(1)) + url.search);
   const rest = /^\/[a-z0-9-]+$/.test(p) ? findR(p.slice(1)) : null;
   if (rest) {
-    const live = { restaurant: { slug: rest.slug, name: rest.name }, free: rest.menu.free, popular: rest.menu.popular, items: rest.menu.items.filter((i) => i.on !== false && i.p > 0) };
+    const live = { restaurant: { slug: rest.slug, name: rest.name }, free: rest.menu.free, popular: rest.menu.popular, cravings: cravingsOf(rest.menu),
+      pay: rest.square && rest.square.appId ? { provider: 'square', appId: rest.square.appId, locationId: rest.square.locationId, sandbox: rest.square.env !== 'production' } : null, items: rest.menu.items.filter((i) => i.on !== false && i.p > 0) };
     if (live.items.filter((i) => i.k !== 'drink').length < 2) return send(res, 200, simplePage(`Foodol is coming to ${rest.name}`, '<p>Foodol is setting up the menu here. Check back soon!</p>'), MIME['.html']);
     const html = file('index.html').replace('<!--FOODOL_MENU-->', '<script>window.FOODOL_MENU=' + JSON.stringify(live).replace(/</g, '\\u003c') + ';</script>');
     return send(res, 200, html, MIME['.html']);

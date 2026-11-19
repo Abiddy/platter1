@@ -107,6 +107,19 @@ dialog .in{margin-bottom:8px}
     <div style="display:flex;gap:8px;margin-top:6px"><button type="button" class="btn2" id="dlX" style="flex:1">Cancel</button><button class="btn" style="flex:1" id="dlGo">Save login</button></div>
   </form>
 </dialog>
+<dialog id="sq">
+  <form id="sqf" method="dialog">
+    <h3 id="sqT">Connect Square</h3>
+    <p>Orders and payments go straight to the restaurant’s Square POS. Find these in developer.squareup.com → your app (Sandbox tab for test mode, Production for live).</p>
+    <select class="in" id="sqEnv"><option value="sandbox">Test mode (sandbox, fake cards)</option><option value="production">Live (real payments)</option></select>
+    <input class="in" id="sqApp" placeholder="Application ID (sq0idp-… or sandbox-sq0idb-…)" autocomplete="off" required>
+    <input class="in" id="sqTok" type="password" placeholder="Access token" autocomplete="off">
+    <input class="in" id="sqLoc" placeholder="Location ID (optional)" autocomplete="off">
+    <div class="err" id="sqErr"></div>
+    <div style="display:flex;gap:8px;margin-top:6px"><button type="button" class="btn2" id="sqX" style="flex:1">Cancel</button><button class="btn" style="flex:1" id="sqGo">Connect</button></div>
+    <button type="button" class="btn2" id="sqOff" style="width:100%;margin-top:8px;color:#b3261e">Disconnect Square</button>
+  </form>
+</dialog>
 <div id="toast"></div>
 
 <script>
@@ -154,12 +167,15 @@ function render(){
       <div><b>${money(r.stats.sales)}</b><span>sales</span></div>
       <div><b>${r.stats.guests}</b><span>emails</span></div>
     </div>
+    <div class="who" style="color:${r.square ? '#1d6b3e' : 'var(--mut)'}">${r.square ? `■ Square ${r.square.env === 'production' ? 'LIVE' : 'test mode'} · ${esc(r.square.locationName || r.square.locationId)} · ${r.square.linked} items linked` : 'Square not connected (guests show a code at the counter)'}</div>
     <div class="who ${r.owner ? '' : 'none'}">${r.owner ? 'Login: ' + esc(r.owner.email) : 'No owner login yet'} · ${r.items} menu items · last order ${ago(r.stats.lastOrder)}</div>
     <div class="acts">
       <a class="btn2" href="/${esc(r.slug)}" target="_blank" rel="noopener">Guest page</a>
       <a class="btn2" href="/portal?r=${encodeURIComponent(r.slug)}">Open portal</a>
       <button class="btn2" data-login="${esc(r.slug)}">${r.owner ? 'Reset login' : 'Set login'}</button>
       <button class="btn2" data-copy="${esc(r.slug)}">Copy link</button>
+      <button class="btn2" data-sq="${esc(r.slug)}">${r.square ? 'Square settings' : 'Connect Square'}</button>
+      ${r.square ? `<button class="btn2" data-sqimp="${esc(r.slug)}">Import menu from Square</button>` : ''}
       <button class="btn2" data-reset="${esc(r.slug)}" style="color:#b3261e">Reset data</button>
     </div>
   </div>`).join('') + `<form class="new" id="nf">
@@ -187,6 +203,14 @@ function render(){
     if (!r.ok) { $('nErr').textContent = j.error || 'Could not create.'; return; }
     toast(j.name + ' is live at /' + j.slug); load();
   };
+  document.querySelectorAll('[data-sq]').forEach((b) => b.onclick = () => openSq(b.dataset.sq));
+  document.querySelectorAll('[data-sqimp]').forEach((b) => b.onclick = async () => {
+    const r = D.restaurants.find((x) => x.slug === b.dataset.sqimp);
+    if (!confirm(`Replace ${r.name}’s Foodol menu with their Square items? Their popular dishes, free item and cravings stay.`)) return;
+    b.disabled = true; b.textContent = 'Importing…';
+    const x = await post('/api/admin/restaurants/' + r.slug + '/square/import', {}); const j = await x.json().catch(() => ({}));
+    if (x.ok) { toast(`Imported ${j.items} items from Square`); load(); } else { toast(j.error || 'Import failed'); b.disabled = false; b.textContent = 'Import menu from Square'; }
+  });
   document.querySelectorAll('[data-reset]').forEach((b) => b.onclick = async () => {
     const r = D.restaurants.find((x) => x.slug === b.dataset.reset);
     if (!confirm(`Clear all orders and guest emails for ${r.name}? Their menu and login stay. This can’t be undone.`)) return;
@@ -207,6 +231,24 @@ function openLogin(slug){
   $('dlE').value = r.owner ? r.owner.email : ''; $('dlW').value = ''; $('dlErr').textContent = '';
   $('dl').showModal();
 }
+let sqSlug = null;
+function openSq(slug){
+  const r = D.restaurants.find((x) => x.slug === slug); sqSlug = slug;
+  $('sqT').textContent = (r.square ? 'Square for ' : 'Connect Square for ') + r.name;
+  $('sqEnv').value = r.square ? r.square.env : 'sandbox'; $('sqApp').value = r.square ? r.square.appId : '';
+  $('sqTok').value = ''; $('sqTok').placeholder = r.square ? 'Access token (saved, leave blank to keep)' : 'Access token';
+  $('sqLoc').value = r.square ? r.square.locationId : ''; $('sqErr').textContent = ''; $('sqOff').style.display = r.square ? '' : 'none';
+  $('sq').showModal();
+}
+$('sqX').onclick = () => $('sq').close();
+$('sqOff').onclick = async () => { if (!confirm('Disconnect Square? Guests will go back to showing a code at the counter.')) return; await fetch('/api/admin/restaurants/' + sqSlug + '/square', {method:'DELETE'}); $('sq').close(); load(); };
+$('sqf').onsubmit = async (e) => {
+  e.preventDefault(); $('sqErr').textContent = ''; $('sqGo').disabled = true; $('sqGo').textContent = 'Checking…';
+  const x = await post('/api/admin/restaurants/' + sqSlug + '/square', {env: $('sqEnv').value, appId: $('sqApp').value, token: $('sqTok').value, locationId: $('sqLoc').value}, 'PUT');
+  const j = await x.json().catch(() => ({})); $('sqGo').disabled = false; $('sqGo').textContent = 'Connect';
+  if (!x.ok) { $('sqErr').textContent = j.error || 'Could not connect.'; return; }
+  $('sq').close(); toast('Square connected · ' + (j.square.locationName || '')); load();
+};
 $('dlX').onclick = () => $('dl').close();
 $('dlGen').onclick = () => {
   const a = 'abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789', v = crypto.getRandomValues(new Uint32Array(12));

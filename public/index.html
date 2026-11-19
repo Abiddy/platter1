@@ -102,6 +102,7 @@ h1{font-size:38px;line-height:1.02;letter-spacing:-.03em;font-weight:800}
 #crave .btn[disabled]{background:#c9d8ce;box-shadow:0 6px 0 #b3c4b9;cursor:default}
 .tile .big{font-size:44px;font-weight:800;line-height:1;letter-spacing:-.03em}
 .tile .lbl{font-size:17px;font-weight:600}
+.tile .emo{font-size:58px;line-height:76px;height:76px}
 .tile .s{font-size:14px;opacity:.75}
 .tile img{width:76px;height:76px;object-fit:contain;margin-bottom:auto}
 .t1{background:var(--green-soft)}.t2{background:var(--peach)}.t3{background:var(--butter)}.t4{background:var(--sky)}.t5{background:#f1e9ff}
@@ -164,6 +165,24 @@ h1{font-size:38px;line-height:1.02;letter-spacing:-.03em;font-weight:800}
 #ask .aerr{color:#c0392b;font-size:14px;min-height:18px;margin-top:8px}
 #ask .fine{font-size:12px;color:var(--muted);margin-top:10px}
 #ask .fine a{color:inherit}
+#pay .in{padding:22px 20px 28px}
+#pay h3{font-size:24px;letter-spacing:-.02em}
+#pay .test{background:#fff6dd;color:#7a5a00;border-radius:12px;padding:8px 12px;font-size:13px;margin:8px 0 0}
+#pay .lines{margin:14px 0 6px;border-top:1px dashed #dfe8e2;border-bottom:1px dashed #dfe8e2;padding:6px 0}
+#pay .ln{display:flex;gap:8px;padding:6px 0;font-size:15px}#pay .ln .n{flex:1}#pay .ln.free{color:var(--green-d);font-weight:700}
+#pay .sum{display:grid;grid-template-columns:1fr auto;gap:4px 10px;font-size:14.5px;color:var(--muted);margin:6px 0 14px}
+#pay .sum b{color:var(--ink);font-size:18px}
+#pay .f{width:100%;font:inherit;font-size:16px;padding:13px 14px;border:2px solid #e3ece6;border-radius:14px;outline:none;background:#fff;margin-top:8px}
+#pay .f:focus{border-color:var(--green)}
+#pay .opt{display:flex;gap:10px;align-items:flex-start;font-size:13.5px;color:var(--muted);margin:10px 2px 0}
+#pay .opt input{width:18px;height:18px;accent-color:var(--green);flex:none}
+#pay .wallet{margin-top:16px;min-height:0}
+#pay #sqApple{display:none;width:100%;height:48px;border-radius:12px;-webkit-appearance:-apple-pay-button;-apple-pay-button-type:plain;-apple-pay-button-style:black;margin-bottom:8px}
+#pay .or{text-align:center;color:var(--muted);font-size:13px;margin:12px 0 4px;display:none}
+#pay #sqCard{margin-top:10px;min-height:90px}
+#pay .perr{color:#c0392b;font-size:14px;min-height:18px;margin-top:6px}
+#pay .btn{width:100%;margin-top:8px}
+#pay .fine{font-size:12px;color:var(--muted);margin-top:10px;text-align:center}
 /* reward celebration */
 #reward{position:fixed;inset:0;z-index:60;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:28px 26px 34px;color:#fff;overflow:hidden;background:radial-gradient(120% 80% at 50% 38%,#4fd17f 0%,#3dbe6e 45%,#259a52 100%)}
 #reward.on{display:flex}
@@ -352,13 +371,32 @@ h1{font-size:38px;line-height:1.02;letter-spacing:-.03em;font-weight:800}
   <button class="skip" id="askSkip" type="button">Skip, just show my code</button>
   <p class="fine">Your code also shows on this screen. <a href="/privacy" target="_blank" rel="noopener">Privacy</a></p>
 </div></div>
+<div class="sheet" id="pay" role="dialog" aria-modal="true" aria-labelledby="payTitle"><div class="in">
+  <button class="close" data-close aria-label="Close">×</button>
+  <h3 id="payTitle">Your order</h3>
+  <p class="test" id="payTest" style="display:none">Test mode: use card 4111 1111 1111 1111, any future date, any CVV. No real charge.</p>
+  <div class="lines" id="payLines"></div>
+  <div class="sum" id="paySum"></div>
+  <form id="payForm" novalidate>
+    <input class="f" id="payName" placeholder="Name for pickup" autocomplete="name" required>
+    <input class="f" id="payPhone" type="tel" placeholder="Phone number" autocomplete="tel" inputmode="tel" required>
+    <input class="f" id="payEmail" type="email" placeholder="Email (for your receipt)" autocomplete="email" inputmode="email" autocapitalize="off" spellcheck="false">
+    <label class="opt"><input type="checkbox" id="payOpt" checked><span>Send me Foodol deals and free-item offers. Unsubscribe anytime.</span></label>
+    <div class="wallet"><button type="button" id="sqApple" aria-label="Pay with Apple Pay"></button><div id="sqGoogle"></div></div>
+    <div class="or" id="payOr">or pay with card</div>
+    <div id="sqCard"></div>
+    <div class="perr" id="payErr"></div>
+    <button class="btn" type="submit" id="payGo">Pay</button>
+  </form>
+  <p class="fine">Secure checkout by Square. Your order goes straight to the kitchen. <a href="/privacy" target="_blank" rel="noopener">Privacy</a></p>
+</div></div>
 <div id="reward" role="dialog" aria-modal="true" aria-labelledby="rwTitle">
   <div class="rays"></div>
   <canvas id="confetti"></canvas>
   <div class="kick">You just unlocked</div>
   <div class="orb"><span id="rwIcon"></span><span class="free">FREE</span></div>
   <h2 id="rwTitle"></h2>
-  <p>Show your code at the counter to claim it with your order.</p>
+  <p id="rwSub">Show your code at the counter to claim it with your order.</p>
   <button class="btn" id="rwGo">Show my code</button>
   <img class="mascot" src="https://d2ol7oe51mr4n9.cloudfront.net/user_3GsbRE1t9hIx7tjNcLo5jEaZ8ao/fe5e036c-785b-4e97-b270-c3a52036389d.svg" alt="">
 </div>
@@ -403,13 +441,14 @@ const ITEMS = MENU.items.filter((i) => i.on !== false && i.p > 0);
 const hasFree = (total) => FoodolCombos.qualifies(total, FREE);
 
 const WHO = [[1,'Just me','t1'],[2,'Two of us','t2'],[4,'Family','t3'],[6,'Big group','t4']];
-const CRAVE = [
- ['breakfast','Breakfast','41101946-0e96-4010-b8b0-b3ed77a520e9','t3'],
- ['thai','Thai plates','ef1348d1-72d0-4ed7-8f84-505475182206','t2'],
- ['sandwich','Sandwiches','c59bdaf3-865d-4654-8242-a22608ab3560','t1'],
- ['sweet','Sweet & fresh','59e60bcd-83ce-45c7-9dad-044bda9f8425','t5'],
- ['surprise','Surprise me!','683fe273-a1dc-4057-aad1-5e229c7e08dc','t4'],
-];
+const TONES = ['t3','t2','t1','t5','t3','t2'];
+const CRAVE = (MENU.cravings && MENU.cravings.length ? MENU.cravings : [
+  {id:'breakfast',label:'Breakfast',img:'41101946-0e96-4010-b8b0-b3ed77a520e9'},
+  {id:'thai',label:'Thai plates',img:'ef1348d1-72d0-4ed7-8f84-505475182206'},
+  {id:'sandwich',label:'Sandwiches',img:'c59bdaf3-865d-4654-8242-a22608ab3560'},
+  {id:'sweet',label:'Sweet & fresh',img:'59e60bcd-83ce-45c7-9dad-044bda9f8425'},
+]).map((c, i) => [c.id, c.label, c.img, TONES[i % TONES.length], c.emoji])
+  .concat([['surprise','Surprise me!','683fe273-a1dc-4057-aad1-5e229c7e08dc','t4']]);
 const KINDS = FoodolCombos.KINDS;
 
 const S = {party:2, craves:new Set(), combos:[], idx:0, order:null, cart:{}};
@@ -429,7 +468,7 @@ document.querySelectorAll('[data-go]').forEach((b) => b.onclick = () => go(b.dat
 
 /* question tiles */
 $('whoGrid').innerHTML = WHO.map(([n,l,t]) => `<button class="tile ${t}" data-n="${n}"><span class="big">${n === 6 ? '5+' : n}</span><span class="lbl">${l}</span></button>`).join('');
-$('craveGrid').innerHTML = CRAVE.map(([k,l,img,t],i) => `<button class="tile ${t} ${i === CRAVE.length - 1 ? 'wide' : ''}" data-k="${k}" aria-pressed="false"><span class="check" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg></span><img src="${IMG + img}.webp" alt="" width="76" height="76"><span class="lbl">${l}</span></button>`).join('');
+$('craveGrid').innerHTML = CRAVE.map(([k,l,img,t,emo],i) => `<button class="tile ${t} ${i === CRAVE.length - 1 && CRAVE.length % 2 ? 'wide' : ''}" data-k="${esc(k)}" aria-pressed="false"><span class="check" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg></span>${img ? `<img src="${IMG + img}.webp" alt="" width="76" height="76">` : `<span class="emo" aria-hidden="true">${esc(emo || '🍽️')}</span>`}<span class="lbl">${esc(l)}</span></button>`).join('');
 const pickTile = (b, then) => { b.classList.add('pick'); setTimeout(() => { b.classList.remove('pick'); then(); }, 160); };
 $('whoGrid').querySelectorAll('.tile').forEach((b) => b.onclick = () => pickTile(b, () => { S.party = +b.dataset.n; go('crave'); }));
 function syncCrave(){
@@ -530,6 +569,8 @@ function celebrate(){
   const name = S.order.extra;
   $('rwIcon').innerHTML = /thai|tea/i.test(name) ? `<img src="${TEA_IMG}" alt="">` : giftSvg().replace('width="18" height="18"', 'width="120" height="120"');
   $('rwTitle').textContent = `A free ${name}!`;
+  $('rwSub').textContent = S.order.paid ? 'It’s on the house, added to your order.' : 'Show your code at the counter to claim it with your order.';
+  $('rwGo').textContent = S.order.paid ? 'See my order' : 'Show my code';
   const el = $('reward'); el.classList.remove('on'); void el.offsetWidth; el.classList.add('on');
   setTimeout(() => { Fx.chime(); Fx.tap([25, 60, 40]); confetti(); }, 120);
   setTimeout(() => Fx.tap(20), 600);
@@ -543,6 +584,7 @@ function placeOrder(btn, label, body){
   const total = body.items.reduce((t,i) => t + i.p * i.q, 0);
   body.extra = hasFree(total) ? FREE_EXTRA : '';
   body.src = src;
+  if (PAY) return openPay(body);
   pending = {btn, label, body};
   let saved = ''; try { saved = localStorage.getItem('foodol_email') || ''; } catch {}
   $('askEmail').value = saved; $('askErr').textContent = '';
@@ -575,8 +617,72 @@ async function sendOrder(tapped){
 }
 $('choose').onclick = () => {
   const c = S.combos[S.idx];
-  placeOrder($('choose'), 'Redeem now', {kind: c.how, title: KINDS[c.how].title, party: S.party, items: c.lines.map((l) => ({n:l.i.n, q:l.q, p:l.i.p}))});
+  placeOrder($('choose'), 'Redeem now', {kind: c.how, title: KINDS[c.how].title, party: S.party, items: c.lines.map((l) => ({id:l.i.id, n:l.i.n, q:l.q, p:l.i.p}))});
 };
+
+/* pay online with Square (restaurants connected to Square) */
+const PAY = MENU.pay && MENU.pay.provider === 'square' ? MENU.pay : null;
+if (PAY) $('choose').textContent = 'Order & pay';
+let payBody = null, sqPayments = null, sqCard = null, sqWallets = [], payQuote = null;
+const cents = (c) => money(c / 100);
+function loadSq(){
+  if (window.Square) return Promise.resolve();
+  return new Promise((ok, bad) => { const sc = document.createElement('script'); sc.src = PAY.sandbox ? 'https://sandbox.web.squarecdn.com/v1/square.js' : 'https://web.squarecdn.com/v1/square.js'; sc.onload = ok; sc.onerror = bad; document.head.appendChild(sc); });
+}
+async function openPay(body){
+  payBody = body; payQuote = null;
+  $('payTest').style.display = PAY.sandbox ? '' : 'none';
+  $('payErr').textContent = ''; $('payGo').disabled = true; $('payGo').textContent = 'Getting your total…';
+  $('payLines').innerHTML = body.items.map((i) => `<div class="ln"><span>${i.q}×</span><span class="n">${esc(i.n)}</span><span>${money(i.p * i.q)}</span></div>`).join('') + (body.extra ? `<div class="ln free"><span>1×</span><span class="n">${esc(body.extra)}</span><span>FREE</span></div>` : '');
+  $('paySum').innerHTML = '';
+  let saved = {}; try { saved = JSON.parse(localStorage.getItem('foodol_payer') || '{}'); saved.email = saved.email || localStorage.getItem('foodol_email') || ''; } catch {}
+  $('payName').value = saved.name || ''; $('payPhone').value = saved.phone || ''; $('payEmail').value = saved.email || '';
+  $('payEmail').placeholder = body.extra ? `Email (needed for your free ${FREE_EXTRA})` : 'Email (for your receipt)';
+  $('pay').classList.add('on');
+  try {
+    const r = await fetch('/api/pay/quote', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({r: REST.slug, items: body.items, extra: body.extra})});
+    const j = await r.json(); if (!r.ok) throw new Error(j.error);
+    payQuote = j;
+    if (body.extra && !j.free) { body.extra = ''; $('payLines').querySelector('.free')?.remove(); }
+    $('paySum').innerHTML = `<span>Subtotal</span><span>${cents(j.subtotal)}</span><span>Tax</span><span>${cents(j.tax)}</span><b>Total</b><b>${cents(j.total)}</b>`;
+    $('payGo').textContent = 'Pay ' + cents(j.total);
+    try { await setupSq(j.total); } catch { throw new Error('Secure checkout couldn’t load. Check your connection and try again.'); }
+    $('payGo').disabled = false;
+  } catch (e) { $('payErr').textContent = (e && e.message) || 'Couldn’t reach the restaurant. Try again in a moment.'; $('payGo').textContent = 'Pay'; }
+}
+async function setupSq(total){
+  await loadSq();
+  sqPayments = sqPayments || window.Square.payments(PAY.appId, PAY.locationId);
+  if (!sqCard) { sqCard = await sqPayments.card(); await sqCard.attach('#sqCard'); }
+  sqWallets.forEach((w) => w.destroy()); sqWallets = []; $('sqGoogle').innerHTML = ''; $('sqApple').style.display = 'none'; $('payOr').style.display = 'none';
+  const req = sqPayments.paymentRequest({countryCode: 'US', currencyCode: 'USD', total: {amount: (total / 100).toFixed(2), label: REST.name}});
+  try { const g = await sqPayments.googlePay(req); await g.attach('#sqGoogle', {buttonColor: 'black', buttonSizeMode: 'fill', buttonType: 'long'}); sqWallets.push(g); $('sqGoogle').onclick = () => payWith(g); $('payOr').style.display = ''; } catch {}
+  try { const a = await sqPayments.applePay(req); sqWallets.push(a); $('sqApple').style.display = 'block'; $('sqApple').onclick = () => payWith(a); $('payOr').style.display = ''; } catch {}
+}
+function payerOk(){
+  const name = $('payName').value.trim(), phone = $('payPhone').value.trim(), email = $('payEmail').value.trim().toLowerCase();
+  if (!name) return fail('Add a name for your pickup order.', 'payName');
+  if (phone.replace(/\D/g, '').length < 10) return fail('Add a phone number so the restaurant can reach you.', 'payPhone');
+  if ((email || payBody.extra) && !EMAIL_RE.test(email)) return fail(payBody.extra ? `Add your email to get your free ${FREE_EXTRA}.` : 'That email doesn’t look right.', 'payEmail');
+  try { localStorage.setItem('foodol_payer', JSON.stringify({name, phone, email})); if (email) localStorage.setItem('foodol_email', email); } catch {}
+  return {name, phone, email};
+  function fail(m, id){ $('payErr').textContent = m; $(id).focus(); return null; }
+}
+async function payWith(method){
+  if (!payQuote) return;
+  const who = payerOk(); if (!who) return;
+  Fx.unlock(); $('payErr').textContent = ''; const go = $('payGo'); go.disabled = true; go.textContent = 'Paying…';
+  try {
+    const t = await method.tokenize();
+    if (t.status !== 'OK') throw new Error((t.errors && t.errors[0] && t.errors[0].message) || 'Check your card details.');
+    const r = await fetch('/api/pay', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({...payBody, r: REST.slug, ...who, consent: $('payOpt').checked, sourceId: t.token, idem: crypto.randomUUID ? crypto.randomUUID() : String(Date.now())})});
+    const j = await r.json(); if (!r.ok) throw new Error(j.error || 'Payment didn’t go through.');
+    S.order = j; save(); $('pay').classList.remove('on'); if (S.order.extra) celebrate(); else showTicket();
+  } catch (e) { $('payErr').textContent = e.message || 'Payment didn’t go through. Try again.'; }
+  go.disabled = false; go.textContent = 'Pay ' + cents(payQuote.total);
+}
+$('payForm').onsubmit = (e) => { e.preventDefault(); if (sqCard) payWith(sqCard); };
+$('pay').addEventListener('click', (e) => { if (e.target === $('pay') || e.target.hasAttribute('data-close')) $('pay').classList.remove('on'); });
 
 /* build your own */
 const secs = [...new Set(ITEMS.map((i) => i.s))];
@@ -593,11 +699,11 @@ function renderBuild(){
   $('progBar').style.width = (FREE.on ? Math.min(100, total / FREE_MIN * 100) : (total ? 100 : 0)) + '%';
   $('cartTot').textContent = money(total);
   $('progTxt').innerHTML = !total ? 'Add items to start' : !FREE.on ? 'Ready when you are' : rem > 0 ? `${money(rem)} away from a free ${esc(FREE_EXTRA)}` : `<span class="ok">Free ${esc(FREE_EXTRA)} unlocked!</span>`;
-  btn.disabled = !total || (FREE.on && rem > 0);
-  btn.textContent = !total ? 'Add items to start' : !FREE.on ? 'Get my code' : rem > 0 ? `Add ${money(rem)} more to unlock` : 'Redeem now';
+  btn.disabled = !total || (FREE.on && rem > 0 && !PAY);
+  btn.textContent = !total ? 'Add items to start' : PAY ? 'Order & pay' : !FREE.on ? 'Get my code' : rem > 0 ? `Add ${money(rem)} more to unlock` : 'Redeem now';
 }
 $('redeemFree').onclick = () => {
-  const items = Object.entries(S.cart).map(([id,q]) => { const i = ITEMS.find((x) => x.id === id); return {n:i.n, q, p:i.p}; });
+  const items = Object.entries(S.cart).map(([id,q]) => { const i = ITEMS.find((x) => x.id === id); return {id:i.id, n:i.n, q, p:i.p}; });
   placeOrder($('redeemFree'), 'Redeem now', {kind:'own', title:'Your order', party:1, items});
 };
 renderBuild();
@@ -612,6 +718,14 @@ function showTicket(){
   go('ticket');
 }
 function setRedeemed(on){
+  if (S.order && S.order.paid) {
+    $('tk').classList.add('redeemed'); $('cashier').style.display = 'none';
+    $('tkHead').textContent = 'Order placed!';
+    $('tkSub').textContent = `${S.order.pickupName ? S.order.pickupName + ', p' : 'P'}ick it up at the counter in about 20 minutes.`;
+    $('tkWhen').textContent = 'Paid ' + money(S.order.charged || S.order.total);
+    document.querySelector('#tk .stamp b').textContent = 'Paid';
+    return;
+  }
   $('tk').classList.toggle('redeemed', on);
   $('cashier').style.display = on ? 'none' : 'flex';
   $('tkHead').textContent = on ? 'Enjoy your meal!' : 'Show this at the counter';
