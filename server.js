@@ -20,7 +20,8 @@ const LOG = path.join(DATA_DIR, 'orders.jsonl');
 const GUESTS_LOG = path.join(DATA_DIR, 'guests.jsonl');
 const LEADS_LOG = path.join(DATA_DIR, 'leads.jsonl');
 const REST_FILE = path.join(DATA_DIR, 'restaurants.json');
-const FIRST = 'sausalido'; // the original restaurant; old data and old QR codes belong to it
+const FIRST = 'sausalido';
+const OG_GENERIC = '7a0ab0e2-ee00-4d9d-a327-7715c344b96b'; // link-preview image: Foodol + "Let's pick the perfect meal" // the original restaurant; old data and old QR codes belong to it
 // Old link names that now point at another restaurant (after a merge or rename).
 const ALIAS_FILE = path.join(DATA_DIR, 'aliases.json');
 
@@ -546,6 +547,7 @@ http.createServer(async (req, res) => {
       const r = findR(nm[1]); if (!r) return send(res, 404, { error: 'not found' });
       const b = await readBody(req); const name = clean(b.name, 60).trim();
       if (name) r.name = name;
+      if (typeof b.ogImage === 'string' && (b.ogImage === '' || /^[0-9a-f-]{36}$/.test(b.ogImage))) r.ogImage = b.ogImage || undefined;
       saveRestaurants();
       return send(res, 200, publicRest(r));
     }
@@ -630,7 +632,17 @@ http.createServer(async (req, res) => {
     const live = { restaurant: { slug: rest.slug, name: rest.name }, free: rest.menu.free, popular: rest.menu.popular, cravings: cravingsOf(rest.menu),
       pay: rest.square && rest.square.appId ? { provider: 'square', appId: rest.square.appId, locationId: rest.square.locationId, sandbox: rest.square.env !== 'production' } : null, items: rest.menu.items.filter((i) => i.on !== false && i.p > 0) };
     if (live.items.filter((i) => i.k !== 'drink').length < 2) return send(res, 200, simplePage(`Foodol is coming to ${rest.name}`, '<p>Foodol is setting up the menu here. Check back soon!</p>'), MIME['.html']);
-    const html = file('index.html').replace('<!--FOODOL_MENU-->', '<script>window.FOODOL_MENU=' + JSON.stringify(live).replace(/</g, '\\u003c') + ';</script>');
+    const img = `https://d2ol7oe51mr4n9.cloudfront.net/user_3GsbRE1t9hIx7tjNcLo5jEaZ8ao/${/^[0-9a-f-]{36}$/.test(rest.ogImage || '') ? rest.ogImage : OG_GENERIC}.jpg`;
+    const title = `${rest.name} · Let Foodol pick your perfect meal`;
+    const desc = `Two quick questions and Foodol picks your perfect combo at ${rest.name}${rest.menu.free && rest.menu.free.on ? `, plus a free ${rest.menu.free.name} on orders $${rest.menu.free.min}+` : ''}.`;
+    const head = `<title>${escH(title)}</title>
+<meta name="description" content="${escH(desc)}">
+<meta property="og:type" content="website"><meta property="og:site_name" content="Foodol">
+<meta property="og:title" content="${escH(title)}"><meta property="og:description" content="${escH(desc)}">
+<meta property="og:url" content="${APP_URL}/${rest.slug}">
+<meta property="og:image" content="${img}"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image"><meta name="twitter:title" content="${escH(title)}"><meta name="twitter:description" content="${escH(desc)}"><meta name="twitter:image" content="${img}">`;
+    const html = file('index.html').replace('<!--FOODOL_HEAD-->', head).replace('<!--FOODOL_MENU-->', '<script>window.FOODOL_MENU=' + JSON.stringify(live).replace(/</g, '\\u003c') + ';</script>');
     return send(res, 200, html, MIME['.html']);
   }
 
