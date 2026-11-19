@@ -120,6 +120,20 @@ dialog .in{margin-bottom:8px}
     <button type="button" class="btn2" id="sqOff" style="width:100%;margin-top:8px;color:#b3261e">Disconnect Square</button>
   </form>
 </dialog>
+<dialog id="cv">
+  <form id="cvf" method="dialog">
+    <h3 id="cvT">Connect Clover</h3>
+    <p>Orders go straight to the restaurant’s Clover POS. From the restaurant’s Clover web dashboard: <b>Merchant ID</b> is in the address bar (…/merchants/<b>XXXXXXXXXXXXX</b>/…), the <b>API token</b> is under Setup → API Tokens (allow Inventory read, Orders read+write, Merchant read), and the <b>Ecommerce keys</b> are under Setup → Ecommerce → Ecommerce API Tokens (type “Hosted iFrame + API”).</p>
+    <select class="in" id="cvEnv"><option value="production">Live (real Clover account)</option><option value="sandbox">Test mode (Clover sandbox)</option></select>
+    <input class="in" id="cvMid" placeholder="Merchant ID (13 characters)" autocomplete="off" required>
+    <input class="in" id="cvTok" type="password" placeholder="API token" autocomplete="off">
+    <input class="in" id="cvPub" placeholder="Ecommerce public key (for online payments)" autocomplete="off">
+    <input class="in" id="cvPriv" type="password" placeholder="Ecommerce private key (for online payments)" autocomplete="off">
+    <div class="err" id="cvErr"></div>
+    <div style="display:flex;gap:8px;margin-top:6px"><button type="button" class="btn2" id="cvX" style="flex:1">Cancel</button><button class="btn" style="flex:1" id="cvGo">Connect</button></div>
+    <button type="button" class="btn2" id="cvOff" style="width:100%;margin-top:8px;color:#b3261e">Disconnect Clover</button>
+  </form>
+</dialog>
 <div id="toast"></div>
 
 <script>
@@ -167,15 +181,19 @@ function render(){
       <div><b>${money(r.stats.sales)}</b><span>sales</span></div>
       <div><b>${r.stats.guests}</b><span>emails</span></div>
     </div>
-    <div class="who" style="color:${r.square ? '#1d6b3e' : 'var(--mut)'}">${r.square ? `■ Square ${r.square.env === 'production' ? 'LIVE' : 'test mode'} · ${esc(r.square.locationName || r.square.locationId)} · ${r.square.linked} items linked` : 'Square not connected (guests show a code at the counter)'}</div>
+    <div class="who" style="color:${r.square || r.clover ? '#1d6b3e' : 'var(--mut)'}">${r.square ? `■ Square ${r.square.env === 'production' ? 'LIVE' : 'test mode'} · ${esc(r.square.locationName || r.square.locationId)} · ${r.square.linked} items linked`
+      : r.clover ? `■ Clover ${r.clover.env === 'production' ? 'LIVE' : 'test mode'} · ${esc(r.clover.merchantName || r.clover.mid)} · ${r.clover.linked} items linked${r.clover.canPay ? '' : ' · online payments not set up yet'}`
+      : 'No POS connected (guests show a code at the counter)'}</div>
     <div class="who ${r.owner ? '' : 'none'}">${r.owner ? 'Login: ' + esc(r.owner.email) : 'No owner login yet'} · ${r.items} menu items · last order ${ago(r.stats.lastOrder)}</div>
     <div class="acts">
       <a class="btn2" href="/${esc(r.slug)}" target="_blank" rel="noopener">Guest page</a>
       <a class="btn2" href="/portal?r=${encodeURIComponent(r.slug)}">Open portal</a>
       <button class="btn2" data-login="${esc(r.slug)}">${r.owner ? 'Reset login' : 'Set login'}</button>
       <button class="btn2" data-copy="${esc(r.slug)}">Copy link</button>
-      <button class="btn2" data-sq="${esc(r.slug)}">${r.square ? 'Square settings' : 'Connect Square'}</button>
+      ${r.clover ? '' : `<button class="btn2" data-sq="${esc(r.slug)}">${r.square ? 'Square settings' : 'Connect Square'}</button>`}
       ${r.square ? `<button class="btn2" data-sqimp="${esc(r.slug)}">Import menu from Square</button>` : ''}
+      ${r.square ? '' : `<button class="btn2" data-cv="${esc(r.slug)}">${r.clover ? 'Clover settings' : 'Connect Clover'}</button>`}
+      ${r.clover ? `<button class="btn2" data-cvimp="${esc(r.slug)}">Import menu from Clover</button>` : ''}
       <button class="btn2" data-reset="${esc(r.slug)}" style="color:#b3261e">Reset data</button>
     </div>
   </div>`).join('') + `<form class="new" id="nf">
@@ -204,6 +222,14 @@ function render(){
     toast(j.name + ' is live at /' + j.slug); load();
   };
   document.querySelectorAll('[data-sq]').forEach((b) => b.onclick = () => openSq(b.dataset.sq));
+  document.querySelectorAll('[data-cv]').forEach((b) => b.onclick = () => openCv(b.dataset.cv));
+  document.querySelectorAll('[data-cvimp]').forEach((b) => b.onclick = async () => {
+    const r = D.restaurants.find((x) => x.slug === b.dataset.cvimp);
+    if (!confirm(`Replace ${r.name}’s Foodol menu with their Clover items? Their popular dishes, free item and cravings stay.`)) return;
+    b.disabled = true; b.textContent = 'Importing…';
+    const x = await post('/api/admin/restaurants/' + r.slug + '/clover/import', {}); const j = await x.json().catch(() => ({}));
+    if (x.ok) { toast(`Imported ${j.items} items from Clover`); load(); } else { toast(j.error || 'Import failed'); b.disabled = false; b.textContent = 'Import menu from Clover'; }
+  });
   document.querySelectorAll('[data-sqimp]').forEach((b) => b.onclick = async () => {
     const r = D.restaurants.find((x) => x.slug === b.dataset.sqimp);
     if (!confirm(`Replace ${r.name}’s Foodol menu with their Square items? Their popular dishes, free item and cravings stay.`)) return;
@@ -231,6 +257,26 @@ function openLogin(slug){
   $('dlE').value = r.owner ? r.owner.email : ''; $('dlW').value = ''; $('dlErr').textContent = '';
   $('dl').showModal();
 }
+let cvSlug = null;
+function openCv(slug){
+  const r = D.restaurants.find((x) => x.slug === slug); cvSlug = slug;
+  $('cvT').textContent = (r.clover ? 'Clover for ' : 'Connect Clover for ') + r.name;
+  $('cvEnv').value = r.clover ? r.clover.env : 'production'; $('cvMid').value = r.clover ? r.clover.mid : '';
+  for (const id of ['cvTok', 'cvPub', 'cvPriv']) $(id).value = '';
+  $('cvTok').placeholder = r.clover ? 'API token (saved, leave blank to keep)' : 'API token';
+  $('cvPub').placeholder = r.clover && r.clover.canPay ? 'Ecommerce public key (saved)' : 'Ecommerce public key (for online payments)';
+  $('cvPriv').placeholder = r.clover && r.clover.canPay ? 'Ecommerce private key (saved)' : 'Ecommerce private key (for online payments)';
+  $('cvErr').textContent = ''; $('cvOff').style.display = r.clover ? '' : 'none'; $('cv').showModal();
+}
+$('cvX').onclick = () => $('cv').close();
+$('cvOff').onclick = async () => { if (!confirm('Disconnect Clover? Guests will go back to showing a code at the counter.')) return; await fetch('/api/admin/restaurants/' + cvSlug + '/clover', {method:'DELETE'}); $('cv').close(); load(); };
+$('cvf').onsubmit = async (e) => {
+  e.preventDefault(); $('cvErr').textContent = ''; $('cvGo').disabled = true; $('cvGo').textContent = 'Checking…';
+  const x = await post('/api/admin/restaurants/' + cvSlug + '/clover', {env: $('cvEnv').value, mid: $('cvMid').value, token: $('cvTok').value, ecomPublic: $('cvPub').value, ecomPrivate: $('cvPriv').value}, 'PUT');
+  const j = await x.json().catch(() => ({})); $('cvGo').disabled = false; $('cvGo').textContent = 'Connect';
+  if (!x.ok) { $('cvErr').textContent = j.error || 'Could not connect.'; return; }
+  $('cv').close(); toast('Clover connected · ' + (j.clover.merchantName || '')); load();
+};
 let sqSlug = null;
 function openSq(slug){
   const r = D.restaurants.find((x) => x.slug === slug); sqSlug = slug;

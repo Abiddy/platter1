@@ -111,6 +111,7 @@ function cleanMenu(b) {
       c: (Array.isArray(i.c) ? i.c : []).filter((c) => CRAVES.includes(c)),
       k: ['main', 'side', 'drink'].includes(i.k) ? i.k : 'main', pop: Math.min(5, Math.max(1, Math.round(+i.pop || 3))), on: i.on !== false,
       ...(i.sq ? { sq: String(i.sq).replace(/[^A-Za-z0-9_-]/g, '').slice(0, 64) } : {}),
+      ...(i.cl ? { cl: String(i.cl).replace(/[^A-Za-z0-9_-]/g, '').slice(0, 64) } : {}),
     };
   }).filter((i) => i.n);
   const ids = new Set(items.filter((i) => i.k !== 'drink').map((i) => i.id));
@@ -248,7 +249,8 @@ function stats(r) {
   return { orders: os.length, redeemed: red.length, sales: Math.round(sales * 100) / 100, guests: gs.length, freeGiven: red.filter((o) => o.extra).length, lastOrder: last || null };
 }
 const publicRest = (r) => ({ slug: r.slug, name: r.name, createdAt: r.createdAt, owner: r.owner ? { email: r.owner.email } : null, stats: stats(r), items: r.menu.items.length,
-  square: r.square ? { env: r.square.env, locationId: r.square.locationId, locationName: r.square.locationName || '', appId: r.square.appId, linked: r.menu.items.filter((i) => i.sq).length } : null });
+  square: r.square ? { env: r.square.env, locationId: r.square.locationId, locationName: r.square.locationName || '', appId: r.square.appId, linked: r.menu.items.filter((i) => i.sq).length } : null,
+  clover: r.clover ? { env: r.clover.env, mid: r.clover.mid, merchantName: r.clover.merchantName || '', orderType: r.clover.orderTypeName || '', canPay: !!(r.clover.ecomPublic && r.clover.ecomPrivate), linked: r.menu.items.filter((i) => i.cl).length } : null });
 
 /* ---------- Square: online ordering straight into the restaurant's POS ---------- */
 // Each restaurant's access token stays on the server; the browser only gets the public app id + location.
@@ -287,19 +289,30 @@ const SIDE_RE = /side|extra|add[- ]?on|topping|dessert|snack|appetizer|starter/i
 // Turn the Square catalog into a Foodol menu (first priced variation of each item).
 function menuFromCatalog(objects, keep) {
   const cats = new Map(objects.filter((o) => o.type === 'CATEGORY').map((o) => [o.id, (o.category_data && o.category_data.name) || '']));
-  const prev = new Map((keep.items || []).filter((i) => i.sq).map((i) => [i.sq, i]));
-  const items = [];
+  const rows = [];
   for (const o of objects) {
     const d = o.item_data; if (o.type !== 'ITEM' || !d || d.is_archived) continue;
     const v = (d.variations || []).find((x) => x.item_variation_data && x.item_variation_data.price_money);
     if (!v) continue;
     const catId = (d.categories && d.categories[0] && d.categories[0].id) || d.category_id || (d.reporting_category && d.reporting_category.id);
-    const sname = cats.get(catId) || 'Menu';
-    const old = prev.get(v.id);
-    const k = old ? old.k : DRINK_RE.test(sname + ' ' + d.name) ? 'drink' : SIDE_RE.test(sname) ? 'side' : 'main';
-    items.push({ id: v.id.slice(0, 24), sq: v.id, s: sname, n: d.name, d: (d.description_plaintext || d.description || '').replace(/\s+/g, ' ').trim().slice(0, 140),
-      p: v.item_variation_data.price_money.amount / 100, c: old ? old.c : [slugify(sname).slice(0, 20)], k, pop: old ? old.pop : 3, on: old ? old.on : true });
+    rows.push({ pid: v.id, s: cats.get(catId) || 'Menu', n: d.name, d: d.description_plaintext || d.description || '', p: v.item_variation_data.price_money.amount / 100 });
   }
+  return menuFromRows(rows, keep, 'sq');
+}
+// Shared by every POS: rows of {pid, s, n, d, p} become Foodol menu items linked by `key` (sq / cl).
+// Settings the restaurant already made (on/off, type, cravings, popularity) are kept for items it already had.
+function menuFromRows(rows, keep, key) {
+  const prev = new Map((keep.items || []).filter((i) => i[key]).map((i) => [i[key], i]));
+  const byName = new Map((keep.items || []).map((i) => [i.n.trim().toLowerCase(), i]));
+  const items = [];
+  for (const r of rows) {
+    const sname = r.s || 'Menu', old = prev.get(r.pid) || byName.get(String(r.n).trim().toLowerCase());
+    const k = old ? old.k : DRINK_RE.test(sname + ' ' + r.n) ? 'drink' : SIDE_RE.test(sname) ? 'side' : 'main';
+    items.push({ id: String(r.pid).slice(0, 24), [key]: r.pid, s: sname, n: r.n, d: String(r.d || '').replace(/\s+/g, ' ').trim().slice(0, 140),
+      p: r.p, c: old ? old.c : [slugify(sname).slice(0, 20)], k, pop: old ? old.pop : 3, on: old ? old.on : true });
+  }
+  const oldIds = new Map((keep.items || []).map((i) => [i.id, i]));
+  const popular = (keep.popular || []).map((id) => { const o = oldIds.get(id); if (!o) return null; const n = items.find((x) => x.n.trim().toLowerCase() === o.n.trim().toLowerCase()); return n ? n.id : null; }).filter(Boolean);
   // cravings: one per food category (up to 6), unless the restaurant already set its own
   let cravings = keep.cravings;
   if (!cravings) {
@@ -307,7 +320,7 @@ function menuFromCatalog(objects, keep) {
     items.filter((i) => i.k !== 'drink').forEach((i) => counts.set(i.s, (counts.get(i.s) || 0) + 1));
     cravings = [...counts].sort((a, b) => b[1] - a[1]).slice(0, 6).map(([sname]) => ({ id: slugify(sname).slice(0, 20), label: sname.slice(0, 24), emoji: '🍽️' }));
   }
-  return cleanMenu({ free: keep.free || { on: true, name: 'Iced tea', min: 20, grace: 0.5 }, popular: keep.popular || [], cravings, items });
+  return cleanMenu({ free: keep.free || { on: true, name: 'Iced tea', min: 20, grace: 0.5 }, popular, cravings, items });
 }
 // Build the Square order for a Foodol cart. Prices always come from Square's catalog, never the browser.
 async function sqOrderFor(rest, lines, extra) {
@@ -332,6 +345,92 @@ async function sqOrderFor(rest, lines, extra) {
   if (qualifies) order.line_items.push({ name: `FREE ${free.name} (Foodol)`, quantity: '1', base_price_money: { amount: 0, currency: 'USD' }, note: 'Free with a Foodol combo' });
   return { order, picked, subtotal, tax, total, qualifies };
 }
+
+/* ---------- Clover: same idea, through Clover's Platform API (orders) + Ecommerce API (payments) ---------- */
+class ClError extends Error { constructor(msg, status, code) { super(msg); this.status = status; this.codes = code ? [code] : []; } }
+async function cl(rest, pathname, init = {}, ecom = false) {
+  const c = rest.clover;
+  if (!c || !c.token) throw new ClError('Clover is not connected for this restaurant', 503);
+  const live = c.env === 'production';
+  const base = process.env.CLOVER_TEST_BASE || (ecom ? (live ? 'https://scl.clover.com' : 'https://scl-sandbox.dev.clover.com') : (live ? 'https://api.clover.com' : 'https://apisandbox.dev.clover.com'));
+  const r = await fetch(base + pathname, { ...init, headers: { Authorization: `Bearer ${ecom ? c.ecomPrivate : c.token}`, 'Content-Type': 'application/json', Accept: 'application/json', ...(init.headers || {}) } });
+  const text = await r.text(); let body = {}; try { body = text ? JSON.parse(text) : {}; } catch { body = { message: text }; }
+  if (!r.ok) {
+    console.error('[clover]', rest.slug, pathname, r.status, text.slice(0, 400));
+    const err = body.error || {};
+    throw new ClError(err.message || body.message || 'Clover request failed', r.status, err.code || err.decline_code || body.code);
+  }
+  return body;
+}
+async function clItems(rest) {
+  const out = []; const mid = rest.clover.mid;
+  for (let offset = 0; offset < 5000; offset += 500) {
+    const page = await cl(rest, `/v3/merchants/${mid}/items?expand=categories&limit=500&offset=${offset}`);
+    const els = page.elements || []; out.push(...els);
+    if (els.length < 500) break;
+  }
+  return out;
+}
+function menuFromClover(items, keep) {
+  const rows = items.filter((i) => !i.hidden && i.available !== false && i.price != null && i.priceType !== 'VARIABLE')
+    .map((i) => ({ pid: i.id, s: (i.categories && i.categories.elements && i.categories.elements[0] && i.categories.elements[0].name) || 'Menu', n: i.name, d: i.alternateName || '', p: (i.price || 0) / 100 }));
+  return menuFromRows(rows, keep, 'cl');
+}
+async function clOrderFor(rest, lines, extra) {
+  const byId = new Map(rest.menu.items.map((i) => [i.id, i]));
+  const picked = [];
+  for (const l of Array.isArray(lines) ? lines.slice(0, 30) : []) {
+    const it = byId.get(String(l.id)); const q = Math.min(20, Math.max(1, Math.round(+l.q || 1)));
+    if (!it || it.on === false || !it.cl) throw new ClError(`“${it ? it.n : 'An item'}” can’t be ordered online right now.`, 409);
+    picked.push({ it, q });
+  }
+  if (!picked.length) throw new ClError('Your order is empty.', 400);
+  const lineItems = picked.flatMap(({ it, q }) => Array.from({ length: q }, () => ({ item: { id: it.cl } })));
+  const cart = { lineItems, ...(rest.clover.orderTypeId ? { orderType: { id: rest.clover.orderTypeId } } : {}) };
+  const calc = await cl(rest, `/v3/merchants/${rest.clover.mid}/atomic_order/checkouts`, { method: 'POST', body: JSON.stringify({ orderCart: cart }) });
+  const total = Math.round(+calc.total || 0);
+  const listed = picked.reduce((t, { it, q }) => t + Math.round(it.p * 100) * q, 0);
+  const subtotal = calc.subtotal != null ? Math.round(+calc.subtotal) : listed;
+  const tax = calc.taxAmount != null ? Math.round(+calc.taxAmount) : Math.max(0, total - subtotal);
+  const free = rest.menu.free;
+  const qualifies = !!(extra && free && free.on && subtotal / 100 >= free.min - (free.grace || 0));
+  return { cart, picked, subtotal, tax, total: total || subtotal + tax, qualifies };
+}
+
+// One interface for every POS, so the routes don't care which one a restaurant uses.
+const PROVIDERS = {
+  square: {
+    quote: (rest, items, extra) => sqOrderFor(rest, items, extra),
+    async place(rest, q, o) {
+      const { order: created } = await sq(rest, '/v2/orders', { method: 'POST', body: JSON.stringify({ idempotency_key: o.idem + '-order', order: { ...q.order, reference_id: 'foodol-' + o.code, source: { name: 'Foodol' },
+        fulfillments: [{ type: 'PICKUP', state: 'PROPOSED', pickup_details: { schedule_type: 'ASAP', prep_time_duration: 'PT20M', note: `Foodol #${o.code}${q.qualifies ? ' · includes FREE ' + rest.menu.free.name : ''}`, recipient: { display_name: o.name, phone_number: o.phone, email_address: o.email || undefined } } }] } }) });
+      const { payment } = await sq(rest, '/v2/payments', { method: 'POST', body: JSON.stringify({ idempotency_key: o.idem + '-pay', source_id: o.sourceId, verification_token: o.verificationToken || undefined,
+        amount_money: created.total_money, order_id: created.id, location_id: rest.square.locationId, autocomplete: true, buyer_email_address: o.email || undefined, buyer_phone_number: o.phone, note: `Foodol pickup for ${o.name}` }) });
+      return { posOrderId: created.id, charged: created.total_money.amount, paymentStatus: payment.status, receiptUrl: payment.receipt_url || null, field: 'squareOrderId' };
+    },
+  },
+  clover: {
+    quote: (rest, items, extra) => clOrderFor(rest, items, extra),
+    async place(rest, q, o) {
+      if (!rest.clover.ecomPrivate) throw new ClError('Online payments aren’t switched on for this restaurant yet.', 503);
+      const mid = rest.clover.mid;
+      const note = `Foodol #${o.code} · PICKUP for ${o.name} · ${o.phone}${q.qualifies ? ' · includes FREE ' + rest.menu.free.name : ''}`;
+      const created = await cl(rest, `/v3/merchants/${mid}/atomic_order/orders`, { method: 'POST', body: JSON.stringify({ orderCart: { ...q.cart, title: `Foodol · ${o.name}`.slice(0, 60), note } }) });
+      if (q.qualifies) {
+        await cl(rest, `/v3/merchants/${mid}/orders/${created.id}/line_items`, { method: 'POST', body: JSON.stringify({ name: `FREE ${rest.menu.free.name} (Foodol)`.slice(0, 127), price: 0, note: 'Free with a Foodol combo' }) }).catch(() => {});
+      }
+      let paid;
+      try {
+        paid = await cl(rest, `/v1/orders/${created.id}/pay`, { method: 'POST', headers: { 'idempotency-key': o.idem + '-pay' }, body: JSON.stringify({ source: o.sourceId, email: o.email || undefined }) }, true);
+      } catch (e) {
+        await cl(rest, `/v3/merchants/${mid}/orders/${created.id}`, { method: 'DELETE' }).catch(() => {}); // don't leave an unpaid ticket on the POS
+        throw e;
+      }
+      return { posOrderId: created.id, charged: Math.round(+(paid.amount || created.total || q.total)), paymentStatus: paid.status || 'paid', receiptUrl: null, field: 'cloverOrderId' };
+    },
+  },
+};
+const posOf = (rest) => (rest && rest.square ? 'square' : rest && rest.clover ? 'clover' : null);
 
 /* ---------- server ---------- */
 http.createServer(async (req, res) => {
@@ -378,33 +477,31 @@ http.createServer(async (req, res) => {
   /* Square: price a cart, then pay and send it to the restaurant's POS */
   if (p === '/api/pay/quote' && req.method === 'POST') {
     const b = await readBody(req), rest = findR(clean(b.r, 40));
-    if (!rest || !rest.square) return send(res, 404, { error: 'Online ordering isn’t set up here.' });
-    try { const q = await sqOrderFor(rest, b.items, b.extra); return send(res, 200, { subtotal: q.subtotal, tax: q.tax, total: q.total, free: q.qualifies }); }
+    if (!posOf(rest)) return send(res, 404, { error: 'Online ordering isn’t set up here.' });
+    try { const q = await PROVIDERS[posOf(rest)].quote(rest, b.items, b.extra); return send(res, 200, { subtotal: q.subtotal, tax: q.tax, total: q.total, free: q.qualifies }); }
     catch (e) { return send(res, e.status && e.status < 500 ? e.status : 502, { error: e.message }); }
   }
   if (p === '/api/pay' && req.method === 'POST') {
     if (tooMany(req)) return send(res, 429, { error: 'Too many tries. Wait a few minutes.' });
     const b = await readBody(req), rest = findR(clean(b.r, 40));
-    if (!rest || !rest.square) return send(res, 404, { error: 'Online ordering isn’t set up here.' });
+    if (!posOf(rest)) return send(res, 404, { error: 'Online ordering isn’t set up here.' });
+    const P = PROVIDERS[posOf(rest)];
     const name = clean(b.name, 60).trim(), phone = clean(b.phone, 30).replace(/[^\d+]/g, ''), email = cleanEmail(b.email);
     if (!name) return send(res, 400, { error: 'Add a name for the pickup order.' });
     if (phone.replace(/\D/g, '').length < 10) return send(res, 400, { error: 'Add a phone number so the restaurant can reach you.' });
     if (!b.sourceId) return send(res, 400, { error: 'Payment details are missing.' });
     const idem = clean(b.idem, 40).replace(/[^\w-]/g, '') || crypto.randomUUID();
     try {
-      const q = await sqOrderFor(rest, b.items, b.extra);
+      const q = await P.quote(rest, b.items, b.extra);
       if (q.qualifies && !email) return send(res, 400, { error: 'Add your email to get the free item.' });
       const code = newCode(rest.slug);
-      const { order: created } = await sq(rest, '/v2/orders', { method: 'POST', body: JSON.stringify({ idempotency_key: idem + '-order', order: { ...q.order, reference_id: 'foodol-' + code, source: { name: 'Foodol' },
-        fulfillments: [{ type: 'PICKUP', state: 'PROPOSED', pickup_details: { schedule_type: 'ASAP', prep_time_duration: 'PT20M', note: `Foodol #${code}${q.qualifies ? ' · includes FREE ' + rest.menu.free.name : ''}`, recipient: { display_name: name, phone_number: phone, email_address: email || undefined } } }] } }) });
-      const { payment } = await sq(rest, '/v2/payments', { method: 'POST', body: JSON.stringify({ idempotency_key: idem + '-pay', source_id: String(b.sourceId), verification_token: b.verificationToken || undefined,
-        amount_money: created.total_money, order_id: created.id, location_id: rest.square.locationId, autocomplete: true, buyer_email_address: email || undefined, buyer_phone_number: phone, note: `Foodol pickup for ${name}` }) });
+      const placed = await P.place(rest, q, { code, name, phone, email, idem, sourceId: String(b.sourceId), verificationToken: b.verificationToken });
       const order = {
         id: crypto.randomBytes(9).toString('base64url'), r: rest.slug, code,
         kind: clean(b.kind, 20), title: clean(b.title, 40), party: Math.min(20, +b.party || 1),
         items: q.picked.map(({ it, q: n }) => ({ n: it.n, q: n, p: it.p })), extra: q.qualifies ? rest.menu.free.name : '',
-        total: q.subtotal / 100, tax: q.tax / 100, charged: created.total_money.amount / 100,
-        paid: true, pickupName: name, squareOrderId: created.id, paymentStatus: payment.status, receiptUrl: payment.receipt_url || null,
+        total: q.subtotal / 100, tax: q.tax / 100, charged: placed.charged / 100,
+        paid: true, pickupName: name, pos: posOf(rest), [placed.field]: placed.posOrderId, paymentStatus: placed.paymentStatus, receiptUrl: placed.receiptUrl,
         src: clean(b.src, 20), email, createdAt: new Date().toISOString(), redeemedAt: new Date().toISOString(),
       };
       orders.set(order.id, order); append({ type: 'order', order });
@@ -415,7 +512,7 @@ http.createServer(async (req, res) => {
       }
       return send(res, 200, order);
     } catch (e) {
-      const declined = (e.codes || []).some((c) => /CARD|CVV|DECLINED|INSUFFICIENT|EXPIR|ADDRESS|POSTAL|VERIFY/.test(c));
+      const declined = (e.codes || []).some((c) => /CARD|CVV|CVC|DECLINE|INSUFFICIENT|EXPIR|ADDRESS|POSTAL|ZIP|VERIFY|INCORRECT/i.test(String(c))) || e.status === 402;
       return send(res, e.status && e.status < 500 ? e.status : 502, { error: declined ? 'Your card was declined. Try another card.' : e.message });
     }
   }
@@ -470,12 +567,45 @@ http.createServer(async (req, res) => {
       saveRestaurants();
       return send(res, 200, publicRest(r));
     }
+    // Connect a restaurant's Clover account (all keys stay on the server except the public payment key)
+    const clm = p.match(/^\/api\/admin\/restaurants\/([a-z0-9-]+)\/clover(\/import)?$/);
+    if (clm) {
+      const r = findR(clm[1]); if (!r) return send(res, 404, { error: 'not found' });
+      if (!clm[2] && req.method === 'DELETE') { delete r.clover; saveRestaurants(); return send(res, 200, publicRest(r)); }
+      if (!clm[2] && req.method === 'PUT') {
+        if (r.square) return send(res, 400, { error: 'This restaurant is connected to Square. Disconnect Square first.' });
+        const b = await readBody(req), old = r.clover || {};
+        const next = { env: b.env === 'production' ? 'production' : 'sandbox', mid: String(b.mid || old.mid || '').trim().toUpperCase(),
+          token: String(b.token || old.token || '').trim(), ecomPublic: String(b.ecomPublic || old.ecomPublic || '').trim(), ecomPrivate: String(b.ecomPrivate || old.ecomPrivate || '').trim() };
+        if (!/^[A-Z0-9]{8,20}$/.test(next.mid)) return send(res, 400, { error: 'Add the Clover merchant ID (13 letters and numbers, from the dashboard address bar).' });
+        if (!next.token) return send(res, 400, { error: 'Paste the Clover API token.' });
+        try {
+          const probe = { slug: r.slug, clover: next };
+          const m = await cl(probe, `/v3/merchants/${next.mid}`);
+          let types = []; try { types = (await cl(probe, `/v3/merchants/${next.mid}/order_types`)).elements || []; } catch { /* token may lack this permission */ }
+          const t = types.find((x) => /pick ?up|online|to ?go|take ?out/i.test(x.label || '')) || null;
+          r.clover = { ...next, merchantName: m.name || '', orderTypeId: t ? t.id : undefined, orderTypeName: t ? t.label : '' };
+          saveRestaurants();
+          return send(res, 200, publicRest(r));
+        } catch (e) { return send(res, 400, { error: e.status === 401 ? 'Clover didn’t accept that API token for this merchant ID.' : e.message }); }
+      }
+      if (clm[2] && req.method === 'POST') {
+        if (!r.clover) return send(res, 400, { error: 'Connect Clover first.' });
+        try {
+          const menu = menuFromClover(await clItems(r), r.menu);
+          if (!menu.items.length) return send(res, 400, { error: 'No items with prices found in Clover.' });
+          r.menu = menu; saveRestaurants();
+          return send(res, 200, publicRest(r));
+        } catch (e) { return send(res, 502, { error: e.message }); }
+      }
+    }
     // Connect a restaurant's Square account (access token stays on the server)
     const sqm = p.match(/^\/api\/admin\/restaurants\/([a-z0-9-]+)\/square(\/import)?$/);
     if (sqm) {
       const r = findR(sqm[1]); if (!r) return send(res, 404, { error: 'not found' });
       if (!sqm[2] && req.method === 'DELETE') { delete r.square; saveRestaurants(); return send(res, 200, publicRest(r)); }
       if (!sqm[2] && req.method === 'PUT') {
+        if (r.clover) return send(res, 400, { error: 'This restaurant is connected to Clover. Disconnect Clover first.' });
         const b = await readBody(req);
         const env = b.env === 'production' ? 'production' : 'sandbox';
         const next = { env, token: String(b.token || (r.square && r.square.token) || '').trim(), appId: String(b.appId || '').trim(), locationId: String(b.locationId || '').trim() };
@@ -630,7 +760,8 @@ http.createServer(async (req, res) => {
   const rest = /^\/[a-z0-9-]+$/.test(p) ? findR(p.slice(1)) : null;
   if (rest) {
     const live = { restaurant: { slug: rest.slug, name: rest.name }, free: rest.menu.free, popular: rest.menu.popular, cravings: cravingsOf(rest.menu),
-      pay: rest.square && rest.square.appId ? { provider: 'square', appId: rest.square.appId, locationId: rest.square.locationId, sandbox: rest.square.env !== 'production' } : null, items: rest.menu.items.filter((i) => i.on !== false && i.p > 0) };
+      pay: rest.square && rest.square.appId ? { provider: 'square', appId: rest.square.appId, locationId: rest.square.locationId, sandbox: rest.square.env !== 'production' }
+        : rest.clover && rest.clover.ecomPublic && rest.clover.ecomPrivate ? { provider: 'clover', publicKey: rest.clover.ecomPublic, merchantId: rest.clover.mid, sandbox: rest.clover.env !== 'production' } : null, items: rest.menu.items.filter((i) => i.on !== false && i.p > 0) };
     if (live.items.filter((i) => i.k !== 'drink').length < 2) return send(res, 200, simplePage(`Foodol is coming to ${rest.name}`, '<p>Foodol is setting up the menu here. Check back soon!</p>'), MIME['.html']);
     const img = `https://d2ol7oe51mr4n9.cloudfront.net/user_3GsbRE1t9hIx7tjNcLo5jEaZ8ao/${/^[0-9a-f-]{36}$/.test(rest.ogImage || '') ? rest.ogImage : OG_GENERIC}.jpg`;
     const title = `${rest.name} · Let Foodol pick your perfect meal`;

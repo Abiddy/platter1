@@ -179,6 +179,9 @@ h1{font-size:38px;line-height:1.02;letter-spacing:-.03em;font-weight:800}
 #pay #sqApple{display:none;width:100%;height:48px;border-radius:12px;-webkit-appearance:-apple-pay-button;-apple-pay-button-type:plain;-apple-pay-button-style:black;margin-bottom:8px}
 #pay .or{text-align:center;color:var(--muted);font-size:13px;margin:12px 0 4px;display:none}
 #pay #sqCard{margin-top:10px;min-height:90px}
+#pay #clCard{display:none;margin-top:10px;grid-template-columns:1fr 1fr;gap:8px}
+#pay #clCard .cf{height:48px;border:2px solid #e3ece6;border-radius:14px;padding:0 10px;background:#fff;overflow:hidden}
+#pay #clCard .cf.wide{grid-column:1/-1}
 #pay .perr{color:#c0392b;font-size:14px;min-height:18px;margin-top:6px}
 #pay .btn{width:100%;margin-top:8px}
 #pay .fine{font-size:12px;color:var(--muted);margin-top:10px;text-align:center}
@@ -384,10 +387,11 @@ h1{font-size:38px;line-height:1.02;letter-spacing:-.03em;font-weight:800}
     <div class="wallet"><button type="button" id="sqApple" aria-label="Pay with Apple Pay"></button><div id="sqGoogle"></div></div>
     <div class="or" id="payOr">or pay with card</div>
     <div id="sqCard"></div>
+    <div id="clCard"><div class="cf wide" id="clNum"></div><div class="cf" id="clDate"></div><div class="cf" id="clCvv"></div><div class="cf wide" id="clZip"></div></div>
     <div class="perr" id="payErr"></div>
     <button class="btn" type="submit" id="payGo">Pay</button>
   </form>
-  <p class="fine">Secure checkout by Square. Your order goes straight to the kitchen. <a href="/privacy" target="_blank" rel="noopener">Privacy</a></p>
+  <p class="fine">Secure checkout by <span id="payBy">Square</span>. Your order goes straight to the kitchen. <a href="/privacy" target="_blank" rel="noopener">Privacy</a></p>
 </div></div>
 <div id="reward" role="dialog" aria-modal="true" aria-labelledby="rwTitle">
   <div class="rays"></div>
@@ -620,17 +624,37 @@ $('choose').onclick = () => {
 };
 
 /* pay online with Square (restaurants connected to Square) */
-const PAY = MENU.pay && MENU.pay.provider === 'square' ? MENU.pay : null;
+const PAY = MENU.pay && ['square', 'clover'].includes(MENU.pay.provider) ? MENU.pay : null;
+let clv = null, clCardMethod = null;
 if (PAY) $('choose').textContent = 'Order & pay';
 let payBody = null, sqPayments = null, sqCard = null, sqWallets = [], payQuote = null;
 const cents = (c) => money(c / 100);
-function loadSq(){
-  if (window.Square) return Promise.resolve();
-  return new Promise((ok, bad) => { const sc = document.createElement('script'); sc.src = PAY.sandbox ? 'https://sandbox.web.squarecdn.com/v1/square.js' : 'https://web.squarecdn.com/v1/square.js'; sc.onload = ok; sc.onerror = bad; document.head.appendChild(sc); });
+function loadScript(src, ready){
+  if (ready()) return Promise.resolve();
+  return new Promise((ok, bad) => { const sc = document.createElement('script'); sc.src = src; sc.onload = ok; sc.onerror = bad; document.head.appendChild(sc); });
+}
+const loadSq = () => loadScript(PAY.sandbox ? 'https://sandbox.web.squarecdn.com/v1/square.js' : 'https://web.squarecdn.com/v1/square.js', () => !!window.Square);
+// Clover's hosted card fields: the card number never touches Foodol.
+async function setupClover(){
+  await loadScript(PAY.sandbox ? 'https://checkout.sandbox.dev.clover.com/sdk.js' : 'https://checkout.clover.com/sdk.js', () => !!window.Clover);
+  if (clCardMethod) return;
+  $('sqCard').style.display = 'none'; $('clCard').style.display = 'grid';
+  clv = new window.Clover(PAY.publicKey, {merchantId: PAY.merchantId});
+  const el = clv.elements(), st = {body: {fontFamily: 'Inter, system-ui, sans-serif', fontSize: '16px'}, input: {fontSize: '16px', padding: '12px 4px'}};
+  el.create('CARD_NUMBER', st).mount('#clNum'); el.create('CARD_DATE', st).mount('#clDate');
+  el.create('CARD_CVV', st).mount('#clCvv'); el.create('CARD_POSTAL_CODE', st).mount('#clZip');
+  clCardMethod = { tokenize: async () => {
+    const r = await clv.createToken();
+    if (r && r.token) return {status: 'OK', token: r.token};
+    const m = r && r.errors ? Object.values(r.errors).filter(Boolean)[0] : '';
+    return {status: 'ERR', errors: [{message: m || 'Check your card details.'}]};
+  } };
 }
 async function openPay(body){
   payBody = body; payQuote = null;
   $('payTest').style.display = PAY.sandbox ? '' : 'none';
+  $('payBy').textContent = PAY.provider === 'clover' ? 'Clover' : 'Square';
+  $('payTest').textContent = PAY.provider === 'clover' ? 'Test mode: use card 4005 5717 0222 2222, any future date, any CVV and ZIP. No real charge.' : 'Test mode: use card 4111 1111 1111 1111, any future date, any CVV. No real charge.';
   $('payErr').textContent = ''; $('payGo').disabled = true; $('payGo').textContent = 'Getting your total…';
   $('payLines').innerHTML = body.items.map((i) => `<div class="ln"><span>${i.q}×</span><span class="n">${esc(i.n)}</span><span>${money(i.p * i.q)}</span></div>`).join('') + (body.extra ? `<div class="ln free"><span>1×</span><span class="n">${esc(body.extra)}</span><span>FREE</span></div>` : '');
   $('paySum').innerHTML = '';
@@ -650,6 +674,7 @@ async function openPay(body){
   } catch (e) { $('payErr').textContent = (e && e.message) || 'Couldn’t reach the restaurant. Try again in a moment.'; $('payGo').textContent = 'Pay'; }
 }
 async function setupSq(total){
+  if (PAY.provider === 'clover') return setupClover();
   await loadSq();
   sqPayments = sqPayments || window.Square.payments(PAY.appId, PAY.locationId);
   if (!sqCard) { sqCard = await sqPayments.card(); await sqCard.attach('#sqCard'); }
@@ -680,7 +705,7 @@ async function payWith(method){
   } catch (e) { $('payErr').textContent = e.message || 'Payment didn’t go through. Try again.'; }
   go.disabled = false; go.textContent = 'Pay ' + cents(payQuote.total);
 }
-$('payForm').onsubmit = (e) => { e.preventDefault(); if (sqCard) payWith(sqCard); };
+$('payForm').onsubmit = (e) => { e.preventDefault(); const m = PAY && PAY.provider === 'clover' ? clCardMethod : sqCard; if (m) payWith(m); };
 $('pay').addEventListener('click', (e) => { if (e.target === $('pay') || e.target.hasAttribute('data-close')) $('pay').classList.remove('on'); });
 
 /* build your own */
