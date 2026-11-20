@@ -58,7 +58,56 @@ h2{font-size:26px;font-weight:800;letter-spacing:-.02em}
 .slugrow span{padding:12px 0 12px 14px;color:var(--mut);white-space:nowrap}
 .slugrow input{border:0;outline:none;padding:12px 14px 12px 2px;flex:1;min-width:0}
 .hint{font-size:13px;color:var(--mut)}
-dialog{border:0;border-radius:24px;padding:28px;width:min(400px,92vw);box-shadow:0 20px 60px rgba(0,0,0,.2)}
+dialog{border:0;border-radius:24px;padding:28px;width:min(400px,92vw);box-shadow:0 20px 60px rgba(0,0,0,.2);margin:auto;position:fixed;inset:0;max-height:calc(100vh - 32px);overflow:auto}
+dialog.modal{padding:0;width:min(600px,94vw);border-radius:22px;overflow:hidden;display:none;flex-direction:column}
+dialog.modal[open]{display:flex}
+dialog.modal form{display:flex;flex-direction:column;max-height:calc(100vh - 32px);min-height:0}
+.modal .mh{display:flex;gap:14px;align-items:flex-start;padding:22px 24px 18px;border-bottom:1px solid var(--line)}
+.modal .logo{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;font-weight:800;font-size:20px;color:#fff;flex:none}
+.modal .sqlogo{background:#111}.modal .cvlogo{background:#1b8a3a}
+.modal .mh h3{font-size:20px;margin:0}
+.modal .mhs{margin:2px 0 0;font-size:14px;color:var(--ink2)}
+.modal .x{margin-left:auto;font-size:26px;line-height:1;color:var(--mut);width:34px;height:34px;border-radius:10px}.modal .x:hover{background:var(--soft)}
+.modal .mb{padding:6px 24px 18px;overflow:auto;min-height:0}
+.modal .sec{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--mut);margin:18px 0 8px}
+.modal .secn{text-transform:none;letter-spacing:0;font-weight:500;margin-left:6px;color:var(--mut)}
+.modal .seg{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.modal .seg button{border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;text-align:left;font-weight:700;font-size:14.5px;background:#fff}
+.modal .seg button small{display:block;font-weight:500;font-size:12.5px;color:var(--mut);margin-top:1px}
+.modal .seg button.on{border-color:var(--g);background:var(--soft);box-shadow:inset 0 0 0 1px var(--g)}
+.modal .fld{margin-bottom:12px}
+.modal .lbl{display:flex;align-items:center;gap:8px;margin-bottom:5px}
+.modal .lbl label{font-weight:700;font-size:14px}
+.modal .saved{display:none;background:var(--soft);color:var(--gd);font-size:11.5px;font-weight:700;border-radius:999px;padding:2px 8px}
+.modal .saved.on{display:inline-block}
+.modal .opt{font-size:12px;color:var(--mut)}
+.modal .inw{position:relative}
+.modal .in{margin:0;padding:11px 14px;font-size:15px}
+.modal .in.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13.5px;letter-spacing:.01em}
+.modal .in.mono::placeholder{font-family:Outfit,system-ui,sans-serif;font-size:14.5px;letter-spacing:0}
+.modal .inw .in{padding-right:46px}
+.modal .eye{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:34px;height:34px;border-radius:9px;color:var(--mut);display:grid;place-items:center}
+.modal .eye:hover{background:var(--soft);color:var(--ink)}
+.modal .eye svg{width:18px;height:18px}
+.modal .eye.on{color:var(--gd)}
+.modal .hint{font-size:12.5px;color:var(--mut);margin-top:5px;line-height:1.45}
+.modal .hint code{font-family:ui-monospace,Menlo,monospace;font-size:12px;background:#f2f5f3;border-radius:5px;padding:1px 4px}
+.modal .perm{margin-top:16px;border:1px solid var(--line);border-radius:14px;padding:14px 16px;background:#fbfcfb}
+.modal .ph{font-weight:700;font-size:14px;margin-bottom:8px}
+.modal .perm ul{list-style:none;display:grid;gap:5px;font-size:13.5px;color:var(--ink2);margin:0 0 8px}
+.modal .perm li{display:flex;gap:8px;align-items:flex-start}
+.modal .can li::before{content:"✓";color:var(--gd);font-weight:800}
+.modal .cant li::before{content:"✕";color:#b3261e;font-weight:800}
+.modal .pf{font-size:12.5px;color:var(--mut);border-top:1px dashed var(--line);padding-top:8px}
+.modal .how{margin-top:12px;font-size:13.5px;color:var(--ink2)}
+.modal .how summary{cursor:pointer;font-weight:700;color:var(--gd)}
+.modal .how ol{margin:8px 0 0 18px;display:grid;gap:4px}
+.modal .err{margin-top:10px}
+.modal .mf{display:flex;align-items:center;gap:8px;padding:14px 24px;border-top:1px solid var(--line);background:#fafcfb}
+.modal .mf .sp{flex:1}
+.modal .mf .btn{padding:10px 20px}
+.modal .lnk{font-weight:600;font-size:14px}.modal .lnk.danger{color:#b3261e}
+@media (max-width:520px){.modal .seg{grid-template-columns:1fr}.modal .mf{flex-wrap:wrap}.modal .lnk{width:100%;text-align:left;order:3}}
 dialog::backdrop{background:rgba(18,58,34,.35)}
 dialog h3{font-size:21px;font-weight:800;margin-bottom:4px}
 dialog p{color:var(--ink2);margin-bottom:16px;font-size:15px}
@@ -107,31 +156,82 @@ dialog .in{margin-bottom:8px}
     <div style="display:flex;gap:8px;margin-top:6px"><button type="button" class="btn2" id="dlX" style="flex:1">Cancel</button><button class="btn" style="flex:1" id="dlGo">Save login</button></div>
   </form>
 </dialog>
-<dialog id="sq">
+<dialog id="sq" class="modal">
   <form id="sqf" method="dialog">
-    <h3 id="sqT">Connect Square</h3>
-    <p>Orders and payments go straight to the restaurant’s Square POS. Find these in developer.squareup.com → your app (Sandbox tab for test mode, Production for live).</p>
-    <select class="in" id="sqEnv"><option value="sandbox">Test mode (sandbox, fake cards)</option><option value="production">Live (real payments)</option></select>
-    <input class="in" id="sqApp" placeholder="Application ID (sq0idp-… or sandbox-sq0idb-…)" autocomplete="off" required>
-    <input class="in" id="sqTok" type="password" placeholder="Access token" autocomplete="off">
-    <input class="in" id="sqLoc" placeholder="Location ID (optional)" autocomplete="off">
-    <div class="err" id="sqErr"></div>
-    <div style="display:flex;gap:8px;margin-top:6px"><button type="button" class="btn2" id="sqX" style="flex:1">Cancel</button><button class="btn" style="flex:1" id="sqGo">Connect</button></div>
-    <button type="button" class="btn2" id="sqOff" style="width:100%;margin-top:8px;color:#b3261e">Disconnect Square</button>
+    <div class="mh"><div class="logo sqlogo">■</div><div><h3 id="sqT">Connect Square</h3><p class="mhs">Online orders and payments go straight to the restaurant’s Square POS.</p></div><button type="button" class="x" data-x aria-label="Close">×</button></div>
+    <div class="mb">
+      <div class="sec">Mode</div>
+      <input type="hidden" id="sqEnv" value="sandbox">
+      <div class="seg" data-for="sqEnv"><button type="button" data-v="production">Live <small>Real payments</small></button><button type="button" data-v="sandbox">Test mode <small>Fake cards, no charges</small></button></div>
+      <div class="sec">Square keys</div>
+      <div class="fld">
+        <div class="lbl"><label for="sqApp">Application ID</label></div>
+        <div class="inw"><input class="in mono" id="sqApp"  placeholder="sq0idp-…" autocomplete="off" spellcheck="false" required></div>
+        <div class="hint">Starts with <code>sq0idp-</code> (live) or <code>sandbox-sq0idb-</code> (test).</div>
+      </div>
+      <div class="fld">
+        <div class="lbl"><label for="sqTok">Access token</label><span class="saved" id="sqTokSaved">Saved</span></div>
+        <div class="inw"><input class="in mono" id="sqTok" type="password" placeholder="EAAA…" autocomplete="off" spellcheck="false"><button type="button" class="eye" data-eye aria-label="Show"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
+        <div class="hint">Secret. Stored only on Foodol’s server and never shown to guests.</div>
+      </div>
+      <div class="fld">
+        <div class="lbl"><label for="sqLoc">Location ID</label><span class="opt">Optional</span></div>
+        <div class="inw"><input class="in mono" id="sqLoc"  placeholder="L8XXXXXXXXXXX" autocomplete="off" spellcheck="false"></div>
+        <div class="hint">Leave blank to use the restaurant’s first active location.</div>
+      </div>
+
+      <div class="perm">
+        <div class="ph">What Foodol uses</div>
+        <ul class="can"><li>Reads the menu and prices</li><li>Calculates tax on each order</li><li>Creates pickup orders placed through Foodol</li><li>Charges the guest’s card for those orders</li></ul>
+        <ul class="cant"><li>Doesn’t read past sales, reports or customers</li><li>Doesn’t change menus, prices or settings</li><li>Doesn’t touch payouts or bank details</li></ul>
+      </div>
+      <details class="how"><summary>Where do I find these?</summary><ol><li>Go to <b>developer.squareup.com</b> and open the app.</li><li>Choose <b>Production</b> (live) or <b>Sandbox</b> (test) at the top.</li><li><b>Credentials</b> shows the Application ID and Access token.</li><li><b>Locations</b> shows the Location ID.</li></ol></details>
+      <div class="err" id="sqErr"></div>
+    </div>
+    <div class="mf"><button type="button" class="lnk danger" id="sqOff">Disconnect Square</button><span class="sp"></span><button type="button" class="btn2" id="sqX">Cancel</button><button class="btn" id="sqGo">Connect</button></div>
   </form>
 </dialog>
-<dialog id="cv">
+<dialog id="cv" class="modal">
   <form id="cvf" method="dialog">
-    <h3 id="cvT">Connect Clover</h3>
-    <p>Orders go straight to the restaurant’s Clover POS. From the restaurant’s Clover web dashboard: <b>Merchant ID</b> is in the address bar (…/merchants/<b>XXXXXXXXXXXXX</b>/…), the <b>API token</b> is under Setup → API Tokens (allow Inventory read, Orders read+write, Merchant read), and the <b>Ecommerce keys</b> are under Setup → Ecommerce → Ecommerce API Tokens (type “Hosted iFrame + API”).</p>
-    <select class="in" id="cvEnv"><option value="production">Live (real Clover account)</option><option value="sandbox">Test mode (Clover sandbox)</option></select>
-    <input class="in" id="cvMid" placeholder="Merchant ID (13 characters)" autocomplete="off" required>
-    <input class="in" id="cvTok" type="password" placeholder="API token" autocomplete="off">
-    <input class="in" id="cvPub" placeholder="Ecommerce public key (for online payments)" autocomplete="off">
-    <input class="in" id="cvPriv" type="password" placeholder="Ecommerce private key (for online payments)" autocomplete="off">
-    <div class="err" id="cvErr"></div>
-    <div style="display:flex;gap:8px;margin-top:6px"><button type="button" class="btn2" id="cvX" style="flex:1">Cancel</button><button class="btn" style="flex:1" id="cvGo">Connect</button></div>
-    <button type="button" class="btn2" id="cvOff" style="width:100%;margin-top:8px;color:#b3261e">Disconnect Clover</button>
+    <div class="mh"><div class="logo cvlogo">C</div><div><h3 id="cvT">Connect Clover</h3><p class="mhs">Online orders go straight to the restaurant’s Clover POS, and payments land in their Clover account.</p></div><button type="button" class="x" data-x aria-label="Close">×</button></div>
+    <div class="mb">
+      <div class="sec">Mode</div>
+      <input type="hidden" id="cvEnv" value="production">
+      <div class="seg" data-for="cvEnv"><button type="button" data-v="production">Live <small>The restaurant’s real Clover</small></button><button type="button" data-v="sandbox">Test mode <small>Clover sandbox</small></button></div>
+      <div class="sec">Clover account</div>
+      <div class="fld">
+        <div class="lbl"><label for="cvMid">Merchant ID</label></div>
+        <div class="inw"><input class="in mono" id="cvMid"  placeholder="XXXXXXXXXXXXX" autocomplete="off" spellcheck="false" required></div>
+        <div class="hint">13 characters, in the dashboard address bar: …/merchants/<b>XXXXXXXXXXXXX</b>/…</div>
+      </div>
+      <div class="fld">
+        <div class="lbl"><label for="cvTok">API token</label><span class="saved" id="cvTokSaved">Saved</span></div>
+        <div class="inw"><input class="in mono" id="cvTok" type="password" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" autocomplete="off" spellcheck="false"><button type="button" class="eye" data-eye aria-label="Show"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
+        <div class="hint">Setup → API Tokens. Tick only <b>Inventory: Read</b> and <b>Orders: Write</b>.</div>
+      </div>
+
+      <div class="sec">Online payments <span class="secn">Needed for guests to pay in Foodol</span></div>
+      <div class="fld">
+        <div class="lbl"><label for="cvPub">Ecommerce public key</label><span class="saved" id="cvPubSaved">Saved</span></div>
+        <div class="inw"><input class="in mono" id="cvPub"  placeholder="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" autocomplete="off" spellcheck="false"></div>
+        <div class="hint">Setup → Ecommerce → Ecommerce API Tokens, type “Hosted iFrame + API”. Safe to show in the browser.</div>
+      </div>
+      <div class="fld">
+        <div class="lbl"><label for="cvPriv">Ecommerce private key</label><span class="saved" id="cvPrivSaved">Saved</span></div>
+        <div class="inw"><input class="in mono" id="cvPriv" type="password" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" autocomplete="off" spellcheck="false"><button type="button" class="eye" data-eye aria-label="Show"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button></div>
+        <div class="hint">Same page. Secret: stored only on Foodol’s server.</div>
+      </div>
+
+      <div class="perm">
+        <div class="ph">What Foodol can do with these keys</div>
+        <ul class="can"><li>Read the menu: item names, prices, categories</li><li>Add new pickup orders placed through Foodol</li><li>Charge the guest’s card for those orders. Money goes straight to the restaurant’s Clover account</li></ul>
+        <ul class="cant"><li>Can’t see past sales, reports or other orders</li><li>Can’t see customers, staff or timecards</li><li>Can’t touch payouts, bank details or refunds</li><li>Can’t change the menu, prices or settings</li></ul>
+        <div class="pf">The restaurant can cut Foodol off anytime by deleting the token in their Clover dashboard.</div>
+      </div>
+      <details class="how"><summary>Where do I find these?</summary><ol><li>Log in at <b>clover.com</b> on a computer.</li><li>Copy the Merchant ID from the address bar.</li><li><b>Account &amp; Setup → API Tokens → Create new token</b>. Name it “Foodol” and tick Inventory (Read) and Orders (Write).</li><li><b>Account &amp; Setup → Ecommerce → Ecommerce API Tokens → Create new token</b>, type “Hosted iFrame + API”. Clover asks for two-step verification first.</li></ol></details>
+      <div class="err" id="cvErr"></div>
+    </div>
+    <div class="mf"><button type="button" class="lnk danger" id="cvOff">Disconnect Clover</button><span class="sp"></span><button type="button" class="btn2" id="cvX">Cancel</button><button class="btn" id="cvGo">Connect</button></div>
   </form>
 </dialog>
 <div id="toast"></div>
@@ -257,15 +357,23 @@ function openLogin(slug){
   $('dlE').value = r.owner ? r.owner.email : ''; $('dlW').value = ''; $('dlErr').textContent = '';
   $('dl').showModal();
 }
+const syncSeg = (id) => document.querySelectorAll(`.seg[data-for="${id}"] button`).forEach((b) => b.classList.toggle('on', b.dataset.v === $(id).value));
+document.querySelectorAll('.seg').forEach((g) => g.addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; $(g.dataset.for).value = b.dataset.v; syncSeg(g.dataset.for); }));
+document.querySelectorAll('[data-eye]').forEach((b) => b.onclick = () => { const i = b.parentElement.querySelector('input'); const show = i.type === 'password'; i.type = show ? 'text' : 'password'; b.classList.toggle('on', show); b.setAttribute('aria-label', show ? 'Hide' : 'Show'); });
+document.querySelectorAll('.modal [data-x]').forEach((b) => b.onclick = () => b.closest('dialog').close());
+const resetEyes = (d) => d.querySelectorAll('[data-eye]').forEach((b) => { b.parentElement.querySelector('input').type = 'password'; b.classList.remove('on'); });
 let cvSlug = null;
 function openCv(slug){
   const r = D.restaurants.find((x) => x.slug === slug); cvSlug = slug;
   $('cvT').textContent = (r.clover ? 'Clover for ' : 'Connect Clover for ') + r.name;
   $('cvEnv').value = r.clover ? r.clover.env : 'production'; $('cvMid').value = r.clover ? r.clover.mid : '';
   for (const id of ['cvTok', 'cvPub', 'cvPriv']) $(id).value = '';
-  $('cvTok').placeholder = r.clover ? 'API token (saved, leave blank to keep)' : 'API token';
-  $('cvPub').placeholder = r.clover && r.clover.canPay ? 'Ecommerce public key (saved)' : 'Ecommerce public key (for online payments)';
-  $('cvPriv').placeholder = r.clover && r.clover.canPay ? 'Ecommerce private key (saved)' : 'Ecommerce private key (for online payments)';
+  $('cvTok').placeholder = r.clover ? 'Saved. Leave blank to keep it' : 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx';
+  $('cvPub').placeholder = r.clover && r.clover.canPay ? 'Saved. Leave blank to keep it' : 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx';
+  $('cvPriv').placeholder = r.clover && r.clover.canPay ? 'Saved. Leave blank to keep it' : 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx';
+  $('cvTokSaved').classList.toggle('on', !!r.clover); $('cvPubSaved').classList.toggle('on', !!(r.clover && r.clover.canPay)); $('cvPrivSaved').classList.toggle('on', !!(r.clover && r.clover.canPay));
+  $('cvGo').textContent = r.clover ? 'Save changes' : 'Connect';
+  syncSeg('cvEnv'); resetEyes($('cv'));
   $('cvErr').textContent = ''; $('cvOff').style.display = r.clover ? '' : 'none'; $('cv').showModal();
 }
 $('cvX').onclick = () => $('cv').close();
@@ -273,7 +381,7 @@ $('cvOff').onclick = async () => { if (!confirm('Disconnect Clover? Guests will 
 $('cvf').onsubmit = async (e) => {
   e.preventDefault(); $('cvErr').textContent = ''; $('cvGo').disabled = true; $('cvGo').textContent = 'Checking…';
   const x = await post('/api/admin/restaurants/' + cvSlug + '/clover', {env: $('cvEnv').value, mid: $('cvMid').value, token: $('cvTok').value, ecomPublic: $('cvPub').value, ecomPrivate: $('cvPriv').value}, 'PUT');
-  const j = await x.json().catch(() => ({})); $('cvGo').disabled = false; $('cvGo').textContent = 'Connect';
+  const j = await x.json().catch(() => ({})); $('cvGo').disabled = false; $('cvGo').textContent = cvSlug && D.restaurants.find((x) => x.slug === cvSlug).clover ? 'Save changes' : 'Connect';
   if (!x.ok) { $('cvErr').textContent = j.error || 'Could not connect.'; return; }
   $('cv').close(); toast('Clover connected · ' + (j.clover.merchantName || '')); load();
 };
@@ -282,8 +390,9 @@ function openSq(slug){
   const r = D.restaurants.find((x) => x.slug === slug); sqSlug = slug;
   $('sqT').textContent = (r.square ? 'Square for ' : 'Connect Square for ') + r.name;
   $('sqEnv').value = r.square ? r.square.env : 'sandbox'; $('sqApp').value = r.square ? r.square.appId : '';
-  $('sqTok').value = ''; $('sqTok').placeholder = r.square ? 'Access token (saved, leave blank to keep)' : 'Access token';
+  $('sqTok').value = ''; $('sqTok').placeholder = r.square ? 'Saved. Leave blank to keep it' : 'EAAA…';
   $('sqLoc').value = r.square ? r.square.locationId : ''; $('sqErr').textContent = ''; $('sqOff').style.display = r.square ? '' : 'none';
+  $('sqTokSaved').classList.toggle('on', !!r.square); $('sqGo').textContent = r.square ? 'Save changes' : 'Connect'; syncSeg('sqEnv'); resetEyes($('sq'));
   $('sq').showModal();
 }
 $('sqX').onclick = () => $('sq').close();
@@ -291,7 +400,7 @@ $('sqOff').onclick = async () => { if (!confirm('Disconnect Square? Guests will 
 $('sqf').onsubmit = async (e) => {
   e.preventDefault(); $('sqErr').textContent = ''; $('sqGo').disabled = true; $('sqGo').textContent = 'Checking…';
   const x = await post('/api/admin/restaurants/' + sqSlug + '/square', {env: $('sqEnv').value, appId: $('sqApp').value, token: $('sqTok').value, locationId: $('sqLoc').value}, 'PUT');
-  const j = await x.json().catch(() => ({})); $('sqGo').disabled = false; $('sqGo').textContent = 'Connect';
+  const j = await x.json().catch(() => ({})); $('sqGo').disabled = false; $('sqGo').textContent = sqSlug && D.restaurants.find((x) => x.slug === sqSlug).square ? 'Save changes' : 'Connect';
   if (!x.ok) { $('sqErr').textContent = j.error || 'Could not connect.'; return; }
   $('sq').close(); toast('Square connected · ' + (j.square.locationName || '')); load();
 };

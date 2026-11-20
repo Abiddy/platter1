@@ -581,13 +581,16 @@ http.createServer(async (req, res) => {
         if (!next.token) return send(res, 400, { error: 'Paste the Clover API token.' });
         try {
           const probe = { slug: r.slug, clover: next };
-          const m = await cl(probe, `/v3/merchants/${next.mid}`);
-          let types = []; try { types = (await cl(probe, `/v3/merchants/${next.mid}/order_types`)).elements || []; } catch { /* token may lack this permission */ }
+          // Only Inventory: Read is required to connect. Merchant name and order types are nice-to-haves
+          // that need extra permissions, so we skip them quietly if the token doesn't allow them.
+          await cl(probe, `/v3/merchants/${next.mid}/items?limit=1`);
+          let m = {}; try { m = await cl(probe, `/v3/merchants/${next.mid}`); } catch { /* no Merchant: Read */ }
+          let types = []; try { types = (await cl(probe, `/v3/merchants/${next.mid}/order_types`)).elements || []; } catch { /* no Orders: Read */ }
           const t = types.find((x) => /pick ?up|online|to ?go|take ?out/i.test(x.label || '')) || null;
-          r.clover = { ...next, merchantName: m.name || '', orderTypeId: t ? t.id : undefined, orderTypeName: t ? t.label : '' };
+          r.clover = { ...next, merchantName: m.name || old.merchantName || r.name, orderTypeId: t ? t.id : old.orderTypeId, orderTypeName: t ? t.label : (old.orderTypeName || '') };
           saveRestaurants();
           return send(res, 200, publicRest(r));
-        } catch (e) { return send(res, 400, { error: e.status === 401 ? 'Clover didn’t accept that API token for this merchant ID.' : e.message }); }
+        } catch (e) { return send(res, 400, { error: e.status === 401 || e.status === 403 ? 'Clover didn’t accept that API token for this merchant ID. Check that it’s the right merchant and that Inventory: Read is ticked.' : e.message }); }
       }
       if (clm[2] && req.method === 'POST') {
         if (!r.clover) return send(res, 400, { error: 'Connect Clover first.' });
