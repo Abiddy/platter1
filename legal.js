@@ -1,8 +1,8 @@
 // Foodol legal documents. Written to match exactly how the app works today.
 // When Foodol starts handling data in a new way, update the text AND bump VERSION
 // (restaurants are asked to accept the Restaurant Agreement again when VERSION changes).
-const VERSION = '2026-11-19';
-const UPDATED = 'November 19, 2026';
+const VERSION = '2026-11-20';
+const UPDATED = 'November 20, 2026';
 
 const CONTACT = 'our contact page at <a href="/contact">foodol.app/contact</a>';
 
@@ -151,7 +151,7 @@ const restaurant = `
 
 <h2 id="trial">2. Free trial, fees and cancellation</h2>
 <ul>
-<li><b>Free trial:</b> unless agreed otherwise in writing, your first 14 days are free. Nothing is charged during the trial, and you can stop at any time.</li>
+<li><b>Free trial:</b> unless agreed otherwise in writing, your first 7 days are free. Nothing is charged during the trial, and you can stop at any time.</li>
 <li><b>Fees:</b> after the trial, fees are those in your order form, invoice or written quote from Foodol (monthly or yearly). Fees don’t include sales tax, which is added where it applies.</li>
 <li><b>Cancelling:</b> you can cancel at any time by telling us in writing (email or through ${CONTACT}). Monthly plans end at the end of the current month. Yearly plans run to the end of the paid year and are not refunded for unused months, unless the law requires otherwise.</li>
 <li><b>Foodol does not take a commission</b> on your orders.</li>
