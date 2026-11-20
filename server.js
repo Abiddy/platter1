@@ -9,6 +9,7 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const LEGAL = require('./legal');
 
 const PORT = process.env.PORT || 3000;
 const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
@@ -19,6 +20,7 @@ const PUBLIC = path.join(__dirname, 'public');
 const LOG = path.join(DATA_DIR, 'orders.jsonl');
 const GUESTS_LOG = path.join(DATA_DIR, 'guests.jsonl');
 const LEADS_LOG = path.join(DATA_DIR, 'leads.jsonl');
+const CONTACT_LOG = path.join(DATA_DIR, 'contact.jsonl');
 const REST_FILE = path.join(DATA_DIR, 'restaurants.json');
 const FIRST = 'sausalido';
 const OG_GENERIC = '7a0ab0e2-ee00-4d9d-a327-7715c344b96b'; // link-preview image: Foodol + "Let's pick the perfect meal" // the original restaurant; old data and old QR codes belong to it
@@ -196,7 +198,7 @@ async function sendCodeEmail(order, rest) {
 ${order.extra ? `<tr><td align="center" style="padding-top:18px"><span style="display:inline-block;background:#fff6e4;color:#b55d10;font-weight:700;border-radius:999px;padding:8px 16px;font-size:14px">Your free ${escH(order.extra)} is included</span></td></tr>` : ''}
 <tr><td align="center" style="font-size:13px;color:#7d8f84;padding-top:20px">${order.paid ? `Pick it up at the counter in about 20 minutes. Give the name ${escH(order.pickupName || '')}.${order.receiptUrl ? ` <a href="${escH(order.receiptUrl)}" style="color:#259a52">Receipt</a>` : ''}` : 'The cashier rings up your order and marks the code as used.'}</td></tr>
 </table>
-<p style="font-size:12px;color:#7d8f84;max-width:440px;margin:16px auto 0;text-align:center">You got this because you redeemed a Foodol code at ${escH(name)}. <a href="${unsub}" style="color:#7d8f84">Unsubscribe</a> · <a href="${APP_URL}/privacy" style="color:#7d8f84">Privacy</a></p>
+<p style="font-size:12px;color:#7d8f84;max-width:440px;margin:16px auto 0;text-align:center">You got this because you redeemed a Foodol code at ${escH(name)}. <a href="${unsub}" style="color:#7d8f84">Unsubscribe</a> · <a href="${APP_URL}/privacy" style="color:#7d8f84">Privacy</a> · <a href="${APP_URL}/terms" style="color:#7d8f84">Terms</a>${process.env.MAIL_ADDRESS ? `<br>Foodol · ${escH(process.env.MAIL_ADDRESS)}` : ''}</p>
 </td></tr></table></body></html>`;
   const text = `Show this at the counter at ${name}.\nYour Foodol code: #${order.code} (${order.title})\n` + order.items.map((i) => `${i.q}x ${i.n}  $${(i.p * i.q).toFixed(2)}`).join('\n') + (order.extra ? `\n1x ${order.extra}  FREE` : '') + `\nTotal $${order.total.toFixed(2)}\n\nUnsubscribe: ${unsub}`;
   try {
@@ -228,6 +230,47 @@ function simplePage(title, body) {
 }
 const file = (name) => fs.readFileSync(path.join(PUBLIC, name), 'utf8');
 
+// Shared look for the legal pages and the contact page.
+const MASCOT = 'https://d2ol7oe51mr4n9.cloudfront.net/user_3GsbRE1t9hIx7tjNcLo5jEaZ8ao/fe5e036c-785b-4e97-b270-c3a52036389d.svg';
+function docPage(title, body, { toc = '', sub = '', active = '' } = {}) {
+  const nav = Object.values(LEGAL.docs).map((d) => `<a href="${d.path}"${d.path === active ? ' class="on"' : ''}>${d.title}</a>`).join('') + `<a href="/contact"${active === '/contact' ? ' class="on"' : ''}>Contact</a>`;
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${escH(title)} · Foodol</title><meta name="robots" content="index,follow"><link rel="icon" href="${MASCOT}">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}body{font-family:Outfit,system-ui,sans-serif;color:#123a22;background:#f6f8f6;-webkit-font-smoothing:antialiased;line-height:1.6}
+a{color:#1d7f43}header{background:#003020}.hw{max-width:1040px;margin:0 auto;padding:16px 22px;display:flex;align-items:center;gap:10px}
+.logo{display:flex;align-items:center;gap:8px;color:#fff;font-weight:700;font-size:21px;text-decoration:none}.logo img{height:34px}
+.tabs{max-width:1040px;margin:0 auto;padding:0 22px;display:flex;gap:6px;flex-wrap:wrap;transform:translateY(-1px)}
+.tabs a{color:rgba(255,255,255,.75);text-decoration:none;font-weight:600;font-size:14.5px;padding:10px 14px;border-radius:12px 12px 0 0}.tabs a.on{background:#f6f8f6;color:#123a22}
+.wrap{max-width:1040px;margin:0 auto;padding:34px 22px 70px;display:grid;grid-template-columns:230px 1fr;gap:36px;align-items:start}
+.wrap.single{grid-template-columns:1fr;max-width:720px}
+aside{position:sticky;top:20px;font-size:14px}aside b{display:block;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:#7d8f84;margin-bottom:8px}
+aside a{display:block;color:#4c6656;text-decoration:none;padding:4px 0}aside a:hover{color:#123a22}
+article{background:#fff;border-radius:22px;padding:38px 42px;box-shadow:0 1px 2px rgba(18,58,34,.05)}
+h1{font-size:36px;letter-spacing:-.02em;line-height:1.1}.upd{color:#7d8f84;font-size:14px;margin:8px 0 22px}
+.lead{font-size:18px;color:#2c4a38;margin-bottom:10px}
+h2{font-size:21px;margin:30px 0 8px;letter-spacing:-.01em;scroll-margin-top:16px}h3{font-size:16.5px;margin:18px 0 6px}
+p,li{font-size:15.5px;color:#2c4a38}p{margin:8px 0}ul{margin:8px 0 8px 20px;display:grid;gap:5px}
+table{width:100%;border-collapse:collapse;margin:10px 0;font-size:14.5px}th,td{text-align:left;padding:9px 10px;border-bottom:1px solid #e6eee9;vertical-align:top}th{background:#f3f7f4;font-weight:700}
+.note{background:#fdf3cf;border-radius:14px;padding:12px 16px;font-size:14px;color:#6b5200;margin-top:26px}
+form .in{width:100%;font:inherit;font-size:16px;padding:12px 14px;border:1.5px solid #e1e9e4;border-radius:12px;margin-top:6px;background:#fff;outline:none}form .in:focus{border-color:#3dbe6e}
+form label{display:block;font-weight:700;font-size:14px;margin-top:14px}form textarea.in{min-height:130px;resize:vertical}
+.btn{margin-top:18px;background:#3dbe6e;color:#fff;border:0;font:inherit;font-weight:700;font-size:16px;border-radius:14px;padding:13px 22px;box-shadow:0 3px 0 #259a52;cursor:pointer}
+.msg{margin-top:12px;font-weight:600}.ok{color:#1d7f43}.bad{color:#b3261e}
+footer{text-align:center;color:#7d8f84;font-size:13.5px;padding:0 0 40px}footer a{color:#7d8f84;margin:0 8px}
+@media(max-width:800px){.wrap{grid-template-columns:1fr}aside{position:static;display:none}article{padding:26px 20px;border-radius:18px}h1{font-size:30px}}
+</style></head><body>
+<header><div class="hw"><a class="logo" href="/"><img src="${MASCOT}" alt="">Foodol</a></div><nav class="tabs">${nav}</nav></header>
+<div class="wrap${toc ? '' : ' single'}">${toc ? `<aside><b>On this page</b>${toc}</aside>` : ''}<article><h1>${escH(title)}</h1>${sub ? `<p class="upd">${sub}</p>` : ''}${body}</article></div>
+<footer>© ${new Date().getFullYear()} Foodol · <a href="/privacy">Privacy</a><a href="/terms">Terms</a><a href="/restaurant-terms">Restaurant Agreement</a><a href="/contact">Contact</a></footer>
+</body></html>`;
+}
+function legalPage(d) {
+  const toc = [...d.html.matchAll(/<h2 id="([^"]+)">([^<]+)<\/h2>/g)].map((m) => `<a href="#${m[1]}">${m[2]}</a>`).join('');
+  return docPage(d.title, d.html, { toc, sub: `Last updated ${LEGAL.UPDATED}`, active: d.path });
+}
+
 /* ---------- who is calling ---------- */
 const isAdmin = (req) => readToken(cookies(req).fd_admin, 'admin') === 'admin';
 // Restaurant the caller may manage: the owner's own, or any (?r=) for the Foodol admin.
@@ -248,7 +291,7 @@ function stats(r) {
   const last = os.reduce((m, o) => (o.createdAt > m ? o.createdAt : m), '');
   return { orders: os.length, redeemed: red.length, sales: Math.round(sales * 100) / 100, guests: gs.length, freeGiven: red.filter((o) => o.extra).length, lastOrder: last || null };
 }
-const publicRest = (r) => ({ slug: r.slug, name: r.name, createdAt: r.createdAt, owner: r.owner ? { email: r.owner.email } : null, stats: stats(r), items: r.menu.items.length,
+const publicRest = (r) => ({ slug: r.slug, name: r.name, createdAt: r.createdAt, accepted: r.accepted || null, owner: r.owner ? { email: r.owner.email } : null, stats: stats(r), items: r.menu.items.length,
   square: r.square ? { env: r.square.env, locationId: r.square.locationId, locationName: r.square.locationName || '', appId: r.square.appId, linked: r.menu.items.filter((i) => i.sq).length } : null,
   clover: r.clover ? { env: r.clover.env, mid: r.clover.mid, merchantName: r.clover.merchantName || '', orderType: r.clover.orderTypeName || '', canPay: !!(r.clover.ecomPublic && r.clover.ecomPrivate), linked: r.menu.items.filter((i) => i.cl).length } : null });
 
@@ -517,6 +560,19 @@ http.createServer(async (req, res) => {
     }
   }
 
+  /* contact form, including privacy (see / correct / delete my data) requests */
+  if (p === '/api/contact' && req.method === 'POST') {
+    if (tooMany(req)) return send(res, 429, { error: 'Too many tries. Wait a few minutes.' });
+    const b = await readBody(req);
+    if (b.website) return send(res, 200, { ok: true });
+    const msg = { at: new Date().toISOString(), id: crypto.randomBytes(6).toString('hex'), topic: ['question', 'data', 'restaurant', 'order'].includes(b.topic) ? b.topic : 'question',
+      name: clean(b.name, 60).trim(), email: cleanEmail(b.email), restaurant: clean(b.restaurant, 80).trim(), message: clean(b.message, 3000).trim(), done: false };
+    if (!msg.name || !msg.message) return send(res, 400, { error: 'Please add your name and a message.' });
+    if (!msg.email) return send(res, 400, { error: 'That email doesn’t look right.' });
+    fs.appendFileSync(CONTACT_LOG, JSON.stringify(msg) + '\n');
+    return send(res, 200, { ok: true });
+  }
+
   /* restaurant sign-ups from the landing page */
   if (p === '/api/lead' && req.method === 'POST') {
     if (tooMany(req)) return send(res, 429, { error: 'Too many tries. Wait a few minutes.' });
@@ -542,7 +598,16 @@ http.createServer(async (req, res) => {
     if (!isAdmin(req)) return send(res, 401, { error: 'login needed' });
     if (p === '/api/admin/restaurants' && req.method === 'GET') {
       const leads = fs.existsSync(LEADS_LOG) ? fs.readFileSync(LEADS_LOG, 'utf8').split('\n').filter(Boolean).map((l) => { try { return JSON.parse(l); } catch { return null; } }).filter(Boolean).reverse() : [];
-      return send(res, 200, { restaurants: restaurants.map(publicRest), leads, appUrl: APP_URL, emailOn: !!process.env.RESEND_API_KEY });
+      const cmap = new Map();
+      if (fs.existsSync(CONTACT_LOG)) for (const l of fs.readFileSync(CONTACT_LOG, 'utf8').split('\n')) { if (!l) continue; try { const m = JSON.parse(l); cmap.set(m.id, { ...(cmap.get(m.id) || {}), ...m }); } catch { /* skip */ } }
+      const messages = [...cmap.values()].filter((m) => m.message).sort((a, b) => b.at.localeCompare(a.at));
+      return send(res, 200, { restaurants: restaurants.map(publicRest), leads, messages, legalVersion: LEGAL.VERSION, appUrl: APP_URL, emailOn: !!process.env.RESEND_API_KEY });
+    }
+    const dm = p.match(/^\/api\/admin\/messages\/([a-f0-9]+)$/);
+    if (dm && req.method === 'PATCH') {
+      const b = await readBody(req);
+      fs.appendFileSync(CONTACT_LOG, JSON.stringify({ id: dm[1], done: !!b.done, doneAt: new Date().toISOString() }) + '\n');
+      return send(res, 200, { ok: true });
     }
     if (p === '/api/admin/restaurants' && req.method === 'POST') {
       const b = await readBody(req);
@@ -676,6 +741,20 @@ http.createServer(async (req, res) => {
       return send(res, 200, { ok: true, into: publicRest(to), ordersMoved: moved });
     }
     const nm = p.match(/^\/api\/admin\/restaurants\/([a-z0-9-]+)$/);
+    if (nm && req.method === 'DELETE') {
+      // Delete a restaurant and everything Foodol holds for it (menu, orders, guest list, POS keys, login).
+      const r = restaurants.find((x) => x.slug === nm[1]); if (!r) return send(res, 404, { error: 'not found' });
+      const b = await readBody(req);
+      if (String(b.confirm || '').trim().toLowerCase() !== r.name.trim().toLowerCase()) return send(res, 400, { error: 'Type the restaurant’s name exactly to confirm.' });
+      const at = new Date().toISOString();
+      append({ type: 'wipe', r: r.slug, at }); for (const [id, o] of orders) if (o.r === r.slug) orders.delete(id);
+      fs.appendFileSync(GUESTS_LOG, JSON.stringify({ wipe: r.slug, at }) + '\n'); for (const [k, g] of guests) if (g.r === r.slug) guests.delete(k);
+      for (const a of Object.keys(aliases)) if (aliases[a] === r.slug) delete aliases[a];
+      writeJSON(ALIAS_FILE, aliases);
+      restaurants = restaurants.filter((x) => x !== r); saveRestaurants();
+      console.log('[delete] restaurant', r.slug, 'deleted at', at);
+      return send(res, 200, { ok: true, deleted: r.slug, at });
+    }
     if (nm && req.method === 'PATCH') {
       const r = findR(nm[1]); if (!r) return send(res, 404, { error: 'not found' });
       const b = await readBody(req); const name = clean(b.name, 60).trim();
@@ -703,7 +782,15 @@ http.createServer(async (req, res) => {
     if (p === '/api/portal/data') {
       const all = [...orders.values()].filter((o) => o.r === r.slug).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
       const gl = [...guests.values()].filter((g) => g.r === r.slug).sort((a, b) => b.lastSeen.localeCompare(a.lastSeen));
-      return send(res, 200, { restaurant: { slug: r.slug, name: r.name, email: r.owner ? r.owner.email : null }, menu: { restaurant: r.name, ...r.menu }, orders: all.slice(0, 200), totalOrders: all.length, guests: gl, emailOn: !!process.env.RESEND_API_KEY, asAdmin: isAdmin(req) && !!url.searchParams.get('r'), appUrl: APP_URL });
+      return send(res, 200, { legal: { version: LEGAL.VERSION, accepted: !!(r.accepted && r.accepted.version === LEGAL.VERSION), acceptedAt: r.accepted ? r.accepted.at : null }, restaurant: { slug: r.slug, name: r.name, email: r.owner ? r.owner.email : null }, menu: { restaurant: r.name, ...r.menu }, orders: all.slice(0, 200), totalOrders: all.length, guests: gl, emailOn: !!process.env.RESEND_API_KEY, asAdmin: isAdmin(req) && !!url.searchParams.get('r'), appUrl: APP_URL });
+    }
+    if (p === '/api/portal/accept' && req.method === 'POST') {
+      if (isAdmin(req) && url.searchParams.get('r')) return send(res, 403, { error: 'Only the restaurant owner can accept the agreement.' });
+      const b = await readBody(req);
+      if (b.version !== LEGAL.VERSION || !b.agree) return send(res, 400, { error: 'Please tick the box to agree.' });
+      r.accepted = { version: LEGAL.VERSION, at: new Date().toISOString(), email: r.owner ? r.owner.email : null, ip: (req.headers['x-forwarded-for'] || req.socket.remoteAddress || '').split(',')[0].trim() };
+      saveRestaurants();
+      return send(res, 200, { ok: true, acceptedAt: r.accepted.at });
     }
     if (p === '/api/portal/menu' && req.method === 'PUT') {
       const mn = cleanMenu(await readBody(req));
@@ -743,13 +830,22 @@ http.createServer(async (req, res) => {
     if (ok && guests.has(r + ':' + em)) upsertGuest(r, em, { consent: false, unsub: true });
     return send(res, ok ? 200 : 400, simplePage(ok ? 'You’re unsubscribed' : 'Link not valid', ok ? `<p>${escH(em)} won’t get Foodol deals anymore. You’ll still get a copy of any code you redeem yourself.</p>` : '<p>This unsubscribe link looks broken. Reply to any Foodol email and we’ll remove you.</p>'), 'text/html; charset=utf-8');
   }
-  if (p === '/privacy') {
-    return send(res, 200, simplePage('Foodol privacy', `<p>Foodol helps you pick an order at participating restaurants. Here’s what we collect and why.</p>
-<p><b>What we collect.</b> When you redeem a code, the items in your order, your order total, and the email address you give us. We don’t collect payment details; you pay the restaurant directly.</p>
-<p><b>How we use it.</b> To send you a copy of your code, to show the restaurant which orders came through Foodol, and, if you agree, to send occasional Foodol and restaurant deals.</p>
-<p><b>Who sees it.</b> Foodol and the restaurant where you redeemed. We don’t sell your information.</p>
-<p><b>Your choices.</b> Every email has an unsubscribe link. To see or delete your information, email us and we’ll take care of it.</p>
-<p>California residents: you can ask what personal information we hold about you and ask us to delete it. We don’t sell or share personal information for cross-context advertising.</p>`), 'text/html; charset=utf-8');
+  const legalDoc = Object.values(LEGAL.docs).find((d) => d.path === p);
+  if (legalDoc) return send(res, 200, legalPage(legalDoc), 'text/html; charset=utf-8');
+  if (p === '/contact') {
+    const kinds = [['question', 'A question'], ['data', 'See, correct or delete my information'], ['restaurant', 'My restaurant / Foodol account'], ['order', 'A problem with an order']];
+    const pre = url.searchParams.get('topic');
+    return send(res, 200, docPage('Contact Foodol', `<p class="lead">Questions, privacy requests, or anything about your restaurant account. We reply within 2 business days.</p>
+<form id="cf"><label for="ct">What’s it about?</label><select class="in" id="ct" name="topic">${kinds.map(([v, l]) => `<option value="${v}"${pre === v ? ' selected' : ''}>${l}</option>`).join('')}</select>
+<label for="cn">Your name</label><input class="in" id="cn" name="name" maxlength="60" required autocomplete="name">
+<label for="ce">Email</label><input class="in" id="ce" name="email" type="email" maxlength="120" required autocomplete="email">
+<label for="cr">Restaurant (if it’s about an order or account)</label><input class="in" id="cr" name="restaurant" maxlength="80">
+<label for="cm">Message</label><textarea class="in" id="cm" name="message" maxlength="3000" required placeholder="For data requests, include the email or phone number you used with Foodol."></textarea>
+<input name="website" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px" aria-hidden="true">
+<button class="btn" type="submit">Send message</button><div class="msg" id="cmsg"></div></form>
+<p style="margin-top:20px;font-size:14px;color:#7d8f84">We use what you send only to answer you. See our <a href="/privacy">Privacy Policy</a>.</p>
+<script>document.getElementById('cf').onsubmit=async(e)=>{e.preventDefault();const f=e.target,m=document.getElementById('cmsg'),b=f.querySelector('button');b.disabled=true;m.className='msg';m.textContent='Sending…';
+try{const r=await fetch('/api/contact',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.fromEntries(new FormData(f)))});const j=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.error||'Something went wrong.');f.reset();m.className='msg ok';m.textContent='Thanks! We got your message and will reply by email.';}catch(err){m.className='msg bad';m.textContent=err.message;}b.disabled=false;};</script>`, { active: '/contact' }), 'text/html; charset=utf-8');
   }
 
   // The root is the Foodol landing page. Old QR codes (/?src=poster|sticker) still go to Sausalido.

@@ -139,6 +139,9 @@ dialog .in{margin-bottom:8px}
     <p class="sub">Every restaurant on Foodol. Each one lives at its own link and has its own login.</p>
     <div class="stats" id="stats"></div>
     <div class="rgrid" id="list"></div>
+    <h2 style="margin-top:40px">Messages <span id="msgCount" class="pill" style="vertical-align:middle;font-size:13px"></span></h2>
+    <p class="sub">From the contact page at foodol.app/contact, including privacy requests. Privacy requests must be answered within 30 days.</p>
+    <div id="msgs" style="display:grid;gap:10px"></div>
     <h2 style="margin-top:40px">Sign-ups</h2>
     <p class="sub">Restaurants that asked for a free trial on foodol.app.</p>
     <div class="stat" style="padding:0;overflow:auto"><table id="leads" style="width:100%;border-collapse:collapse;font-size:15px"></table></div>
@@ -284,6 +287,7 @@ function render(){
     <div class="who" style="color:${r.square || r.clover ? '#1d6b3e' : 'var(--mut)'}">${r.square ? `■ Square ${r.square.env === 'production' ? 'LIVE' : 'test mode'} · ${esc(r.square.locationName || r.square.locationId)} · ${r.square.linked} items linked`
       : r.clover ? `■ Clover ${r.clover.env === 'production' ? 'LIVE' : 'test mode'} · ${esc(r.clover.merchantName || r.clover.mid)} · ${r.clover.linked} items linked${r.clover.canPay ? '' : ' · online payments not set up yet'}`
       : 'No POS connected (guests show a code at the counter)'}</div>
+    <div class="who" style="color:${r.accepted && r.accepted.version === D.legalVersion ? '#1d6b3e' : '#a3620b'}">${r.accepted ? (r.accepted.version === D.legalVersion ? '✓ Agreement accepted ' : '⚠ Accepted an older agreement version on ') + new Date(r.accepted.at).toLocaleDateString([], {month:'short', day:'numeric', year:'numeric'}) : 'Agreement not accepted yet (asked at first portal login)'}</div>
     <div class="who ${r.owner ? '' : 'none'}">${r.owner ? 'Login: ' + esc(r.owner.email) : 'No owner login yet'} · ${r.items} menu items · last order ${ago(r.stats.lastOrder)}</div>
     <div class="acts">
       <a class="btn2" href="/${esc(r.slug)}" target="_blank" rel="noopener">Guest page</a>
@@ -294,6 +298,7 @@ function render(){
       ${r.square ? `<button class="btn2" data-sqimp="${esc(r.slug)}">Import menu from Square</button>` : ''}
       ${r.square ? '' : `<button class="btn2" data-cv="${esc(r.slug)}">${r.clover ? 'Clover settings' : 'Connect Clover'}</button>`}
       ${r.clover ? `<button class="btn2" data-cvimp="${esc(r.slug)}">Import menu from Clover</button>` : ''}
+      <button class="btn2" data-del="${esc(r.slug)}" style="color:#b3261e">Delete restaurant</button>
       <button class="btn2" data-reset="${esc(r.slug)}" style="color:#b3261e">Reset data</button>
     </div>
   </div>`).join('') + `<form class="new" id="nf">
@@ -337,6 +342,27 @@ function render(){
     const x = await post('/api/admin/restaurants/' + r.slug + '/square/import', {}); const j = await x.json().catch(() => ({}));
     if (x.ok) { toast(`Imported ${j.items} items from Square`); load(); } else { toast(j.error || 'Import failed'); b.disabled = false; b.textContent = 'Import menu from Square'; }
   });
+  document.querySelectorAll('[data-del]').forEach((b) => b.onclick = async () => {
+    const r = D.restaurants.find((x) => x.slug === b.dataset.del);
+    const typed = prompt(`This permanently deletes ${r.name} and everything Foodol holds for it: menu, orders, guest emails, POS keys and login. Their link stops working.\n\nType the restaurant name to confirm:\n${r.name}`);
+    if (typed === null) return;
+    const x = await post('/api/admin/restaurants/' + r.slug, {confirm: typed}, 'DELETE'); const j = await x.json().catch(() => ({}));
+    if (!x.ok) { toast(j.error || 'Could not delete'); return; }
+    toast(`${r.name} deleted · ${new Date(j.at).toLocaleString()}. Send them a written confirmation.`); load();
+  });
+  const M2 = D.messages || [], open = M2.filter((m) => !m.done);
+  $('msgCount').textContent = open.length ? open.length + ' open' : '';
+  const TOPIC = {question: 'Question', data: 'Privacy request', restaurant: 'Restaurant account', order: 'Order problem'};
+  $('msgs').innerHTML = M2.length ? M2.map((m) => {
+    const due = m.topic === 'data' && !m.done ? Math.ceil((new Date(m.at).getTime() + 30 * 864e5 - Date.now()) / 864e5) : null;
+    return `<div class="stat" style="opacity:${m.done ? .55 : 1}"><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><b style="font-size:16px">${esc(m.name)}</b>
+      <span class="pill" style="${m.topic === 'data' ? 'background:#fde7e4;color:#b3261e' : ''}">${TOPIC[m.topic] || m.topic}</span>${due !== null ? `<span style="color:#b3261e;font-size:13px;font-weight:600">reply within ${due} days</span>` : ''}
+      <span style="color:var(--mut);font-size:13px;margin-left:auto">${new Date(m.at).toLocaleString([], {month:'short', day:'numeric', hour:'numeric', minute:'2-digit'})}</span></div>
+      <div style="margin:6px 0;color:var(--ink2);white-space:pre-wrap">${esc(m.message)}</div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:14px"><a href="mailto:${esc(m.email)}?subject=${encodeURIComponent('Re: your message to Foodol')}">${esc(m.email)}</a>${m.restaurant ? ` · ${esc(m.restaurant)}` : ''}
+      <button class="btn2" data-done="${m.id}" data-v="${m.done ? 0 : 1}" style="margin-left:auto">${m.done ? 'Reopen' : 'Mark done'}</button></div></div>`; }).join('')
+    : '<div class="stat" style="color:var(--mut)">No messages yet.</div>';
+  document.querySelectorAll('[data-done]').forEach((b) => b.onclick = async () => { await post('/api/admin/messages/' + b.dataset.done, {done: b.dataset.v === '1'}, 'PATCH'); load(); });
   document.querySelectorAll('[data-reset]').forEach((b) => b.onclick = async () => {
     const r = D.restaurants.find((x) => x.slug === b.dataset.reset);
     if (!confirm(`Clear all orders and guest emails for ${r.name}? Their menu and login stay. This can’t be undone.`)) return;

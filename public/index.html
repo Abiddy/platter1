@@ -51,6 +51,7 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
 #hello .say b{color:var(--green-d);font-weight:800}
 #hello .say small{display:block;margin-top:4px;font-size:12.5px;font-weight:500;color:var(--muted)}
 #hello .hero{display:block;height:clamp(170px,38dvh,340px);width:auto;max-width:78vw;margin:0;pointer-events:none}
+#hello .legal{text-align:center;font-size:12px;color:var(--muted);margin-top:2px}#hello .legal a{color:inherit;text-decoration:none}
 #hello .ownlink{font-size:15px;font-weight:600;color:var(--muted);padding:6px;align-self:center;text-decoration:underline;text-underline-offset:3px}
 /* welcome: Foodol walks in, then talks */
 #hello .says{position:relative;display:flex;justify-content:center;margin-bottom:clamp(16px,2.6dvh,24px)}
@@ -287,6 +288,7 @@ h1{font-size:38px;line-height:1.02;letter-spacing:-.03em;font-weight:800}
     <div class="bottom">
       <button class="btn" data-go="who">Let me pick for you</button>
       <button class="ownlink" data-go="build">or pick my own</button>
+      <p class="legal"><a href="/terms" target="_blank" rel="noopener">Terms</a> · <a href="/privacy" target="_blank" rel="noopener">Privacy</a></p>
     </div>
   </section>
 
@@ -371,7 +373,7 @@ h1{font-size:38px;line-height:1.02;letter-spacing:-.03em;font-weight:800}
     <button class="btn" type="submit" id="askGo">Redeem now</button>
   </form>
   <button class="skip" id="askSkip" type="button">Skip, just show my code</button>
-  <p class="fine">Your code also shows on this screen. <a href="/privacy" target="_blank" rel="noopener">Privacy</a></p>
+  <p class="fine">Your code also shows on this screen. By continuing you agree to Foodol’s <a href="/terms" target="_blank" rel="noopener">Terms</a> and <a href="/privacy" target="_blank" rel="noopener">Privacy Policy</a>.</p>
 </div></div>
 <div class="sheet" id="pay" role="dialog" aria-modal="true" aria-labelledby="payTitle"><div class="in">
   <button class="close" data-close aria-label="Close">×</button>
@@ -391,7 +393,7 @@ h1{font-size:38px;line-height:1.02;letter-spacing:-.03em;font-weight:800}
     <div class="perr" id="payErr"></div>
     <button class="btn" type="submit" id="payGo">Pay</button>
   </form>
-  <p class="fine">Secure checkout by <span id="payBy">Square</span>. Your order goes straight to the kitchen. <a href="/privacy" target="_blank" rel="noopener">Privacy</a></p>
+  <p class="fine">Secure checkout by <span id="payBy">Square</span>. Your order goes straight to the kitchen.<br>By paying you agree to Foodol’s <a href="/terms" target="_blank" rel="noopener">Terms</a> and <a href="/privacy" target="_blank" rel="noopener">Privacy Policy</a>.</p>
 </div></div>
 <div id="reward" role="dialog" aria-modal="true" aria-labelledby="rwTitle">
   <div class="rays"></div>
