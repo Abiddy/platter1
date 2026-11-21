@@ -821,6 +821,7 @@ http.createServer(async (req, res) => {
   }
 
   /* pages */
+  if (p === '/ghost') return send(res, 200, file('ghost.html'), MIME['.html']);
   if (p === '/admin') return send(res, 200, file('admin.html'), MIME['.html']);
   if (p === '/portal') return send(res, 200, file('portal.html'), MIME['.html']);
   if (p === '/owner') return redirect(res, '/portal');

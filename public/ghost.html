@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#ffffff">
+<title>Foodol · Every kitchen, one order</title>
+<meta property="og:title" content="Foodol · Every kitchen at 2509 S Broadway">
+<meta property="og:description" content="Tell Foodol what you're craving. It picks the best thing from every kitchen.">
+<meta property="og:image" content="https://d2ol7oe51mr4n9.cloudfront.net/user_3GsbRE1t9hIx7tjNcLo5jEaZ8ao/7a0ab0e2-ee00-4d9d-a327-7715c344b96b.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#123a22;--ink2:#3d5a47;--muted:#6b8073;--line:#e3ece6;--soft:#f4f9f5;
+  --green:#3dbe6e;--green-d:#259a52;--green-soft:#e6f6ec;
+  --peach:#ffe9db;--peach-i:#a5481a;--butter:#fff3c4;--butter-i:#7a5a00;--sky:#ddefff;--sky-i:#1d5a8f;--lav:#ece8fb;--lav-i:#5b3f8f;--mintc:#dcf6e6;--mintc-i:#1d6b3e;
+  --r:24px;
+}
+*{box-sizing:border-box;margin:0;-webkit-tap-highlight-color:transparent}
+html,body{min-height:100%}
+body{font-family:Outfit,system-ui,sans-serif;color:var(--ink);background:#eef5f0;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+.app{max-width:460px;min-height:100dvh;margin:0 auto;background:#fff;display:flex;flex-direction:column;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+.screen{flex:1;display:none;flex-direction:column;padding:20px 22px 28px;animation:in .35s ease}
+.screen.on{display:flex}
+@keyframes in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+.tag{align-self:center;font-size:14px;font-weight:600;background:var(--green-soft);padding:8px 16px;border-radius:999px}
+.btn{width:100%;background:var(--green);color:#fff;font-weight:700;font-size:19px;padding:18px;border-radius:18px;box-shadow:0 6px 0 var(--green-d);transition:transform .08s,box-shadow .08s}
+.btn:active{transform:translateY(4px);box-shadow:0 2px 0 var(--green-d)}
+.btn:disabled{opacity:.45;pointer-events:none}
+.btn.alt{background:#fff;color:var(--ink);box-shadow:0 0 0 2px var(--line) inset,0 6px 0 var(--line)}
+.link{font-size:15px;font-weight:500;color:var(--muted);text-decoration:underline;text-underline-offset:3px;padding:10px;align-self:center}
+.foot{margin-top:auto;padding-top:18px;display:flex;flex-direction:column;gap:12px}
+.top{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;min-height:36px}
+.back{width:40px;height:40px;border-radius:50%;background:var(--soft);display:grid;place-items:center}
+.who{font-size:14px;font-weight:700;background:var(--lav);color:var(--lav-i);padding:7px 14px;border-radius:999px}
+.ask{display:flex;align-items:flex-end;gap:10px;margin-bottom:20px}
+.ask img{width:66px;flex:none}
+.bubble{background:var(--soft);border-radius:22px 22px 22px 6px;padding:14px 18px;font-size:23px;font-weight:700;letter-spacing:-.02em;line-height:1.15}
+
+/* hello */
+#hello{text-align:center;justify-content:space-between}
+#hello .mid{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:16px 0}
+#hello .hero{width:min(54vw,210px);margin-bottom:8px;animation:bob 3s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-8px)}}
+#hello h1{font-size:clamp(32px,8.6vw,40px);line-height:1.04;letter-spacing:-.03em}
+#hello .sub{font-size:17px;line-height:1.4;color:var(--ink2);max-width:320px}
+.kits{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:12px}
+.kit{font-size:13.5px;font-weight:600;padding:6px 12px;border-radius:999px}
+.k-cb{background:var(--peach);color:var(--peach-i)}.k-bc{background:var(--butter);color:var(--butter-i)}.k-tq{background:var(--sky);color:var(--sky-i)}
+
+/* crave */
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.tile{position:relative;border-radius:var(--r);padding:14px 14px 16px;text-align:left;display:flex;flex-direction:column;gap:4px;min-height:136px;border:3px solid transparent;transition:transform .12s}
+.tile:active{transform:scale(.97)}
+.tile img{width:84px;height:84px;object-fit:contain;margin-bottom:auto;align-self:flex-end}
+.tile .lbl{font-size:17px;font-weight:700;line-height:1.15}
+.tile .hint{font-size:13px;opacity:.75}
+.tile[aria-pressed=true]{border-color:var(--ink)}
+.tile .check{position:absolute;left:12px;top:12px;width:26px;height:26px;border-radius:50%;background:var(--ink);display:none;place-items:center}
+.tile[aria-pressed=true] .check{display:grid}
+.t0{background:var(--peach);color:var(--peach-i)}.t1{background:var(--butter);color:var(--butter-i)}.t2{background:var(--sky);color:var(--sky-i)}.t3{background:var(--lav);color:var(--lav-i)}.t4{background:var(--mintc);color:var(--mintc-i)}.t5{background:#ffe3ea;color:#9a2a4a}
+
+/* hunger */
+.hung{display:flex;flex-direction:column;gap:12px}
+.hopt{display:flex;align-items:center;gap:14px;text-align:left;border-radius:var(--r);padding:18px;background:var(--soft);border:3px solid transparent}
+.hopt .em{width:54px;height:54px;border-radius:18px;display:grid;place-items:center;background:#fff;flex:none}
+.hopt .em svg{width:30px;height:30px;fill:none;stroke:var(--ink);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.hopt b{display:block;font-size:20px}
+.hopt span{font-size:14.5px;color:var(--muted)}
+.hopt[aria-pressed=true]{border-color:var(--ink);background:var(--green-soft)}
+
+/* picks */
+.picks{display:flex;flex-direction:column;gap:14px}
+.card{border-radius:var(--r);padding:18px;background:#fff;box-shadow:0 0 0 2px var(--line) inset}
+.card .bd{display:inline-block;font-size:12.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:5px 10px;border-radius:999px;margin-bottom:10px}
+.b0{background:var(--green-soft);color:var(--green-d)}.b1{background:var(--lav);color:var(--lav-i)}.b2{background:var(--butter);color:var(--butter-i)}
+.card .why{font-size:15px;color:var(--ink2);margin-bottom:10px;line-height:1.35}
+.ln{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px dashed var(--line)}
+.ln:first-of-type{border-top:0}
+.ln .n{flex:1;font-weight:600;font-size:16px;line-height:1.2}
+.ln .n small{display:block;margin-top:3px}
+.ln .p{font-weight:600}
+.pill{display:inline-block;font-size:11.5px;font-weight:700;padding:3px 8px;border-radius:999px}
+.card .tot{display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:12px;border-top:2px solid var(--line)}
+.card .tot b{font-size:22px}
+.card .go{background:var(--ink);color:#fff;font-weight:700;padding:12px 20px;border-radius:14px}
+
+/* order + ticket */
+.person{border-radius:var(--r);background:var(--soft);padding:16px;margin-bottom:12px}
+.person h3{font-size:16px;margin-bottom:4px;display:flex;justify-content:space-between}
+.sum{display:flex;justify-content:space-between;font-size:20px;font-weight:800;margin:6px 2px 0}
+#ticket{text-align:center}
+#ticket .code{font-size:64px;font-weight:800;letter-spacing:-.02em;margin:4px 0 2px}
+#ticket .tk{text-align:left;margin-top:16px}
+.kbox{border-radius:20px;padding:14px 16px;margin-bottom:10px}
+.kbox h4{font-size:15px;margin-bottom:6px;display:flex;justify-content:space-between}
+.kbox .row{display:flex;gap:8px;font-size:15px;padding:3px 0}
+.kbox .row .n{flex:1}
+.kbox .row i{font-style:normal;opacity:.7;font-size:13px}
+.demo{font-size:13px;color:var(--muted);margin-top:12px}
+</style>
+</head>
+<body>
+<div class="app">
+
+<section class="screen on" id="hello">
+  <span class="tag">2509 S Broadway · Santa Ana</span>
+  <div class="mid">
+    <img class="hero" src="https://d2ol7oe51mr4n9.cloudfront.net/user_3GsbRE1t9hIx7tjNcLo5jEaZ8ao/fb01c05e-949a-4e50-86de-253056e50ede.webp" alt="Foodol the mascot">
+    <h1>One window.<br>Every kitchen.</h1>
+    <p class="sub">Tell me what you’re craving and I’ll pick the best thing from every kitchen here.</p>
+    <div class="kits"><span class="kit k-cb">Century Burger</span><span class="kit k-bc">Birria &amp; Consomè</span><span class="kit k-tq">Taqueros</span></div>
+  </div>
+  <div class="foot"><button class="btn" id="start">Start my order</button></div>
+</section>
+
+<section class="screen" id="crave">
+  <div class="top"><button class="back" data-back aria-label="Back"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button><span class="who" id="who1"></span></div>
+  <div class="ask"><img src="https://d2ol7oe51mr4n9.cloudfront.net/user_3GsbRE1t9hIx7tjNcLo5jEaZ8ao/96e4324c-5fc2-4a1f-a62b-067f2a812d76.webp" alt=""><div class="bubble">What are you craving?</div></div>
+  <div class="grid" id="craveGrid"></div>
+  <div class="foot"><button class="btn" id="craveGo" disabled>Next</button></div>
+</section>
+
+<section class="screen" id="hunger">
+  <div class="top"><button class="back" data-back aria-label="Back"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button><span class="who" id="who2"></span></div>
+  <div class="ask"><img src="https://d2ol7oe51mr4n9.cloudfront.net/user_3GsbRE1t9hIx7tjNcLo5jEaZ8ao/96e4324c-5fc2-4a1f-a62b-067f2a812d76.webp" alt=""><div class="bubble">How hungry are you?</div></div>
+  <div class="hung" id="hungList"></div>
+</section>
+
+<section class="screen" id="picks">
+  <div class="top"><button class="back" data-back aria-label="Back"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button><span class="who" id="who3"></span></div>
+  <div class="ask"><img src="https://d2ol7oe51mr4n9.cloudfront.net/user_3GsbRE1t9hIx7tjNcLo5jEaZ8ao/96e4324c-5fc2-4a1f-a62b-067f2a812d76.webp" alt=""><div class="bubble">Trust me, pick one of these.</div></div>
+  <div class="picks" id="pickList"></div>
+</section>
+
+<section class="screen" id="order">
+  <div class="ask"><img src="https://d2ol7oe51mr4n9.cloudfront.net/user_3GsbRE1t9hIx7tjNcLo5jEaZ8ao/96e4324c-5fc2-4a1f-a62b-067f2a812d76.webp" alt=""><div class="bubble">Anyone else eating?</div></div>
+  <div id="people"></div>
+  <div class="sum"><span>Total</span><span id="sumTot"></span></div>
+  <div class="foot">
+    <button class="btn alt" id="addP">+ Add someone else</button>
+    <button class="btn" id="done">That’s everyone</button>
+  </div>
+</section>
+
+<section class="screen" id="ticket">
+  <span class="tag">Show this at the window</span>
+  <div class="code" id="code"></div>
+  <p style="color:var(--muted)">Each kitchen gets its part of your order.</p>
+  <div class="tk" id="tk"></div>
+  <div class="sum"><span>Total</span><span id="tkTot"></span></div>
+  <p class="demo">Demo only: no order was sent and nothing was charged. Prices are from the kitchens’ delivery menus.</p>
+  <div class="foot"><button class="btn alt" id="again">Start a new order</button></div>
+</section>
+
+</div>
+<script>
+const IMG = 'https://d2ol7oe51mr4n9.cloudfront.net/user_3GsbRE1t9hIx7tjNcLo5jEaZ8ao/';
+const KIT = {
+  cb: {name:'Century Burger', cls:'k-cb', box:'var(--peach)'},
+  bc: {name:'Birria & Consomè', cls:'k-bc', box:'var(--butter)'},
+  tq: {name:'Taqueros', cls:'k-tq', box:'var(--sky)'},
+};
+// r: main | small | side | drink | sweet.  t: craving tags.  pop: a known favorite.
+const ITEMS = [
+  {k:'cb',n:'Atomic Burger',p:16.99,r:'main',t:['burger'],pop:1,d:'Pulled grass-fed beef, truffle garlic cream'},
+  {k:'cb',n:'Gourmet Burger',p:13.89,r:'main',t:['burger'],pop:1,d:'Grass-fed patty, Century sauce'},
+  {k:'cb',n:'Psycho Burger',p:15.99,r:'main',t:['burger'],d:'Beef bacon, onion ring, jalapeño'},
+  {k:'cb',n:'Beef Coma Burger',p:18.80,r:'main',t:['burger'],big:1,d:'BBQ pulled beef plus a patty'},
+  {k:'cb',n:'Classic BBQ Bacon Burger',p:14.79,r:'main',t:['burger']},
+  {k:'cb',n:'Chaos Burger',p:14.79,r:'main',t:['burger','loaded'],d:'Mozzarella sticks inside'},
+  {k:'cb',n:'Earthy Burger',p:14.79,r:'main',t:['burger','light'],d:'Veggie patty'},
+  {k:'cb',n:'Chicken Tenders (4)',p:11.49,r:'main',t:['chicken'],pop:1},
+  {k:'cb',n:'Chicken Nuggets (8)',p:8.99,r:'small',t:['chicken']},
+  {k:'cb',n:'Chili Cheese Fries',p:16.49,r:'main',t:['loaded']},
+  {k:'cb',n:'French Fries',p:7.49,r:'side',t:[]},
+  {k:'cb',n:'Sweet Potato Fries',p:8.49,r:'side',t:[]},
+  {k:'cb',n:'Onion Rings',p:8.29,r:'side',t:[]},
+  {k:'cb',n:'Mozzarella Sticks',p:9.29,r:'side',t:['loaded']},
+  {k:'cb',n:'Coca-Cola',p:2.49,r:'drink',t:[]},
+  {k:'cb',n:'Sprite',p:2.49,r:'drink',t:[]},
+  {k:'bc',n:'Cheesy Birria Tacos + Rice & Beans',p:18.99,r:'main',t:['birria','loaded'],pop:1,d:'3 tacos, consomé on the side'},
+  {k:'bc',n:'3 Chicken Birria Cheesy Tacos',p:18.99,r:'main',t:['birria','chicken'],pop:1},
+  {k:'bc',n:'Birria Bowl',p:17.99,r:'main',t:['birria','light'],d:'Rice, beans, birria, pico, guac'},
+  {k:'bc',n:'Birria Burrito',p:17.99,r:'main',t:['birria'],pop:1},
+  {k:'bc',n:'Birria Ramen (32 oz)',p:20.99,r:'main',t:['birria'],big:1},
+  {k:'bc',n:'Large Asada Loaded Fries',p:20.99,r:'main',t:['loaded'],pop:1,big:1},
+  {k:'bc',n:'Large Birria Loaded Fries',p:20.99,r:'main',t:['loaded','birria'],big:1},
+  {k:'bc',n:'Birria Grilled Cheese + Fries',p:18.99,r:'main',t:['birria','loaded']},
+  {k:'bc',n:'Birria Taco',p:7.99,r:'small',t:['birria'],pop:1},
+  {k:'bc',n:'Grilled Chicken Taco',p:7.99,r:'small',t:['chicken','light']},
+  {k:'bc',n:'Churros',p:9.99,r:'sweet',t:['sweet']},
+  {k:'bc',n:'Horchata',p:5.49,r:'drink',t:['sweet'],pop:1},
+  {k:'bc',n:'Jamaica',p:5.49,r:'drink',t:[]},
+  {k:'tq',n:'Birria Tacos (3)',p:14.95,r:'main',t:['birria'],pop:1,d:'Consomé on the side'},
+  {k:'tq',n:'3 Taco Plate',p:13.95,r:'main',t:['birria','light'],d:'3 tacos, rice and beans'},
+  {k:'tq',n:'Taco de Birria',p:4.45,r:'small',t:['birria','light']},
+];
+const CRAVES = [
+  ['burger','Burgers','c2be9ddb-6039-4c08-80ec-cad36de12b8b','Century Burger'],
+  ['birria','Tacos & birria','cb07bab7-c14d-430b-874c-30989fe52d21','3 kitchens'],
+  ['chicken','Chicken','d5c7a287-5c8f-492b-a1a0-c13d298d5e03','Tenders, tacos'],
+  ['loaded','Loaded & cheesy','0169484c-ccd4-471c-b6b9-02812a530357','Fries, nachos'],
+  ['light','Something light','ee92a7d6-4126-44c9-9bf2-fb0d7455e5fe','Bowls, tacos'],
+  ['sweet','Sweet','37252f39-e08d-4763-b3d0-f027eaf96b84','Churros, horchata'],
+];
+const HUNGER = {
+  snack:{lo:6,hi:14,label:'Snack',sub:'Something small, around $10',icon:'<path d="M6 14h12l-1.5 6h-9Z"/><path d="M9 14c0-3 1.5-5 3-7 1.5 2 3 4 3 7"/>'},
+  meal:{lo:15,hi:25,label:'Meal',sub:'A proper plate, around $20',icon:'<circle cx="12" cy="13" r="7"/><circle cx="12" cy="13" r="3.5"/><path d="M3 4v6M21 4v16M3 7h0"/>'},
+  starving:{lo:25,hi:38,label:'Starving',sub:'Go big, around $30',icon:'<path d="M12 3c3 4 6 6 6 11a6 6 0 0 1-12 0c0-3 2-5 3-6 0 2 1 3 2 3 0-3 0-5 1-8Z"/>'},
+};
+const $ = (id) => document.getElementById(id);
+const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const money = (n) => '$' + n.toFixed(2);
+const S = {people:[], cur:null, trail:['hello']};
+const label = () => S.people.length === 0 ? 'You' : 'Person ' + (S.people.length + 1);
+
+function go(id, push = true){
+  document.querySelectorAll('.screen').forEach((s) => s.classList.toggle('on', s.id === id));
+  if (push && S.trail[S.trail.length - 1] !== id) S.trail.push(id);
+  ['who1','who2','who3'].forEach((w) => $(w).textContent = label());
+  window.scrollTo(0, 0);
+}
+document.querySelectorAll('[data-back]').forEach((b) => b.onclick = () => { S.trail.pop(); go(S.trail[S.trail.length - 1] || 'hello', false); });
+
+/* crave */
+$('craveGrid').innerHTML = CRAVES.map(([k,l,img,h],i) => `<button class="tile t${i}" data-k="${k}" aria-pressed="false"><span class="check"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg></span><img src="${IMG + img}.webp" alt="" width="84" height="84"><span class="lbl">${l}</span><span class="hint">${h}</span></button>`).join('');
+$('craveGrid').onclick = (e) => {
+  const t = e.target.closest('.tile'); if (!t) return;
+  const on = t.getAttribute('aria-pressed') !== 'true';
+  const picked = [...document.querySelectorAll('#craveGrid [aria-pressed=true]')];
+  if (on && picked.length >= 2) picked[0].setAttribute('aria-pressed', 'false');
+  t.setAttribute('aria-pressed', on);
+  $('craveGo').disabled = !document.querySelector('#craveGrid [aria-pressed=true]');
+};
+$('start').onclick = () => newPerson();
+function newPerson(){
+  S.cur = {craves:[], hunger:null, pick:null};
+  document.querySelectorAll('#craveGrid .tile').forEach((t) => t.setAttribute('aria-pressed','false'));
+  $('craveGo').disabled = true;
+  go('crave');
+}
+$('craveGo').onclick = () => { S.cur.craves = [...document.querySelectorAll('#craveGrid [aria-pressed=true]')].map((t) => t.dataset.k); go('hunger'); };
+
+/* hunger */
+$('hungList').innerHTML = Object.entries(HUNGER).map(([k,h]) => `<button class="hopt" data-h="${k}" aria-pressed="false"><span class="em"><svg viewBox="0 0 24 24">${h.icon}</svg></span><span><b>${h.label}</b><span>${h.sub}</span></span></button>`).join('');
+$('hungList').onclick = (e) => {
+  const b = e.target.closest('.hopt'); if (!b) return;
+  document.querySelectorAll('.hopt').forEach((x) => x.setAttribute('aria-pressed', x === b));
+  S.cur.hunger = b.dataset.h;
+  setTimeout(() => { renderPicks(); go('picks'); }, 180);
+};
+
+/* the picker */
+function build(craves, hunger){
+  const H = HUNGER[hunger], want = new Set(craves);
+  const match = (i) => i.t.filter((t) => want.has(t)).length;
+  const onlySweet = want.size === 1 && want.has('sweet');
+  const bases = ITEMS.filter((i) => match(i) && (onlySweet ? i.r === 'sweet' || i.r === 'drink' : i.r !== 'drink') && (hunger === 'snack' ? i.p <= 13 : onlySweet || i.r === 'main'));
+  const extras = ITEMS.filter((i) => i.r !== 'main' && (!onlySweet || i.r === 'sweet' || i.r === 'drink'));
+  const out = [];
+  const add = (lines) => {
+    const tot = lines.reduce((s, i) => s + i.p, 0);
+    if (tot > H.hi + 4) return;
+    const kits = new Set(lines.filter((i) => i.r !== 'drink').map((i) => i.k)).size;
+    const covered = new Set(lines.flatMap((i) => i.t.filter((t) => want.has(t)))).size;
+    const roles = lines.map((i) => i.r);
+    if (new Set(lines.map((i) => i.n)).size < lines.length) return;
+    if (roles.filter((r) => r === 'drink').length > 1 || roles.filter((r) => r === 'side').length > 1) return;
+    const fit = tot >= H.lo && tot <= H.hi ? 6 : -Math.abs(tot < H.lo ? H.lo - tot : tot - H.hi);
+    const score = covered * 5 + lines.filter((i) => i.pop).length * 2 + fit + (hunger !== 'snack' && roles.includes('drink') ? 1 : 0) - (hunger === 'snack' && lines.length > 2 ? 4 : 0);
+    out.push({lines, tot, kits, score});
+  };
+  for (const b of bases){
+    add([b]);
+    for (const x of extras){ if (x === b) continue; add([b, x]);
+      for (const y of extras){ if (y === b || y === x || y.r === x.r && y.r !== 'small') continue; if (x.r === 'drink') continue; add([b, x, y]); } }
+  }
+  out.sort((a, b) => b.score - a.score || a.tot - b.tot);
+  const picks = [], usedMain = new Set();
+  const take = (f, kind) => { const c = out.find((o) => f(o) && !usedMain.has(o.lines[0].n)); if (c){ usedMain.add(c.lines[0].n); picks.push({...c, kind}); } };
+  take(() => true, 0);
+  take((o) => o.kits >= 2, 1);
+  const best = out.filter((o) => !usedMain.has(o.lines[0].n) && o.tot >= H.lo * .85 && o.score > 0).sort((a, b) => a.tot - b.tot)[0];
+  if (best){ usedMain.add(best.lines[0].n); picks.push({...best, kind:2}); }
+  if (picks.length < 3) take(() => true, 2);
+  return picks.slice(0, 3).map((p, i) => ({...p, kind: i === 1 && p.kits < 2 ? 2 : p.kind}));
+}
+const KINDS = [
+  ['b0','Foodol’s pick',(p) => p.lines[0].pop ? `Trust me, the ${p.lines[0].n} is what everyone comes back for.` : `If I were you, I’d get the ${p.lines[0].n}.`],
+  ['b1','Mix it up',(p) => `Best of ${[...new Set(p.lines.map((i) => KIT[i.k].name))].join(' + ')}, in one order.`],
+  ['b2','Best value',(p) => `Hits the spot for ${money(p.tot)}.`],
+];
+function renderPicks(){
+  S.picks = build(S.cur.craves, S.cur.hunger);
+  $('pickList').innerHTML = S.picks.map((p, idx) => { const [cls, badge, why] = KINDS[p.kind]; return `<div class="card"><span class="bd ${cls}">${badge}</span><p class="why">${esc(why(p))}</p>
+    ${p.lines.map((i) => `<div class="ln"><span class="n">${esc(i.n)}<small><span class="pill ${KIT[i.k].cls}">${esc(KIT[i.k].name)}</span></small></span><span class="p">${money(i.p)}</span></div>`).join('')}
+    <div class="tot"><b>${money(p.tot)}</b><button class="go" data-i="${idx}">I’ll take it</button></div></div>`; }).join('') || '<p>Hmm, nothing fits. Try another craving.</p>';
+}
+$('pickList').onclick = (e) => {
+  const b = e.target.closest('.go'); if (!b) return;
+  S.cur.pick = S.picks[+b.dataset.i];
+  S.cur.name = label();
+  S.people.push(S.cur);
+  renderOrder(); go('order');
+};
+
+/* order */
+function renderOrder(){
+  $('people').innerHTML = S.people.map((p) => `<div class="person"><h3><span>${esc(p.name)}</span><span>${money(p.pick.tot)}</span></h3>${p.pick.lines.map((i) => `<div class="ln"><span class="n">${esc(i.n)}<small><span class="pill ${KIT[i.k].cls}">${esc(KIT[i.k].name)}</span></small></span><span class="p">${money(i.p)}</span></div>`).join('')}</div>`).join('');
+  $('sumTot').textContent = money(S.people.reduce((s, p) => s + p.pick.tot, 0));
+}
+$('addP').onclick = () => newPerson();
+$('done').onclick = () => {
+  const by = {};
+  S.people.forEach((p) => p.pick.lines.forEach((i) => { (by[i.k] = by[i.k] || []).push({...i, who:p.name}); }));
+  $('code').textContent = '#' + String(Math.floor(1000 + Math.random() * 9000));
+  $('tk').innerHTML = Object.entries(by).map(([k, ls]) => `<div class="kbox" style="background:${KIT[k].box}"><h4><span>${esc(KIT[k].name)}</span><span>${money(ls.reduce((s, i) => s + i.p, 0))}</span></h4>${ls.map((i) => `<div class="row"><span class="n">1× ${esc(i.n)} <i>· ${esc(i.who)}</i></span><span>${money(i.p)}</span></div>`).join('')}</div>`).join('');
+  $('tkTot').textContent = money(S.people.reduce((s, p) => s + p.pick.tot, 0));
+  go('ticket');
+};
+$('again').onclick = () => { S.people = []; S.trail = ['hello']; go('hello', false); };
+</script>
+</body>
+</html>
