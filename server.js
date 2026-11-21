@@ -118,7 +118,7 @@ function cleanMenu(b) {
   }).filter((i) => i.n);
   const ids = new Set(items.filter((i) => i.k !== 'drink').map((i) => i.id));
   const popular = (Array.isArray(b.popular) ? b.popular : []).map((x) => String(x)).filter((x, k, a) => ids.has(x) && a.indexOf(x) === k).slice(0, 30);
-  const menu = { free: { on: !!f.on, name: clean(f.name, 40) || 'free item', min: num(f.min, 0, 500), grace: num(f.grace ?? 0.5, 0, 5) }, items, popular };
+  const menu = { free: { on: !!f.on, name: clean(f.name, 40) || 'free item', min: num(f.min, 0, 500), grace: num(f.grace ?? 0.5, 0, 5), img: /^https:\/\/d2ol7oe51mr4n9\.cloudfront\.net\/[\w\/.-]+$/.test(String(f.img || '')) ? String(f.img) : '' }, items, popular };
   if (cravings) menu.cravings = cravings;
   return menu;
 }
@@ -795,6 +795,7 @@ http.createServer(async (req, res) => {
     if (p === '/api/portal/menu' && req.method === 'PUT') {
       const mn = cleanMenu(await readBody(req));
       if (!mn.items.length) return send(res, 400, { error: 'menu is empty' });
+      if (!r.menu.free || mn.free.name !== r.menu.free.name) mn.free.img = ''; // picture belongs to the old item
       r.menu = mn; saveRestaurants();
       return send(res, 200, { restaurant: r.name, ...r.menu });
     }
