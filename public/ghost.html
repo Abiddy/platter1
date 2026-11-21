@@ -104,6 +104,15 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
 #load.on .bar i{animation:fill 3.2s ease-in-out forwards}
 @keyframes fill{to{width:100%}}
 
+/* free drink */
+.fd{display:flex;align-items:center;gap:10px;border-radius:16px;padding:10px 12px;margin-top:10px;font-size:14.5px;font-weight:600;background:var(--green-soft);color:var(--green-d)}
+.fd svg{width:22px;height:22px;flex:none;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.fd.no{background:var(--soft);color:var(--ink2)}
+.fd b{font-weight:800}
+.promo{display:inline-flex;align-items:center;gap:8px;margin-top:14px;background:var(--ink);color:#fff;font-weight:700;font-size:15px;padding:10px 16px;border-radius:999px}
+.promo svg{width:20px;height:20px;fill:none;stroke:#7ff0a6;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.kbox.free{background:var(--green);color:#fff}
+
 /* order + ticket */
 .person{border-radius:var(--r);background:var(--soft);padding:16px;margin-bottom:12px}
 .person h3{font-size:16px;margin-bottom:4px;display:flex;justify-content:space-between}
@@ -128,6 +137,7 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
     <img class="hero" src="https://d2ol7oe51mr4n9.cloudfront.net/user_3GsbRE1t9hIx7tjNcLo5jEaZ8ao/fb01c05e-949a-4e50-86de-253056e50ede.webp" alt="Foodol the mascot">
     <h1>One window.<br>Every kitchen.</h1>
     <p class="sub">Tell me what you’re craving and I’ll pick the best thing from every kitchen here.</p>
+    <span class="promo"><svg viewBox="0 0 24 24"><path d="M6 8h12l-1.4 12.2a1 1 0 0 1-1 .8H8.4a1 1 0 0 1-1-.8Z"/><path d="M5 8h14"/><path d="M13 8l2-5h3"/></svg>Free drink on orders $25+</span>
     <div class="kits"><span class="kit k-cb">Century Burger</span><span class="kit k-bc">Birria &amp; Consomè</span><span class="kit k-tq">Taqueros</span></div>
   </div>
   <div class="foot"><button class="btn" id="start">Start my order</button></div>
@@ -238,6 +248,12 @@ const HUNGER = {
   starving:{lo:25,hi:38,label:'Starving',sub:'Go big, around $30',icon:'<path d="M12 3c3 4 6 6 6 11a6 6 0 0 1-12 0c0-3 2-5 3-6 0 2 1 3 2 3 0-3 0-5 1-8Z"/>'},
 };
 const $ = (id) => document.getElementById(id);
+const FREE_MIN = 25, CUP = '<svg viewBox="0 0 24 24"><path d="M6 8h12l-1.4 12.2a1 1 0 0 1-1 .8H8.4a1 1 0 0 1-1-.8Z"/><path d="M5 8h14"/><path d="M13 8l2-5h3"/></svg>';
+const orderSoFar = () => S.people.reduce((s, p) => s + p.pick.tot, 0);
+function freeNote(total){
+  return total >= FREE_MIN ? `<div class="fd">${CUP}<span><b>Free drink unlocked!</b> Coke, Sprite or an agua fresca, on us.</span></div>`
+    : `<div class="fd no">${CUP}<span>Just <b>${money(FREE_MIN - total)}</b> away from a free drink.</span></div>`;
+}
 const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const money = (n) => '$' + n.toFixed(2);
 const S = {people:[], cur:null, trail:['hello']};
@@ -347,9 +363,11 @@ const KINDS = [
 ];
 function renderPicks(){
   S.picks = build(S.cur.craves, S.cur.hunger);
+  // the free drink covers it, so don't sell them one
+  S.picks = S.picks.map((p) => { const d = p.lines.find((i) => i.r === 'drink' && !i.t.includes('sweet')) || (p.lines.length > 1 && p.lines.find((i) => i.r === 'drink')); return d && orderSoFar() + p.tot - d.p >= FREE_MIN ? {...p, lines: p.lines.filter((i) => i !== d), tot: p.tot - d.p} : p; });
   $('pickList').innerHTML = S.picks.map((p, idx) => { const [cls, badge, why] = KINDS[p.kind]; return `<div class="card"><span class="bd ${cls}">${badge}</span><p class="why">${esc(why(p))}</p>
     ${p.lines.map((i) => `<div class="ln"><span class="n">${esc(i.n)}<small><span class="pill ${KIT[i.k].cls}">${esc(KIT[i.k].name)}</span></small></span><span class="p">${money(i.p)}</span></div>`).join('')}
-    <div class="tot"><b>${money(p.tot)}</b><button class="go" data-i="${idx}">I’ll take it</button></div></div>`; }).join('') || '<p>Hmm, nothing fits. Try another craving.</p>';
+    <div class="tot"><b>${money(p.tot)}</b><button class="go" data-i="${idx}">I’ll take it</button></div>${freeNote(orderSoFar() + p.tot)}</div>`; }).join('') || '<p>Hmm, nothing fits. Try another craving.</p>';
 }
 $('pickList').onclick = (e) => {
   const b = e.target.closest('.go'); if (!b) return;
@@ -362,7 +380,8 @@ $('pickList').onclick = (e) => {
 /* order */
 function renderOrder(){
   $('people').innerHTML = S.people.map((p) => `<div class="person"><h3><span>${esc(p.name)}</span><span>${money(p.pick.tot)}</span></h3>${p.pick.lines.map((i) => `<div class="ln"><span class="n">${esc(i.n)}<small><span class="pill ${KIT[i.k].cls}">${esc(KIT[i.k].name)}</span></small></span><span class="p">${money(i.p)}</span></div>`).join('')}</div>`).join('');
-  $('sumTot').textContent = money(S.people.reduce((s, p) => s + p.pick.tot, 0));
+  $('sumTot').textContent = money(orderSoFar());
+  $('people').insertAdjacentHTML('beforeend', freeNote(orderSoFar()));
 }
 $('addP').onclick = () => newPerson();
 $('done').onclick = () => {
@@ -370,7 +389,8 @@ $('done').onclick = () => {
   S.people.forEach((p) => p.pick.lines.forEach((i) => { (by[i.k] = by[i.k] || []).push({...i, who:p.name}); }));
   $('code').textContent = '#' + String(Math.floor(1000 + Math.random() * 9000));
   $('tk').innerHTML = Object.entries(by).map(([k, ls]) => `<div class="kbox" style="background:${KIT[k].box}"><h4><span>${esc(KIT[k].name)}</span><span>${money(ls.reduce((s, i) => s + i.p, 0))}</span></h4>${ls.map((i) => `<div class="row"><span class="n">1× ${esc(i.n)} <i>· ${esc(i.who)}</i></span><span>${money(i.p)}</span></div>`).join('')}</div>`).join('');
-  $('tkTot').textContent = money(S.people.reduce((s, p) => s + p.pick.tot, 0));
+  if (orderSoFar() >= FREE_MIN) $('tk').insertAdjacentHTML('beforeend', `<div class="kbox free"><h4><span>Free drink</span><span>FREE</span></h4><div class="row"><span class="n">1× Coke, Sprite or agua fresca</span><span>$0.00</span></div></div>`);
+  $('tkTot').textContent = money(orderSoFar());
   go('ticket');
 };
 $('again').onclick = () => { S.people = []; S.trail = ['hello']; go('hello', false); };
