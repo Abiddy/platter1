@@ -89,6 +89,21 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
 .card .tot b{font-size:22px}
 .card .go{background:var(--ink);color:#fff;font-weight:700;padding:12px 20px;border-radius:14px}
 
+/* loading */
+#load{align-items:center;justify-content:center;text-align:center;gap:22px;background:linear-gradient(#fff,var(--green-soft))}
+.orbit{position:relative;width:280px;height:280px;display:grid;place-items:center}
+.orbit .me{width:150px;animation:hop .55s cubic-bezier(.3,0,.4,1) infinite alternate;filter:drop-shadow(0 14px 10px rgba(18,58,34,.15))}
+@keyframes hop{from{transform:translateY(6px) scale(1.03,.97)}to{transform:translateY(-14px) scale(.98,1.02)}}
+.orbit .ring{position:absolute;inset:0;animation:spin 6s linear infinite}
+.orbit .ring img{position:absolute;width:62px;height:62px;object-fit:contain;animation:spin 6s linear infinite reverse}
+@keyframes spin{to{transform:rotate(360deg)}}
+.quip{font-size:21px;font-weight:700;letter-spacing:-.01em;line-height:1.25;max-width:300px;min-height:54px;transition:opacity .25s,transform .25s}
+.quip.out{opacity:0;transform:translateY(6px)}
+.bar{width:200px;height:10px;border-radius:99px;background:#fff;box-shadow:0 0 0 2px var(--line) inset;overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--green);border-radius:99px}
+#load.on .bar i{animation:fill 3.2s ease-in-out forwards}
+@keyframes fill{to{width:100%}}
+
 /* order + ticket */
 .person{border-radius:var(--r);background:var(--soft);padding:16px;margin-bottom:12px}
 .person h3{font-size:16px;margin-bottom:4px;display:flex;justify-content:space-between}
@@ -129,6 +144,15 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
   <div class="top"><button class="back" data-back aria-label="Back"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button><span class="who" id="who2"></span></div>
   <div class="ask"><img src="https://d2ol7oe51mr4n9.cloudfront.net/user_3GsbRE1t9hIx7tjNcLo5jEaZ8ao/96e4324c-5fc2-4a1f-a62b-067f2a812d76.webp" alt=""><div class="bubble">How hungry are you?</div></div>
   <div class="hung" id="hungList"></div>
+</section>
+
+<section class="screen" id="load" aria-live="polite">
+  <div class="orbit">
+    <div class="ring" id="ring"></div>
+    <img class="me" src="https://d2ol7oe51mr4n9.cloudfront.net/user_3GsbRE1t9hIx7tjNcLo5jEaZ8ao/96e4324c-5fc2-4a1f-a62b-067f2a812d76.webp" alt="Foodol thinking">
+  </div>
+  <p class="quip" id="quip"></p>
+  <div class="bar"><i></i></div>
 </section>
 
 <section class="screen" id="picks">
@@ -252,8 +276,34 @@ $('hungList').onclick = (e) => {
   const b = e.target.closest('.hopt'); if (!b) return;
   document.querySelectorAll('.hopt').forEach((x) => x.setAttribute('aria-pressed', x === b));
   S.cur.hunger = b.dataset.h;
-  setTimeout(() => { renderPicks(); go('picks'); }, 180);
+  setTimeout(() => { renderPicks(); loading(); }, 180);
 };
+
+/* loading */
+const QUIPS = {
+  any:['Sniffing every kitchen in the building…','Asking the grill what’s hot right now…','Doing very serious combo math…','Taste-testing for you (purely for science)…','Folding the napkins just right…'],
+  burger:['Stacking buns with extreme precision…','Negotiating with a very juicy patty…'],
+  birria:['Dunking a taco in consomé, brb…','Getting the birria extra cheesy…'],
+  chicken:['Counting tenders… one for you, one for me…','Asking the chicken nicely…'],
+  loaded:['Adding cheese. Then more cheese…','Loading the fries until they beg…'],
+  light:['Finding something that won’t need a nap after…','Picking the greens, I promise…'],
+  sweet:['Rolling churros in way too much sugar…','Stirring the horchata with love…'],
+};
+$('ring').innerHTML = CRAVES.map((c, i) => { const a = i / CRAVES.length * Math.PI * 2; return `<img src="${IMG + c[2]}.webp" alt="" style="left:${50 + 44 * Math.cos(a)}%;top:${50 + 44 * Math.sin(a)}%;margin:-31px 0 0 -31px">`; }).join('');
+let quipT = null;
+function loading(){
+  const pool = [...S.cur.craves.flatMap((c) => QUIPS[c] || []), ...QUIPS.any].sort(() => Math.random() - .5);
+  const lines = [pool[0], pool[1], 'Okay, I’ve got it. Trust me…'];
+  let n = 0; $('quip').textContent = lines[0]; $('quip').classList.remove('out');
+  go('load', false);
+  clearInterval(quipT);
+  quipT = setInterval(() => {
+    n++;
+    if (n >= lines.length){ clearInterval(quipT); go('picks'); return; }
+    $('quip').classList.add('out');
+    setTimeout(() => { $('quip').textContent = lines[n]; $('quip').classList.remove('out'); }, 250);
+  }, 1100);
+}
 
 /* the picker */
 function build(craves, hunger){
