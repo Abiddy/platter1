@@ -62,7 +62,7 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
 .tile[aria-pressed=true]{border-color:var(--ink)}
 .tile .check{position:absolute;left:12px;top:12px;width:26px;height:26px;border-radius:50%;background:var(--ink);display:none;place-items:center}
 .tile[aria-pressed=true] .check{display:grid}
-.t0{background:var(--peach);color:var(--peach-i)}.t1{background:var(--butter);color:var(--butter-i)}.t2{background:var(--sky);color:var(--sky-i)}.t3{background:var(--lav);color:var(--lav-i)}.t4{background:var(--mintc);color:var(--mintc-i)}.t5{background:#ffe3ea;color:#9a2a4a}
+.t0{background:var(--peach);color:var(--peach-i)}.t1{background:var(--butter);color:var(--butter-i)}.t2{background:var(--sky);color:var(--sky-i)}.t3{background:var(--lav);color:var(--lav-i)}.t4{background:var(--mintc);color:var(--mintc-i)}.t5{background:#ffe3ea;color:#9a2a4a}.t6{background:#f9e4f6;color:#86307a}.t7{background:#e6f6ec;color:#1d6b3e}
 
 /* hunger */
 .hung{display:flex;flex-direction:column;gap:12px}
@@ -84,6 +84,7 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
 .ln .n{flex:1;font-weight:600;font-size:16px;line-height:1.2}
 .ln .n small{display:block;margin-top:3px}
 .ln .p{font-weight:600}
+.ln .th{width:52px;height:52px;border-radius:14px;object-fit:cover;flex:none;background:var(--soft)}
 .pill{display:inline-block;font-size:11.5px;font-weight:700;padding:3px 8px;border-radius:999px}
 .card .tot{display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:12px;border-top:2px solid var(--line)}
 .card .tot b{font-size:22px}
@@ -138,7 +139,7 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
     <h1>One window.<br>Every kitchen.</h1>
     <p class="sub">Tell me what you’re craving and I’ll pick the best thing from every kitchen here.</p>
     <span class="promo"><svg viewBox="0 0 24 24"><path d="M6 8h12l-1.4 12.2a1 1 0 0 1-1 .8H8.4a1 1 0 0 1-1-.8Z"/><path d="M5 8h14"/><path d="M13 8l2-5h3"/></svg>Free drink on orders $25+</span>
-    <div class="kits"><span class="kit k-cb">Century Burger</span><span class="kit k-bc">Birria &amp; Consomè</span><span class="kit k-tq">Taqueros</span></div>
+    <div class="kits" id="kits"></div>
   </div>
   <div class="foot"><button class="btn" id="start">Start my order</button></div>
 </section>
@@ -187,7 +188,7 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
   <p style="color:var(--muted)">Each kitchen gets its part of your order.</p>
   <div class="tk" id="tk"></div>
   <div class="sum"><span>Total</span><span id="tkTot"></span></div>
-  <p class="demo">Demo only: no order was sent and nothing was charged. Prices are from the kitchens’ delivery menus.</p>
+  <p class="demo">Demo only: no order was sent and nothing was charged. Menus and prices from southcoasttakeout.com.</p>
   <div class="foot"><button class="btn alt" id="again">Start a new order</button></div>
 </section>
 
@@ -195,52 +196,26 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
 <script>
 const IMG = 'https://d2ol7oe51mr4n9.cloudfront.net/user_3GsbRE1t9hIx7tjNcLo5jEaZ8ao/';
 const KIT = {
-  cb: {name:'Century Burger', cls:'k-cb', box:'var(--peach)'},
-  bc: {name:'Birria & Consomè', cls:'k-bc', box:'var(--butter)'},
-  tq: {name:'Taqueros', cls:'k-tq', box:'var(--sky)'},
+  cb: {name:'Century Burger', bg:'#ffe9db', fg:'#a5481a'},
+  th: {name:"Theo's Smash Burgers", bg:'#ffe3ea', fg:'#9a2a4a'},
+  bb: {name:'Bird-N-Bun', bg:'#fff3c4', fg:'#7a5a00'},
+  bc: {name:'Birria & Consomé', bg:'#ffe1d4', fg:'#9b3412'},
+  sol:{name:'SÓL Mexican Bowls', bg:'#dcf6e6', fg:'#1d6b3e'},
+  st: {name:'Suree Thai', bg:'#ddefff', fg:'#1d5a8f'},
+  gn: {name:'Ginza Nishikawa', bg:'#ece8fb', fg:'#5b3f8f'},
+  af: {name:'Afters Ice Cream', bg:'#f9e4f6', fg:'#86307a'},
 };
-// r: main | small | side | drink | sweet.  t: craving tags.  pop: a known favorite.
-const ITEMS = [
-  {k:'cb',n:'Atomic Burger',p:16.99,r:'main',t:['burger'],pop:1,d:'Pulled grass-fed beef, truffle garlic cream'},
-  {k:'cb',n:'Gourmet Burger',p:13.89,r:'main',t:['burger'],pop:1,d:'Grass-fed patty, Century sauce'},
-  {k:'cb',n:'Psycho Burger',p:15.99,r:'main',t:['burger'],d:'Beef bacon, onion ring, jalapeño'},
-  {k:'cb',n:'Beef Coma Burger',p:18.80,r:'main',t:['burger'],big:1,d:'BBQ pulled beef plus a patty'},
-  {k:'cb',n:'Classic BBQ Bacon Burger',p:14.79,r:'main',t:['burger']},
-  {k:'cb',n:'Chaos Burger',p:14.79,r:'main',t:['burger','loaded'],d:'Mozzarella sticks inside'},
-  {k:'cb',n:'Earthy Burger',p:14.79,r:'main',t:['burger','light'],d:'Veggie patty'},
-  {k:'cb',n:'Chicken Tenders (4)',p:11.49,r:'main',t:['chicken'],pop:1},
-  {k:'cb',n:'Chicken Nuggets (8)',p:8.99,r:'small',t:['chicken']},
-  {k:'cb',n:'Chili Cheese Fries',p:16.49,r:'main',t:['loaded']},
-  {k:'cb',n:'French Fries',p:7.49,r:'side',t:[]},
-  {k:'cb',n:'Sweet Potato Fries',p:8.49,r:'side',t:[]},
-  {k:'cb',n:'Onion Rings',p:8.29,r:'side',t:[]},
-  {k:'cb',n:'Mozzarella Sticks',p:9.29,r:'side',t:['loaded']},
-  {k:'cb',n:'Coca-Cola',p:2.49,r:'drink',t:[]},
-  {k:'cb',n:'Sprite',p:2.49,r:'drink',t:[]},
-  {k:'bc',n:'Cheesy Birria Tacos + Rice & Beans',p:18.99,r:'main',t:['birria','loaded'],pop:1,d:'3 tacos, consomé on the side'},
-  {k:'bc',n:'3 Chicken Birria Cheesy Tacos',p:18.99,r:'main',t:['birria','chicken'],pop:1},
-  {k:'bc',n:'Birria Bowl',p:17.99,r:'main',t:['birria','light'],d:'Rice, beans, birria, pico, guac'},
-  {k:'bc',n:'Birria Burrito',p:17.99,r:'main',t:['birria'],pop:1},
-  {k:'bc',n:'Birria Ramen (32 oz)',p:20.99,r:'main',t:['birria'],big:1},
-  {k:'bc',n:'Large Asada Loaded Fries',p:20.99,r:'main',t:['loaded'],pop:1,big:1},
-  {k:'bc',n:'Large Birria Loaded Fries',p:20.99,r:'main',t:['loaded','birria'],big:1},
-  {k:'bc',n:'Birria Grilled Cheese + Fries',p:18.99,r:'main',t:['birria','loaded']},
-  {k:'bc',n:'Birria Taco',p:7.99,r:'small',t:['birria'],pop:1},
-  {k:'bc',n:'Grilled Chicken Taco',p:7.99,r:'small',t:['chicken','light']},
-  {k:'bc',n:'Churros',p:9.99,r:'sweet',t:['sweet']},
-  {k:'bc',n:'Horchata',p:5.49,r:'drink',t:['sweet'],pop:1},
-  {k:'bc',n:'Jamaica',p:5.49,r:'drink',t:[]},
-  {k:'tq',n:'Birria Tacos (3)',p:14.95,r:'main',t:['birria'],pop:1,d:'Consomé on the side'},
-  {k:'tq',n:'3 Taco Plate',p:13.95,r:'main',t:['birria','light'],d:'3 tacos, rice and beans'},
-  {k:'tq',n:'Taco de Birria',p:4.45,r:'small',t:['birria','light']},
-];
+// Real menus and prices from southcoasttakeout.com (Nov 21, 2026). pop = a known or likely favorite.
+const ITEMS = [{"k":"cb","n":"Atomic Burger","p":16.49,"r":"main","t":["burger"],"pop":1,"img":"https://photos.tryotter.com/menu-photos/cdf8281b-4aa7-4643-8430-1f1f5d4a02d9.webp"},{"k":"cb","n":"Gourmet Burger","p":12.89,"r":"main","t":["burger"],"pop":1,"img":"https://photos.tryotter.com/menu-photos/879bc3b1-72cb-42de-97c4-a1dd9791a777.jpeg"},{"k":"cb","n":"Psycho Burger","p":15.6,"r":"main","t":["burger"],"img":"https://photos.tryotter.com/menu-photos/df9339c9-575f-4a84-8a44-499b989c5d0e.webp"},{"k":"cb","n":"Beef Coma Burger","p":17.8,"r":"main","t":["burger"],"img":"https://photos.tryotter.com/menu-photos/35861742-afc4-4eed-b878-2e1ebebb8754.jpeg"},{"k":"cb","n":"Classic BBQ Bacon Burger","p":13.79,"r":"main","t":["burger"],"img":"https://photos.tryotter.com/menu-photos/af9fca32-0b91-4da1-9114-e5bf2d5c2ab0.jpeg"},{"k":"cb","n":"Chaos Burger","p":13.79,"r":"main","t":["burger","loaded"],"img":"https://photos.tryotter.com/menu-photos/74d22e81-d3e1-498e-8c1c-39c7f38203ec.jpeg"},{"k":"cb","n":"Earthy Burger","p":13.79,"r":"main","t":["burger","light"],"img":"https://photos.tryotter.com/menu-photos/1284e51a-4eee-4eff-ac69-bcd7e73fa4ab.jpeg"},{"k":"cb","n":"Chicken Tenders","p":11.49,"r":"main","t":["chicken"],"img":"https://photos.tryotter.com/menu-photos/32c81fac-c820-44c0-b83d-36defa06fb19.webp"},{"k":"cb","n":"Chicken Nuggets","p":8.99,"r":"small","t":["chicken"],"img":"https://photos.tryotter.com/menu-photos/9fb1ad09-cd88-4944-86b6-68581d542a7f.jpeg"},{"k":"cb","n":"Chili Cheese Fries","p":16.49,"r":"main","t":["loaded"],"img":"https://photos.tryotter.com/menu-photos/b4a29dae-8850-43c5-98a0-88315bed7b61.jpeg"},{"k":"cb","n":"French Fries","p":7.49,"r":"side","t":[],"img":"https://photos.tryotter.com/menu-photos/b98529a7-3c98-4787-ab47-54992dcec54f.jpeg"},{"k":"cb","n":"Sweet Potato Fries","p":8.49,"r":"side","t":[],"img":"https://photos.tryotter.com/menu-photos/b773ab9e-df85-4061-bf15-985726bfae34.jpeg"},{"k":"cb","n":"Onion Rings","p":8.29,"r":"side","t":[],"img":"https://photos.tryotter.com/menu-photos/09d77772-c07f-4188-8135-162c9b6ad223.jpeg"},{"k":"cb","n":"Mozzarella Sticks","p":9.29,"r":"side","t":["loaded"],"img":"https://photos.tryotter.com/menu-photos/95e571b3-c68d-4383-a087-a5ff7afbdabb.jpeg"},{"k":"cb","n":"Coca-Cola","p":2.49,"r":"drink","t":[],"img":"https://photos.tryotter.com/menu-photos/f52110bc-3e7b-42fc-8b4b-61c90f093582.webp"},{"k":"cb","n":"Sprite","p":2.49,"r":"drink","t":[],"img":"https://photos.tryotter.com/menu-photos/f2118b05-3e70-4b98-8823-ea2c5f6399b3.webp"},{"k":"th","n":"Theo's Double Cheese Burger combo","p":14.99,"r":"main","t":["burger"],"pop":1,"img":"https://photos.tryotter.com/menu-photos/f5b8ea94-9049-4541-acd3-e881f0f39e50.jpeg"},{"k":"th","n":"Theo's Bacon Avocado Cheese Burger combo","p":15.99,"r":"main","t":["burger"],"img":"https://photos.tryotter.com/menu-photos/35cd0a1f-666b-47ea-a21e-9b9d0f46bfb4.jpeg"},{"k":"th","n":"Hot Cheetos Double Cheese Burger combo","p":14.99,"r":"main","t":["burger","loaded"],"pop":1,"img":"https://photos.tryotter.com/menu-photos/b6cc70cf-4fd9-492d-8c2c-88f10e747b27.jpeg"},{"k":"th","n":"Theo's Triple Smash Burger combo","p":16.99,"r":"main","t":["burger"],"img":"https://photos.tryotter.com/menu-photos/d1b67a6d-4e3d-47cb-8c2c-df91f1a587ce.jpeg"},{"k":"th","n":"Mac & Cheese Double Cheese Burger","p":15.99,"r":"main","t":["burger","loaded"],"img":"https://photos.tryotter.com/menu-photos/40f30ddd-8236-48da-9c1c-cd09e8933128.jpeg"},{"k":"th","n":"Hamburger","p":9,"r":"small","t":["burger"],"img":"https://photos.tryotter.com/menu-photos/18141797-ee54-4761-ba01-135fbbeb42f1.jpeg"},{"k":"th","n":"Smash Fries","p":14.99,"r":"main","t":["loaded"],"img":"https://photos.tryotter.com/menu-photos/e07dc94e-6c61-4ea7-bb5a-d0eccf28a6d2.jpeg"},{"k":"th","n":"Hot Cheetos Smash Fries","p":15.99,"r":"main","t":["loaded"],"img":"https://photos.tryotter.com/menu-photos/cd272a26-002c-4e0c-8e4a-e33af2cf0eb1.jpeg"},{"k":"th","n":"Churros","p":6.99,"r":"sweet","t":["sweet"],"img":"https://photos.tryotter.com/menu-photos/878db057-95b7-4e9a-8206-9a95e70bb012.jpeg"},{"k":"th","n":"Churro Cheesecake","p":8.99,"r":"sweet","t":["sweet"],"pop":1,"img":"https://photos.tryotter.com/menu-photos/83856c13-369c-4dc7-9f96-60eeae9cde81.jpeg"},{"k":"th","n":"Mexican Choco Flan","p":9.99,"r":"sweet","t":["sweet"],"img":"https://photos.tryotter.com/menu-photos/6de05860-9cd2-4e79-a5ae-62d48e29ca20.jpeg"},{"k":"th","n":"Regular Fries","p":6,"r":"side","t":[],"img":"https://photos.tryotter.com/menu-photos/3112c74c-8710-4ec2-a2c5-bc04f2086ea1.jpeg"},{"k":"bb","n":"Original Bird chicken sandwich","p":15.04,"r":"main","t":["chicken"],"pop":1,"img":"https://photos.tryotter.com/menu-photos/8f71c4a4-369c-4bf7-893f-0d2464546275.jpeg"},{"k":"bb","n":"Spicy Bird chicken sandwich","p":15.04,"r":"main","t":["chicken"],"pop":1,"img":"https://photos.tryotter.com/menu-photos/65c21d7c-dde5-46c9-bf31-59a6c7c13143.jpeg"},{"k":"bb","n":"Deluxe Bird chicken sandwich w/Coleslaw","p":15.04,"r":"main","t":["chicken"],"img":"https://photos.tryotter.com/menu-photos/48bca5d9-3e71-4068-837c-a21c1a2efbe3.jpeg"},{"k":"bb","n":"Jumbo Fried Chicken Tenders (3 pcs)","p":12.31,"r":"main","t":["chicken"],"pop":1,"img":"https://photos.tryotter.com/menu-photos/eef2b0df-0d33-436e-91be-924c9f8ffcb7.jpeg"},{"k":"bb","n":"Fried Chicken & Waffles","p":14.29,"r":"main","t":["chicken","sweet"],"img":"https://photos.tryotter.com/menu-photos/86c70e27-0375-4901-942f-b4dbb90e9fdc.jpeg"},{"k":"bb","n":"Boneless Fried Chicken Wings (6 pcs)","p":13.43,"r":"main","t":["chicken"],"img":"https://photos.tryotter.com/menu-photos/7f35d200-bdbb-4861-929d-4e7356964f96.jpeg"},{"k":"bb","n":"Biscuit Bird chicken slider","p":8.14,"r":"small","t":["chicken"],"img":"https://photos.tryotter.com/menu-photos/7615eca9-d242-499d-8771-b471cb2148c2.jpeg"},{"k":"bb","n":"Loaded Fries","p":11.49,"r":"main","t":["loaded"],"img":"https://photos.tryotter.com/menu-photos/74840894-5d80-43ee-bd1e-8d4860f85c30.jpeg"},{"k":"bb","n":"Waffle Fries","p":5.99,"r":"side","t":[],"img":"https://photos.tryotter.com/menu-photos/916f9cbb-1b18-4614-afe2-b96287a96c6b.jpeg"},{"k":"bb","n":"Chocolate Chip Cookie","p":5.99,"r":"sweet","t":["sweet"],"img":"https://photos.tryotter.com/menu-photos/67cb8241-bc44-4d43-901d-a9790d0011ee.jpeg"},{"k":"bb","n":"Double Chocolate Brownie","p":5.99,"r":"sweet","t":["sweet"],"img":"https://photos.tryotter.com/menu-photos/6ed07c71-f73b-433b-9eb5-c268ce8ac3be.jpeg"},{"k":"bb","n":"Coke","p":2.99,"r":"drink","t":[],"img":"https://photos.tryotter.com/menu-photos/f2737569-d460-4cf8-b7e9-14608777b159.jpeg"},{"k":"st","n":"Pad Se-Ew","p":18.95,"r":"main","t":["thai"],"pop":1,"img":"https://photos.tryotter.com/menu-photos/4bec981e-2077-4e3e-9838-853ee4685657.png"},{"k":"st","n":"Pad Thai","p":18.95,"r":"main","t":["thai"],"pop":1,"img":"https://photos.tryotter.com/menu-photos/97b89908-53e2-4f07-bc14-4469127a5704.png"},{"k":"st","n":"Drunken Noodle","p":18.95,"r":"main","t":["thai"],"img":"https://photos.tryotter.com/menu-photos/fda4b570-8357-4192-88d4-7e54f90fd575.png"},{"k":"st","n":"Yellow Curry with Rice","p":20.95,"r":"main","t":["thai"],"pop":1,"img":"https://photos.tryotter.com/menu-photos/b56e6afa-0694-476f-b963-5b9f764aa31c.png"},{"k":"st","n":"Green Curry with Rice","p":20.95,"r":"main","t":["thai"],"img":"https://photos.tryotter.com/menu-photos/c7f5998d-17d7-4dff-a6a1-b54e775ebfc1.png"},{"k":"st","n":"Orange Chicken with Rice","p":18.95,"r":"main","t":["thai","chicken"],"img":"https://photos.tryotter.com/menu-photos/8a8e718a-5d71-491c-8578-e4bac95290c4.png"},{"k":"st","n":"Thai Fried Rice","p":18.95,"r":"main","t":["thai"],"img":"https://photos.tryotter.com/menu-photos/371ee6e3-df75-41d6-bda0-24b9402f5b2c.png"},{"k":"st","n":"Thai Boat Noodle Soup","p":20.95,"r":"main","t":["thai"],"img":"https://photos.tryotter.com/menu-photos/e7c46b51-9c12-4cb5-84dc-f4c032c54519.png"},{"k":"st","n":"Crispy Thai Spring Rolls","p":12.95,"r":"side","t":["thai"],"img":"https://photos.tryotter.com/menu-photos/00e336f3-8b99-4587-b4de-52573bfaeb81.png"},{"k":"st","n":"Potstickers","p":11.95,"r":"side","t":["thai"],"img":"https://photos.tryotter.com/menu-photos/aab9db09-cbe2-4a89-95b6-b14dc684aa5b.png"},{"k":"st","n":"Cucumber Salad","p":8.95,"r":"side","t":["thai","light"],"img":"https://photos.tryotter.com/menu-photos/0a6105e6-5987-4bdd-a958-e600c50fd6db.png"},{"k":"st","n":"Thai Milk Tea","p":7.95,"r":"drink","t":["thai","sweet"],"pop":1,"img":"https://photos.tryotter.com/menu-photos/8c923ba5-e23c-4bd8-8a1b-4086561d386b.png"},{"k":"st","n":"Brown Sugar Milk Tea","p":7.95,"r":"drink","t":["sweet"],"img":"https://photos.tryotter.com/menu-photos/21b8d307-1a70-43d1-a643-2d449f45d533.png"},{"k":"gn","n":"Ginza Honey Toast","p":13,"r":"sweet","t":["sweet"],"pop":1,"img":"https://photos.tryotter.com/menu-photos/a00e7d92-d0d6-4db3-a9ec-ebd2e0d3226e.jpeg"},{"k":"gn","n":"Ube Shokupan (milk bread)","p":20,"r":"sweet","t":["sweet"],"img":"https://photos.tryotter.com/menu-photos/5c63c4de-bdec-44b3-90d9-a779f1767aa2.jpeg"},{"k":"gn","n":"Half Shokupan (milk bread)","p":10,"r":"sweet","t":["sweet"],"img":"https://photos.tryotter.com/menu-photos/6e572b02-95a5-42e8-a729-16bc510a4fcb.jpeg"},{"k":"gn","n":"Matcha Azuki Mochi Shokupan","p":15,"r":"sweet","t":["sweet"],"img":"https://photos.tryotter.com/menu-photos/481ce0ab-c573-4d9e-afcb-4d6cf59bc9c4.jpeg"},{"k":"sol","n":"Birria SÓL Bowl","p":13.5,"r":"main","t":["birria","light"],"pop":1,"img":"https://photos.tryotter.com/menu-photos/e5e0a099-fc9d-444e-896b-a182117ad87e.png"},{"k":"sol","n":"Carne Asada SÓL Bowl","p":13.5,"r":"main","t":["light"],"pop":1,"img":"https://photos.tryotter.com/menu-photos/b04ec3b5-d67b-4648-aa93-01e891790c02.jpeg"},{"k":"sol","n":"Chicken SÓL Bowl","p":13.5,"r":"main","t":["light","chicken"],"img":"https://photos.tryotter.com/menu-photos/4284f46c-8e44-4238-9eff-9ee40f220128.jpeg"},{"k":"sol","n":"Grilled Shrimp SÓL Bowl","p":15.5,"r":"main","t":["light"],"img":"https://photos.tryotter.com/menu-photos/db00fd44-c589-4d19-b34d-3ef8d09241d8.jpeg"},{"k":"sol","n":"Grilled Veggie & Guac SÓL Bowl","p":11.5,"r":"main","t":["light"],"img":"https://photos.tryotter.com/menu-photos/f7f3a73f-7a22-44b4-8687-350b7382f2e6.jpeg"},{"k":"sol","n":"Birria SÓL Burrito","p":13.5,"r":"main","t":["birria"],"img":"https://photos.tryotter.com/menu-photos/4ad3150c-55e1-49da-b35e-b68f4ea7e13f.jpeg"},{"k":"sol","n":"Carne Asada SÓL Burrito","p":13.5,"r":"main","t":["birria"],"img":"https://photos.tryotter.com/menu-photos/191e4f31-b74b-4af1-9d72-15f6ad35f288.jpeg"},{"k":"sol","n":"Chips and Guacamole","p":8.5,"r":"side","t":["light"],"img":"https://photos.tryotter.com/menu-photos/c5852bdb-7f92-4ecf-9c24-6b49e43226dc.jpeg"},{"k":"sol","n":"SÓL Churro","p":3,"r":"sweet","t":["sweet"],"img":"https://photos.tryotter.com/menu-photos/e0b6014f-900d-4a0d-994c-e18c7a694f93.jpeg"},{"k":"sol","n":"Arroz con Leche","p":6.5,"r":"sweet","t":["sweet"],"img":"https://photos.tryotter.com/menu-photos/5ac03438-c406-43ab-b3a1-01d36eea81bc.jpeg"},{"k":"sol","n":"Horchata","p":4.5,"r":"drink","t":["sweet"],"pop":1,"img":"https://photos.tryotter.com/menu-photos/3ff76774-7f70-4222-85b8-3764070e7cd3.jpeg"},{"k":"sol","n":"Jamaica","p":4.5,"r":"drink","t":[],"img":"https://photos.tryotter.com/menu-photos/cbd48c8a-948f-46bb-923e-e6c662a72db2.jpeg"},{"k":"af","n":"Cookie Monster ice cream (pint)","p":10,"r":"sweet","t":["sweet"],"pop":1,"img":"https://photos.tryotter.com/menu-photos/81f8229c-0e23-4c89-a907-556baa4d9a55.jpeg"},{"k":"af","n":"Milk & Cereal ice cream (pint)","p":10,"r":"sweet","t":["sweet"],"pop":1,"img":"https://photos.tryotter.com/menu-photos/e71c4eec-8732-47d4-90a3-d04189e1ab23.jpeg"},{"k":"af","n":"Ube Brownie ice cream (pint)","p":10,"r":"sweet","t":["sweet"],"img":"https://photos.tryotter.com/menu-photos/ccbd75a2-653d-42a7-8462-6e1aeb89add5.jpeg"},{"k":"af","n":"Cookie Butter ice cream (pint)","p":10,"r":"sweet","t":["sweet"],"img":"https://photos.tryotter.com/menu-photos/55dbbd84-9da8-43bf-9aa7-b4f47afcae5d.jpeg"},{"k":"bc","n":"Famous Cheesy Birria Tacos Combo","p":18.99,"r":"main","t":["birria","loaded"],"pop":1,"img":"https://storage.googleapis.com/css-photos/menu-photos/f185b907-b338-4500-b42f-2a9fb1f1ff90.jpeg"},{"k":"bc","n":"3 Chicken Birria Cheesy Tacos Combo","p":18.99,"r":"main","t":["birria","chicken"],"pop":1,"img":"https://storage.googleapis.com/css-photos/menu-photos/9f1be61e-8369-447b-9cfa-f3f8ee290f06.jpeg"},{"k":"bc","n":"Birria Burrito","p":17.99,"r":"main","t":["birria"],"img":"https://storage.googleapis.com/css-photos/menu-photos/b4472e35-e119-4836-97ae-42817a247565.jpeg"},{"k":"bc","n":"Birria Bowl","p":17.99,"r":"main","t":["birria","light"],"img":"https://storage.googleapis.com/css-photos/menu-photos/81cc6900-afa0-454c-ab15-a159619f6c0d.jpeg"},{"k":"bc","n":"Birria Ramen (Beef)","p":20.99,"r":"main","t":["birria"],"img":"https://photos.tryotter.com/menu-photos/0fcc0284-5b6d-4bd4-bba8-748ae9e2859c.jpeg"},{"k":"bc","n":"Large Birria Loaded Fries","p":20.99,"r":"main","t":["loaded","birria"],"pop":1,"img":"https://storage.googleapis.com/css-photos/menu-photos/da4b47ea-d21d-4d27-962d-6aec5a170318.jpeg"},{"k":"bc","n":"Large Asada Loaded Nachos","p":20.99,"r":"main","t":["loaded"],"img":"https://storage.googleapis.com/css-photos/menu-photos/49aeba22-290d-46a1-8bce-f43a62ca0da9.jpeg"},{"k":"bc","n":"Quesabirria Quesadilla","p":19.99,"r":"main","t":["birria","loaded"],"img":"https://storage.googleapis.com/css-photos/menu-photos/873a949b-c2e2-4f91-a329-eee0b33b754d.jpeg"},{"k":"bc","n":"Birria Taco","p":7.99,"r":"small","t":["birria"],"pop":1,"img":"https://storage.googleapis.com/css-photos/menu-photos/4c643c74-93a7-450f-975b-f3e2a8a27a63.jpeg"},{"k":"bc","n":"Freshly Grilled Chicken Taco","p":7.99,"r":"small","t":["chicken","light","birria"],"img":"https://storage.googleapis.com/css-photos/menu-photos/d4027664-d6e5-4e52-9b1d-fcca56eeda11.jpeg"},{"k":"bc","n":"Al Pastor Taco","p":7.99,"r":"small","t":["birria"],"img":"https://storage.googleapis.com/css-photos/menu-photos/a6bac1bd-ae72-4a43-b1c9-868f07aed246.jpeg"},{"k":"bc","n":"Churro Cheesecake","p":11.99,"r":"sweet","t":["sweet"],"img":"https://storage.googleapis.com/css-photos/menu-photos/e1df816b-72d5-48ca-bd12-cdbae2f0595b.jpeg"}];
 const CRAVES = [
-  ['burger','Burgers','c2be9ddb-6039-4c08-80ec-cad36de12b8b','Century Burger'],
-  ['birria','Tacos & birria','cb07bab7-c14d-430b-874c-30989fe52d21','3 kitchens'],
-  ['chicken','Chicken','d5c7a287-5c8f-492b-a1a0-c13d298d5e03','Tenders, tacos'],
+  ['burger','Burgers','c2be9ddb-6039-4c08-80ec-cad36de12b8b','Century, Theo’s'],
+  ['birria','Tacos & birria','cb07bab7-c14d-430b-874c-30989fe52d21','Birria & Consomé, SÓL'],
+  ['chicken','Fried chicken','d5c7a287-5c8f-492b-a1a0-c13d298d5e03','Bird-N-Bun & more'],
+  ['thai','Thai & noodles','3fe57873-6e9c-4ef2-b5a9-88601b5db586','Suree Thai'],
   ['loaded','Loaded & cheesy','0169484c-ccd4-471c-b6b9-02812a530357','Fries, nachos'],
-  ['light','Something light','ee92a7d6-4126-44c9-9bf2-fb0d7455e5fe','Bowls, tacos'],
-  ['sweet','Sweet','37252f39-e08d-4763-b3d0-f027eaf96b84','Churros, horchata'],
+  ['light','Something light','ee92a7d6-4126-44c9-9bf2-fb0d7455e5fe','SÓL bowls'],
+  ['sweet','Sweet','37252f39-e08d-4763-b3d0-f027eaf96b84','Ice cream, honey toast'],
+  ['surprise','Surprise me!','683fe273-a1dc-4057-aad1-5e229c7e08dc','Let Foodol choose'],
 ];
 const HUNGER = {
   snack:{lo:6,hi:14,label:'Snack',sub:'Something small, around $10',icon:'<path d="M6 14h12l-1.5 6h-9Z"/><path d="M9 14c0-3 1.5-5 3-7 1.5 2 3 4 3 7"/>'},
@@ -268,6 +243,7 @@ function go(id, push = true){
 document.querySelectorAll('[data-back]').forEach((b) => b.onclick = () => { S.trail.pop(); go(S.trail[S.trail.length - 1] || 'hello', false); });
 
 /* crave */
+$('kits').innerHTML = Object.values(KIT).map((k) => `<span class="kit" style="background:${k.bg};color:${k.fg}">${esc(k.name)}</span>`).join('');
 $('craveGrid').innerHTML = CRAVES.map(([k,l,img,h],i) => `<button class="tile t${i}" data-k="${k}" aria-pressed="false"><span class="check"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg></span><img src="${IMG + img}.webp" alt="" width="84" height="84"><span class="lbl">${l}</span><span class="hint">${h}</span></button>`).join('');
 $('craveGrid').onclick = (e) => {
   const t = e.target.closest('.tile'); if (!t) return;
@@ -303,7 +279,9 @@ const QUIPS = {
   chicken:['Counting tenders… one for you, one for me…','Asking the chicken nicely…'],
   loaded:['Adding cheese. Then more cheese…','Loading the fries until they beg…'],
   light:['Finding something that won’t need a nap after…','Picking the greens, I promise…'],
-  sweet:['Rolling churros in way too much sugar…','Stirring the horchata with love…'],
+  sweet:['Scooping ice cream with a very serious face…','Drizzling honey on the toast… and my fingers…'],
+  thai:['Tossing noodles in a very hot wok…','Asking for Thai hot. Wait, you said medium…'],
+  surprise:['Spinning the wheel of deliciousness…','Closing my eyes and pointing at the menu…'],
 };
 $('ring').innerHTML = CRAVES.map((c, i) => { const a = i / CRAVES.length * Math.PI * 2; return `<img src="${IMG + c[2]}.webp" alt="" style="left:${50 + 44 * Math.cos(a)}%;top:${50 + 44 * Math.sin(a)}%;margin:-31px 0 0 -31px">`; }).join('');
 let quipT = null;
@@ -323,7 +301,8 @@ function loading(){
 
 /* the picker */
 function build(craves, hunger){
-  const H = HUNGER[hunger], want = new Set(craves);
+  const surprise = craves.includes('surprise');
+  const H = HUNGER[hunger], want = new Set(surprise ? ['burger','birria','chicken','thai','loaded','light'] : craves);
   const match = (i) => i.t.filter((t) => want.has(t)).length;
   const onlySweet = want.size === 1 && want.has('sweet');
   const bases = ITEMS.filter((i) => match(i) && (onlySweet ? i.r === 'sweet' || i.r === 'drink' : i.r !== 'drink') && (hunger === 'snack' ? i.p <= 13 : onlySweet || i.r === 'main'));
@@ -338,7 +317,7 @@ function build(craves, hunger){
     if (new Set(lines.map((i) => i.n)).size < lines.length) return;
     if (roles.filter((r) => r === 'drink').length > 1 || roles.filter((r) => r === 'side').length > 1) return;
     const fit = tot >= H.lo && tot <= H.hi ? 6 : -Math.abs(tot < H.lo ? H.lo - tot : tot - H.hi);
-    const score = covered * 5 + lines.filter((i) => i.pop).length * 2 + fit + (hunger !== 'snack' && roles.includes('drink') ? 1 : 0) - (hunger === 'snack' && lines.length > 2 ? 4 : 0);
+    const score = (surprise ? Math.min(covered, 1) * 5 + Math.random() * 6 : covered * 5) + (lines[0].pop ? 3 : 0) + lines.slice(1).filter((i) => i.k === lines[0].k).length * 1.5 + Math.random() * 1.5 + fit + (hunger !== 'snack' && roles.includes('drink') ? 1 : 0) - (hunger === 'snack' && lines.length > 2 ? 4 : 0);
     out.push({lines, tot, kits, score});
   };
   for (const b of bases){
@@ -366,7 +345,7 @@ function renderPicks(){
   // the free drink covers it, so don't sell them one
   S.picks = S.picks.map((p) => { const d = p.lines.find((i) => i.r === 'drink' && !i.t.includes('sweet')) || (p.lines.length > 1 && p.lines.find((i) => i.r === 'drink')); return d && orderSoFar() + p.tot - d.p >= FREE_MIN ? {...p, lines: p.lines.filter((i) => i !== d), tot: p.tot - d.p} : p; });
   $('pickList').innerHTML = S.picks.map((p, idx) => { const [cls, badge, why] = KINDS[p.kind]; return `<div class="card"><span class="bd ${cls}">${badge}</span><p class="why">${esc(why(p))}</p>
-    ${p.lines.map((i) => `<div class="ln"><span class="n">${esc(i.n)}<small><span class="pill ${KIT[i.k].cls}">${esc(KIT[i.k].name)}</span></small></span><span class="p">${money(i.p)}</span></div>`).join('')}
+    ${p.lines.map((i) => `<div class="ln">${i.img ? `<img class="th" src="${esc(i.img)}" alt="" loading="lazy">` : ''}<span class="n">${esc(i.n)}<small><span class="pill" style="background:${KIT[i.k].bg};color:${KIT[i.k].fg}">${esc(KIT[i.k].name)}</span></small></span><span class="p">${money(i.p)}</span></div>`).join('')}
     <div class="tot"><b>${money(p.tot)}</b><button class="go" data-i="${idx}">I’ll take it</button></div>${freeNote(orderSoFar() + p.tot)}</div>`; }).join('') || '<p>Hmm, nothing fits. Try another craving.</p>';
 }
 $('pickList').onclick = (e) => {
@@ -379,7 +358,7 @@ $('pickList').onclick = (e) => {
 
 /* order */
 function renderOrder(){
-  $('people').innerHTML = S.people.map((p) => `<div class="person"><h3><span>${esc(p.name)}</span><span>${money(p.pick.tot)}</span></h3>${p.pick.lines.map((i) => `<div class="ln"><span class="n">${esc(i.n)}<small><span class="pill ${KIT[i.k].cls}">${esc(KIT[i.k].name)}</span></small></span><span class="p">${money(i.p)}</span></div>`).join('')}</div>`).join('');
+  $('people').innerHTML = S.people.map((p) => `<div class="person"><h3><span>${esc(p.name)}</span><span>${money(p.pick.tot)}</span></h3>${p.pick.lines.map((i) => `<div class="ln">${i.img ? `<img class="th" src="${esc(i.img)}" alt="" loading="lazy">` : ''}<span class="n">${esc(i.n)}<small><span class="pill" style="background:${KIT[i.k].bg};color:${KIT[i.k].fg}">${esc(KIT[i.k].name)}</span></small></span><span class="p">${money(i.p)}</span></div>`).join('')}</div>`).join('');
   $('sumTot').textContent = money(orderSoFar());
   $('people').insertAdjacentHTML('beforeend', freeNote(orderSoFar()));
 }
@@ -388,7 +367,7 @@ $('done').onclick = () => {
   const by = {};
   S.people.forEach((p) => p.pick.lines.forEach((i) => { (by[i.k] = by[i.k] || []).push({...i, who:p.name}); }));
   $('code').textContent = '#' + String(Math.floor(1000 + Math.random() * 9000));
-  $('tk').innerHTML = Object.entries(by).map(([k, ls]) => `<div class="kbox" style="background:${KIT[k].box}"><h4><span>${esc(KIT[k].name)}</span><span>${money(ls.reduce((s, i) => s + i.p, 0))}</span></h4>${ls.map((i) => `<div class="row"><span class="n">1× ${esc(i.n)} <i>· ${esc(i.who)}</i></span><span>${money(i.p)}</span></div>`).join('')}</div>`).join('');
+  $('tk').innerHTML = Object.entries(by).map(([k, ls]) => `<div class="kbox" style="background:${KIT[k].bg}"><h4><span>${esc(KIT[k].name)}</span><span>${money(ls.reduce((s, i) => s + i.p, 0))}</span></h4>${ls.map((i) => `<div class="row"><span class="n">1× ${esc(i.n)} <i>· ${esc(i.who)}</i></span><span>${money(i.p)}</span></div>`).join('')}</div>`).join('');
   if (orderSoFar() >= FREE_MIN) $('tk').insertAdjacentHTML('beforeend', `<div class="kbox free"><h4><span>Free drink</span><span>FREE</span></h4><div class="row"><span class="n">1× Coke, Sprite or agua fresca</span><span>$0.00</span></div></div>`);
   $('tkTot').textContent = money(orderSoFar());
   go('ticket');
