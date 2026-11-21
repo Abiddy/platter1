@@ -112,6 +112,13 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
 .fd{display:flex;align-items:center;gap:10px;border-radius:16px;padding:10px 12px;margin-top:10px;font-size:14.5px;font-weight:600;background:var(--green-soft);color:var(--green-d)}
 .fd svg{width:22px;height:22px;flex:none;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
 .fd.no{background:var(--soft);color:var(--ink2)}
+.adds{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+.add{display:flex;align-items:center;gap:10px;text-align:left;border-radius:14px;padding:8px 10px;box-shadow:0 0 0 2px var(--line) inset;background:#fff}
+.add img{width:40px;height:40px;border-radius:10px;object-fit:cover;flex:none}
+.add span{flex:1;font-weight:600;font-size:14.5px;line-height:1.2}
+.add small{display:block;font-weight:500;color:var(--muted);font-size:12px}
+.add b{color:var(--green-d);font-size:14.5px}
+.hintp{font-size:14px;color:var(--muted);margin:-10px 0 14px 76px}
 .fd b{font-weight:800}
 .promo{display:inline-flex;align-items:center;gap:8px;margin-top:14px;background:var(--ink);color:#fff;font-weight:700;font-size:15px;padding:10px 16px;border-radius:999px}
 .promo svg{width:20px;height:20px;fill:none;stroke:#7ff0a6;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
@@ -141,7 +148,7 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
     <img class="hero" src="https://d2ol7oe51mr4n9.cloudfront.net/user_3GsbRE1t9hIx7tjNcLo5jEaZ8ao/fb01c05e-949a-4e50-86de-253056e50ede.webp" alt="Foodol the mascot">
     <h1>One window.<br>Every kitchen.</h1>
     <p class="sub">Tell me what you’re craving and I’ll pick the best thing from every kitchen here.</p>
-    <span class="promo"><svg viewBox="0 0 24 24"><path d="M6 8h12l-1.4 12.2a1 1 0 0 1-1 .8H8.4a1 1 0 0 1-1-.8Z"/><path d="M5 8h14"/><path d="M13 8l2-5h3"/></svg>Free drink on orders $25+</span>
+    <span class="promo"><svg viewBox="0 0 24 24"><path d="M6 8h12l-1.4 12.2a1 1 0 0 1-1 .8H8.4a1 1 0 0 1-1-.8Z"/><path d="M5 8h14"/><path d="M13 8l2-5h3"/></svg>Free drink with every $20+ combo</span>
     <div class="kits" id="kits"></div>
   </div>
   <div class="foot"><button class="btn" id="start">Start my order</button></div>
@@ -150,6 +157,7 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
 <section class="screen" id="crave">
   <div class="top"><button class="back" data-back aria-label="Back"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button><span class="who" id="who1"></span></div>
   <div class="ask"><img src="https://d2ol7oe51mr4n9.cloudfront.net/user_3GsbRE1t9hIx7tjNcLo5jEaZ8ao/96e4324c-5fc2-4a1f-a62b-067f2a812d76.webp" alt=""><div class="bubble">What are you craving?</div></div>
+  <p class="hintp">Pick up to 2</p>
   <div class="grid" id="craveGrid"></div>
   <div class="foot"><button class="btn" id="craveGo" disabled>Next</button></div>
 </section>
@@ -221,16 +229,19 @@ const CRAVES = [
   ['surprise','Surprise me!','683fe273-a1dc-4057-aad1-5e229c7e08dc','Let Foodol choose'],
 ];
 const HUNGER = {
-  snack:{lo:6,hi:14,label:'Snack',sub:'Something small, around $10',icon:'<path d="M6 14h12l-1.5 6h-9Z"/><path d="M9 14c0-3 1.5-5 3-7 1.5 2 3 4 3 7"/>'},
-  meal:{lo:15,hi:25,label:'Meal',sub:'A proper plate, around $20',icon:'<circle cx="12" cy="13" r="7"/><circle cx="12" cy="13" r="3.5"/><path d="M3 4v6M21 4v16M3 7h0"/>'},
-  starving:{lo:25,hi:38,label:'Starving',sub:'Go big, around $30',icon:'<path d="M12 3c3 4 6 6 6 11a6 6 0 0 1-12 0c0-3 2-5 3-6 0 2 1 3 2 3 0-3 0-5 1-8Z"/>'},
+  snack:{lo:20,hi:24,label:'A little hungry',sub:'Something lighter, plus a free drink',icon:'<path d="M6 14h12l-1.5 6h-9Z"/><path d="M9 14c0-3 1.5-5 3-7 1.5 2 3 4 3 7"/>'},
+  meal:{lo:20,hi:29,label:'Hungry',sub:'A proper meal, plus a free drink',icon:'<circle cx="12" cy="13" r="7"/><circle cx="12" cy="13" r="3.5"/><path d="M3 4v6M21 4v16"/>'},
+  starving:{lo:28,hi:40,label:'Starving',sub:'Go big, plus a free drink',icon:'<path d="M12 3c3 4 6 6 6 11a6 6 0 0 1-12 0c0-3 2-5 3-6 0 2 1 3 2 3 0-3 0-5 1-8Z"/>'},
 };
 const $ = (id) => document.getElementById(id);
-const FREE_MIN = 25, CUP = '<svg viewBox="0 0 24 24"><path d="M6 8h12l-1.4 12.2a1 1 0 0 1-1 .8H8.4a1 1 0 0 1-1-.8Z"/><path d="M5 8h14"/><path d="M13 8l2-5h3"/></svg>';
+const FREE_MIN = 20, CUP = '<svg viewBox="0 0 24 24"><path d="M6 8h12l-1.4 12.2a1 1 0 0 1-1 .8H8.4a1 1 0 0 1-1-.8Z"/><path d="M5 8h14"/><path d="M13 8l2-5h3"/></svg>';
 const orderSoFar = () => S.people.reduce((s, p) => s + p.pick.tot, 0);
-function freeNote(total){
-  return total >= FREE_MIN ? `<div class="fd">${CUP}<span><b>Free drink unlocked!</b> Coke, Sprite or an agua fresca, on us.</span></div>`
-    : `<div class="fd no">${CUP}<span>Just <b>${money(FREE_MIN - total)}</b> away from a free drink.</span></div>`;
+const drinksEarned = () => S.people.filter((p) => p.pick.tot >= FREE_MIN).length;
+function freeNote(pick, where){
+  if (pick.tot >= FREE_MIN) return `<div class="fd">${CUP}<span><b>Free drink included!</b> Coke, Sprite or an agua fresca, on us.</span></div>`;
+  const adds = suggestAdds(pick.lines, FREE_MIN - pick.tot);
+  return `<div class="fd no">${CUP}<span>Add <b>${money(FREE_MIN - pick.tot)}</b> more to get a free drink.</span></div>`
+    + (adds.length ? `<div class="adds">${adds.map((i) => `<button class="add" data-where="${where}" data-n="${esc(i.n)}" data-k="${i.k}">${i.img ? `<img src="${esc(i.img)}" alt="">` : ''}<span>${esc(i.n)}<small>${esc(KIT[i.k].name)}</small></span><b>+${money(i.p)}</b></button>`).join('')}</div>` : '');
 }
 const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const money = (n) => '$' + n.toFixed(2);
@@ -303,55 +314,85 @@ function loading(){
 }
 
 /* the picker */
+const CUISINE = {cb:'american', th:'american', bb:'american', bc:'mexican', sol:'mexican', st:'thai', gn:'dessert', af:'dessert'};
+// plain sodas and agua frescas are the free drink, so Foodol never sells them in a combo
+const FREEBIE = (i) => i.r === 'drink' && !i.t.includes('sweet');
+function pairScore(base, x){
+  let s = 0;
+  if (x.k === base.k) s += 2;
+  if (CUISINE[x.k] === CUISINE[base.k]) s += 1;
+  if (x.r === 'side' && CUISINE[x.k] !== CUISINE[base.k]) s -= 4;   // no waffle fries with pad thai
+  if (x.r === 'small' && CUISINE[x.k] !== CUISINE[base.k]) s -= 1;
+  if (x.r === 'drink' && CUISINE[x.k] !== CUISINE[base.k]) s -= 2;
+  if (x.r === 'sweet' && CUISINE[x.k] !== 'dessert' && CUISINE[x.k] !== CUISINE[base.k]) s -= 2;
+  if (x.r === 'side' && /combo/i.test(base.n) && base.k === 'th') s -= 20;   // Theo's combos already come with fries
+  return s;
+}
 function build(craves, hunger){
   const surprise = craves.includes('surprise');
   const H = HUNGER[hunger], want = new Set(surprise ? ['burger','birria','chicken','thai','loaded','light'] : craves);
   const match = (i) => i.t.filter((t) => want.has(t)).length;
   const onlySweet = want.size === 1 && want.has('sweet');
-  const bases = ITEMS.filter((i) => match(i) && (onlySweet ? i.r === 'sweet' || i.r === 'drink' : i.r !== 'drink') && (hunger === 'snack' ? i.p <= 13 : onlySweet || i.r === 'main'));
-  const extras = ITEMS.filter((i) => i.r !== 'main' && (!onlySweet || i.r === 'sweet' || i.r === 'drink'));
+  const live = ITEMS.filter((i) => !FREEBIE(i));
+  const bases = live.filter((i) => match(i) && (onlySweet ? i.r === 'sweet' || i.r === 'drink' : i.r === 'main' || (hunger === 'snack' && i.r === 'small')));
+  const extras = live.filter((i) => i.r !== 'main' && (!onlySweet || i.r === 'sweet' || i.r === 'drink'));
   const out = [];
   const add = (lines) => {
     const tot = lines.reduce((s, i) => s + i.p, 0);
-    if (tot > H.hi + 4) return;
-    const kits = new Set(lines.filter((i) => i.r !== 'drink').map((i) => i.k)).size;
+    if (tot > H.hi + 3) return;
+    const roles = lines.map((i) => i.r), count = (r) => roles.filter((x) => x === r).length;
+    if (count('side') > 1 || count('sweet') > 1 + (onlySweet ? 1 : 0) || count('drink') > 1 || count('small') > 2) return;
     const covered = new Set(lines.flatMap((i) => i.t.filter((t) => want.has(t)))).size;
-    const roles = lines.map((i) => i.r);
-    if (new Set(lines.map((i) => i.n)).size < lines.length) return;
-    if (roles.filter((r) => r === 'drink').length > 1 || roles.filter((r) => r === 'side').length > 1) return;
-    const fit = tot >= H.lo && tot <= H.hi ? 6 : -Math.abs(tot < H.lo ? H.lo - tot : tot - H.hi);
-    const score = (surprise ? Math.min(covered, 1) * 5 + Math.random() * 6 : covered * 5) + (lines[0].pop ? 3 : 0) + lines.slice(1).filter((i) => i.k === lines[0].k).length * 1.5 + Math.random() * 1.5 + fit + (hunger !== 'snack' && roles.includes('drink') ? 1 : 0) - (hunger === 'snack' && lines.length > 2 ? 4 : 0);
+    const fit = tot >= H.lo && tot <= H.hi ? 8 : tot < H.lo ? -3 * (H.lo - tot) : -2 * (tot - H.hi);
+    const pair = lines.slice(1).reduce((s, x) => s + pairScore(lines[0], x), 0);
+    const score = (surprise ? Math.min(covered, 1) : covered) * 6 + (lines[0].pop ? 3 : 0) + (hunger === 'starving' && lines[0].p >= 17 ? 2 : 0)
+      + pair + fit - (hunger === 'snack' && lines.length > 2 ? 3 : 0) - (lines.length > 3 ? 4 : 0) + Math.random() * (surprise ? 5 : 1.2);
+    const kits = new Set(lines.filter((i) => i.r !== 'drink').map((i) => i.k)).size;
     out.push({lines, tot, kits, score});
   };
   for (const b of bases){
     add([b]);
     for (const x of extras){ if (x === b) continue; add([b, x]);
-      for (const y of extras){ if (y === b || y === x || y.r === x.r && y.r !== 'small') continue; if (x.r === 'drink') continue; add([b, x, y]); } }
+      for (const y of extras){ if (y === b || y === x || extras.indexOf(y) < extras.indexOf(x)) continue; add([b, x, y]); } }
   }
-  out.sort((a, b) => b.score - a.score || a.tot - b.tot);
-  const picks = [], usedMain = new Set();
-  const take = (f, kind) => { const c = out.find((o) => f(o) && !usedMain.has(o.lines[0].n)); if (c){ usedMain.add(c.lines[0].n); picks.push({...c, kind}); } };
-  take(() => true, 0);
-  take((o) => o.kits >= 2, 1);
-  const best = out.filter((o) => !usedMain.has(o.lines[0].n) && o.tot >= H.lo * .85 && o.score > 0).sort((a, b) => a.tot - b.tot)[0];
-  if (best){ usedMain.add(best.lines[0].n); picks.push({...best, kind:2}); }
-  if (picks.length < 3) take(() => true, 2);
-  return picks.slice(0, 3).map((p, i) => ({...p, kind: i === 1 && p.kits < 2 ? 2 : p.kind}));
+  out.sort((a, b) => b.score - a.score);
+  const ok = out.filter((o) => o.tot >= FREE_MIN);
+  const pool = ok.length >= 3 ? ok : out;
+  const picks = [], used = new Set();
+  const take = (c, kind) => { if (c){ used.add(c.lines[0].n); picks.push({...c, lines:[...c.lines], kind}); } };
+  take(pool[0], 0);
+  take(pool.find((o) => !used.has(o.lines[0].n) && o.kits >= 2 && o.score > pool[0].score - 12), 1);
+  const top = pool[0] ? pool[0].score : 0;
+  take(pool.filter((o) => !used.has(o.lines[0].n) && o.score > top - 9).sort((a, b) => a.tot - b.tot)[0], 2);
+  while (picks.length < 3){ const c = pool.find((o) => !used.has(o.lines[0].n)); if (!c) break; take(c, 2); }
+  return picks;
+}
+function suggestAdds(lines, gap){
+  const base = lines[0], have = new Set(lines.map((i) => i.n));
+  return ITEMS.filter((i) => !FREEBIE(i) && !have.has(i.n) && (i.r !== 'main' || CUISINE[i.k] === CUISINE[base.k]))
+    .map((i) => ({i, s: pairScore(base, i) * 2 + (i.p >= gap - .001 ? 4 - (i.p - gap) * .5 : -(gap - i.p) * .6) + (i.pop ? 1 : 0)}))
+    .sort((a, b) => b.s - a.s).slice(0, 3).map((x) => x.i);
 }
 const KINDS = [
   ['b0','Foodol’s pick',(p) => p.lines[0].pop ? `Trust me, the ${p.lines[0].n} is what everyone comes back for.` : `If I were you, I’d get the ${p.lines[0].n}.`],
-  ['b1','Mix it up',(p) => `Best of ${[...new Set(p.lines.map((i) => KIT[i.k].name))].join(' + ')}, in one order.`],
-  ['b2','Best value',(p) => `Hits the spot for ${money(p.tot)}.`],
+  ['b1','Mix it up',(p) => `Best of ${[...new Set(p.lines.filter((i) => i.r !== 'drink').map((i) => KIT[i.k].name))].join(' + ')}, in one order.`],
+  ['b2','Best value',(p) => `Everything you’re craving for ${money(p.tot)}.`],
 ];
+const lineHtml = (i) => `<div class="ln">${i.img ? `<img class="th" src="${esc(i.img)}" alt="" loading="lazy">` : ''}<span class="n">${esc(i.n)}<small><span class="pill" style="background:${KIT[i.k].bg};color:${KIT[i.k].fg}">${esc(KIT[i.k].name)}</span></small></span><span class="p">${money(i.p)}</span></div>`;
+function cardHtml(p, idx){
+  const [cls, badge, why] = KINDS[p.kind];
+  return `<div class="card" data-c="${idx}"><span class="bd ${cls}">${badge}</span><p class="why">${esc(why(p))}</p>${p.lines.map(lineHtml).join('')}
+    <div class="tot"><b>${money(p.tot)}</b><button class="go" data-i="${idx}">I’ll take it</button></div>${freeNote(p, 'p' + idx)}</div>`;
+}
 function renderPicks(){
   S.picks = build(S.cur.craves, S.cur.hunger);
-  // the free drink covers it, so don't sell them one
-  S.picks = S.picks.map((p) => { const d = p.lines.find((i) => i.r === 'drink' && !i.t.includes('sweet')) || (p.lines.length > 1 && p.lines.find((i) => i.r === 'drink')); return d && orderSoFar() + p.tot - d.p >= FREE_MIN ? {...p, lines: p.lines.filter((i) => i !== d), tot: p.tot - d.p} : p; });
-  $('pickList').innerHTML = S.picks.map((p, idx) => { const [cls, badge, why] = KINDS[p.kind]; return `<div class="card"><span class="bd ${cls}">${badge}</span><p class="why">${esc(why(p))}</p>
-    ${p.lines.map((i) => `<div class="ln">${i.img ? `<img class="th" src="${esc(i.img)}" alt="" loading="lazy">` : ''}<span class="n">${esc(i.n)}<small><span class="pill" style="background:${KIT[i.k].bg};color:${KIT[i.k].fg}">${esc(KIT[i.k].name)}</span></small></span><span class="p">${money(i.p)}</span></div>`).join('')}
-    <div class="tot"><b>${money(p.tot)}</b><button class="go" data-i="${idx}">I’ll take it</button></div>${freeNote(orderSoFar() + p.tot)}</div>`; }).join('') || '<p>Hmm, nothing fits. Try another craving.</p>';
+  $('pickList').innerHTML = S.picks.map(cardHtml).join('') || '<p>Hmm, nothing fits. Try another craving.</p>';
 }
+const findItem = (b) => ITEMS.find((i) => i.n === b.dataset.n && i.k === b.dataset.k);
+function addTo(pick, item){ pick.lines.push(item); pick.tot = Math.round((pick.tot + item.p) * 100) / 100; }
 $('pickList').onclick = (e) => {
+  const a = e.target.closest('.add');
+  if (a){ const idx = +a.dataset.where.slice(1); addTo(S.picks[idx], findItem(a)); a.closest('.card').outerHTML = cardHtml(S.picks[idx], idx); return; }
   const b = e.target.closest('.go'); if (!b) return;
   S.cur.pick = S.picks[+b.dataset.i];
   S.cur.name = label();
@@ -361,17 +402,17 @@ $('pickList').onclick = (e) => {
 
 /* order */
 function renderOrder(){
-  $('people').innerHTML = S.people.map((p) => `<div class="person"><h3><span>${esc(p.name)}</span><span>${money(p.pick.tot)}</span></h3>${p.pick.lines.map((i) => `<div class="ln">${i.img ? `<img class="th" src="${esc(i.img)}" alt="" loading="lazy">` : ''}<span class="n">${esc(i.n)}<small><span class="pill" style="background:${KIT[i.k].bg};color:${KIT[i.k].fg}">${esc(KIT[i.k].name)}</span></small></span><span class="p">${money(i.p)}</span></div>`).join('')}</div>`).join('');
+  $('people').innerHTML = S.people.map((p, i) => `<div class="person"><h3><span>${esc(p.name)}</span><span>${money(p.pick.tot)}</span></h3>${p.pick.lines.map(lineHtml).join('')}${freeNote(p.pick, 'o' + i)}</div>`).join('');
   $('sumTot').textContent = money(orderSoFar());
-  $('people').insertAdjacentHTML('beforeend', freeNote(orderSoFar()));
 }
+$('people').onclick = (e) => { const a = e.target.closest('.add'); if (!a) return; addTo(S.people[+a.dataset.where.slice(1)].pick, findItem(a)); renderOrder(); };
 $('addP').onclick = () => newPerson();
 $('done').onclick = () => {
   const by = {};
   S.people.forEach((p) => p.pick.lines.forEach((i) => { (by[i.k] = by[i.k] || []).push({...i, who:p.name}); }));
   $('code').textContent = '#' + String(Math.floor(1000 + Math.random() * 9000));
   $('tk').innerHTML = Object.entries(by).map(([k, ls]) => `<div class="kbox" style="background:${KIT[k].bg}"><h4><span>${esc(KIT[k].name)}</span><span>${money(ls.reduce((s, i) => s + i.p, 0))}</span></h4>${ls.map((i) => `<div class="row"><span class="n">1× ${esc(i.n)} <i>· ${esc(i.who)}</i></span><span>${money(i.p)}</span></div>`).join('')}</div>`).join('');
-  if (orderSoFar() >= FREE_MIN) $('tk').insertAdjacentHTML('beforeend', `<div class="kbox free"><h4><span>Free drink</span><span>FREE</span></h4><div class="row"><span class="n">1× Coke, Sprite or agua fresca</span><span>$0.00</span></div></div>`);
+  const fdN = drinksEarned(); if (fdN) $('tk').insertAdjacentHTML('beforeend', `<div class="kbox free"><h4><span>Free drink${fdN > 1 ? 's' : ''}</span><span>FREE</span></h4><div class="row"><span class="n">${fdN}× Coke, Sprite or agua fresca</span><span>$0.00</span></div></div>`);
   $('tkTot').textContent = money(orderSoFar());
   go('ticket');
 };
