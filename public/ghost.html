@@ -48,7 +48,10 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
 @keyframes bob{50%{transform:translateY(-8px)}}
 #hello h1{font-size:clamp(32px,8.6vw,40px);line-height:1.04;letter-spacing:-.03em}
 #hello .sub{font-size:17px;line-height:1.4;color:var(--ink2);max-width:320px}
-.kits{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:12px}
+.kits{align-self:stretch;margin:14px -22px 0;overflow:hidden;-webkit-mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent);mask-image:linear-gradient(90deg,transparent,#000 12%,#000 88%,transparent)}
+.kits .track{display:flex;width:max-content;animation:slide 28s linear infinite}
+.kits .track .kit{white-space:nowrap;margin-right:8px}
+@keyframes slide{from{transform:translateX(0)}to{transform:translateX(-50%)}}
 .kit{font-size:13.5px;font-weight:600;padding:6px 12px;border-radius:999px}
 .k-cb{background:var(--peach);color:var(--peach-i)}.k-bc{background:var(--butter);color:var(--butter-i)}.k-tq{background:var(--sky);color:var(--sky-i)}
 
@@ -243,7 +246,7 @@ function go(id, push = true){
 document.querySelectorAll('[data-back]').forEach((b) => b.onclick = () => { S.trail.pop(); go(S.trail[S.trail.length - 1] || 'hello', false); });
 
 /* crave */
-$('kits').innerHTML = Object.values(KIT).map((k) => `<span class="kit" style="background:${k.bg};color:${k.fg}">${esc(k.name)}</span>`).join('');
+{ const chips = Object.values(KIT).map((k) => `<span class="kit" style="background:${k.bg};color:${k.fg}">${esc(k.name)}</span>`).join(''); $('kits').innerHTML = `<div class="track">${chips}${chips}</div>`; }
 $('craveGrid').innerHTML = CRAVES.map(([k,l,img,h],i) => `<button class="tile t${i}" data-k="${k}" aria-pressed="false"><span class="check"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg></span><img src="${IMG + img}.webp" alt="" width="84" height="84"><span class="lbl">${l}</span><span class="hint">${h}</span></button>`).join('');
 $('craveGrid').onclick = (e) => {
   const t = e.target.closest('.tile'); if (!t) return;
