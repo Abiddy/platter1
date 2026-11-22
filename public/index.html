@@ -148,22 +148,25 @@ h1{font-size:38px;line-height:1.02;letter-spacing:-.03em;font-weight:800}
 .pdots{display:flex;justify-content:center;gap:6px;margin:12px 0 16px}.pdots i{width:8px;height:8px;border-radius:9px;background:var(--line);transition:all .2s}.pdots i.on{width:22px;background:var(--ink)}
 .actions{position:sticky;bottom:0;padding:14px 22px calc(10px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:2px;margin-top:auto;background:linear-gradient(to bottom,rgba(255,255,255,0),#fff 22%);z-index:5}
 #picks{padding-bottom:0}
-/* fit the picks screen to one phone screen */
-#picks.on{flex:none;height:calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom));min-height:0;overflow:hidden;padding-top:14px}
+/* picks: aim for one screen, but never hide items in an inner scroll */
+#picks.on{flex:none;min-height:calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom));padding-top:14px}
 #picks h2{font-size:24px}
-#picks .rail{flex:1;min-height:0;align-items:stretch;padding-top:4px;padding-bottom:2px}
-#picks .slide{display:flex;flex-direction:column;padding-top:clamp(64px,11dvh,104px);min-height:0}
-#picks .slide .peek{width:clamp(120px,22dvh,170px);height:auto}
-#picks .card{flex:1;min-height:0;display:flex;flex-direction:column;padding:clamp(16px,2.6dvh,26px) 18px 16px}
-#picks .card h3{font-size:clamp(21px,3.1dvh,26px);margin:8px 0 4px}
+#picks .rail{flex:1;align-items:stretch;padding-top:2px;padding-bottom:2px}
+#picks .slide{display:flex;flex-direction:column;padding-top:76px}
+#picks .slide .peek{width:128px;height:auto}
+#picks .card{flex:1;display:flex;flex-direction:column;padding:24px 18px 16px}
+#picks .card h3{font-size:23px;margin:8px 0 4px}
 #picks .quote{font-size:14px;margin-bottom:10px}
-#picks .card .items{flex:0 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-mask-image:linear-gradient(#000 calc(100% - 14px),transparent);mask-image:linear-gradient(#000 calc(100% - 14px),transparent)}
 #picks .it{padding:8px 0}
 #picks .tot{margin-top:auto;padding-top:10px;flex:none}
 #picks .tot .v{font-size:28px}
-#picks .actions{position:static;background:none;padding:8px 22px calc(8px + env(safe-area-inset-bottom));margin-top:0;flex:none}
-#picks .pdots{margin:0 0 8px!important}
-@media (max-height:640px){#picks .quote{display:none}#picks .slide{padding-top:56px}}
+#picks .actions{position:sticky;bottom:0;background:linear-gradient(to bottom,rgba(255,255,255,0),#fff 30%);padding:12px 22px calc(10px + env(safe-area-inset-bottom));margin-top:0;flex:none}
+#picks .pdots{margin:0 0 10px!important}
+.actrow{display:flex;gap:10px;align-items:stretch}
+.actrow .btn{flex:1}
+.redo{flex:none;width:60px;border-radius:18px;background:#fff;border:2px solid var(--line);display:grid;place-items:center;color:var(--ink)}
+.redo svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.redo:active{transform:scale(.96)}
 
 /* ticket */
 /* email ask */
@@ -350,8 +353,7 @@ h1{font-size:38px;line-height:1.02;letter-spacing:-.03em;font-weight:800}
     <div class="head"><div><div class="dots" style="margin-bottom:10px"><i class="on"></i><i class="on"></i><i class="on"></i></div><h2>Here's what I'd get</h2></div><span class="hint">Swipe →</span></div>
     <div class="rail" id="rail"></div>
     <div class="actions"><div class="pdots" id="pdots" style="margin:0 0 10px"></div>
-      <button class="btn" id="choose">Redeem now</button>
-      <button class="link" data-go="who">Start over</button>
+      <div class="actrow"><button class="btn" id="choose">Redeem now</button><button class="redo" data-go="who" aria-label="Start over" title="Start over"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg></button></div>
     </div>
   </section>
 
