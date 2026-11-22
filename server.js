@@ -286,10 +286,11 @@ function portalRest(req, url) {
 function stats(r) {
   const os = [...orders.values()].filter((o) => o.r === r.slug);
   const red = os.filter((o) => o.redeemedAt);
-  const sales = red.reduce((t, o) => t + (o.total || 0), 0);
+  // Without a POS, the guest tapping Redeem is the order; the cashier's tap only confirms it.
+  const sales = os.reduce((t, o) => t + (o.total || 0), 0);
   const gs = [...guests.values()].filter((g) => g.r === r.slug);
   const last = os.reduce((m, o) => (o.createdAt > m ? o.createdAt : m), '');
-  return { orders: os.length, redeemed: red.length, sales: Math.round(sales * 100) / 100, guests: gs.length, freeGiven: red.filter((o) => o.extra).length, lastOrder: last || null };
+  return { orders: os.length, redeemed: red.length, sales: Math.round(sales * 100) / 100, guests: gs.length, freeGiven: os.filter((o) => o.extra).length, lastOrder: last || null };
 }
 const publicRest = (r) => ({ slug: r.slug, name: r.name, createdAt: r.createdAt, accepted: r.accepted || null, owner: r.owner ? { email: r.owner.email } : null, stats: stats(r), items: r.menu.items.length,
   square: r.square ? { env: r.square.env, locationId: r.square.locationId, locationName: r.square.locationName || '', appId: r.square.appId, linked: r.menu.items.filter((i) => i.sq).length } : null,

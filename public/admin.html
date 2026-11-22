@@ -270,8 +270,8 @@ async function load(){
 function render(){
   const R = D.restaurants, sum = (k) => R.reduce((t, r) => t + r.stats[k], 0);
   $('stats').innerHTML = [
-    [R.length, 'restaurants'], [sum('orders'), 'orders built'], [sum('redeemed'), 'redeemed'],
-    [money(sum('sales')), 'redeemed sales'], [sum('guests'), 'guest emails'],
+    [R.length, 'restaurants'], [sum('orders'), 'Foodol orders'], [sum('redeemed'), 'confirmed by cashier'],
+    [money(sum('sales')), 'Foodol sales'], [sum('guests'), 'guest emails'],
   ].map(([b, s]) => `<div class="stat"><b>${b}</b><span>${s}</span></div>`).join('') +
   (D.emailOn ? '' : '<div class="stat" style="background:var(--butter);border:0"><b style="font-size:17px">Email is off</b><span>Add RESEND_API_KEY to send codes</span></div>');
 
@@ -280,7 +280,7 @@ function render(){
     <div class="url">${esc(host())}/${esc(r.slug)}</div>
     <div class="nums">
       <div><b>${r.stats.orders}</b><span>orders</span></div>
-      <div><b>${r.stats.redeemed}</b><span>redeemed</span></div>
+      <div><b>${r.stats.redeemed}</b><span>confirmed</span></div>
       <div><b>${money(r.stats.sales)}</b><span>sales</span></div>
       <div><b>${r.stats.guests}</b><span>emails</span></div>
     </div>

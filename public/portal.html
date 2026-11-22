@@ -391,8 +391,8 @@ document.addEventListener('click', (e) => { const a = e.target.closest('[data-go
 /* overview */
 function renderOverview(){
   const o = D.orders, red = o.filter((x) => x.redeemedAt), sum = (a) => a.reduce((t,x) => t + (x.total || 0), 0);
-  const freeGiven = red.filter((x) => x.extra).length;
-  const st = [[D.totalOrders,'combos & orders built','var(--soft)'],[red.length,'redeemed at the counter','var(--butter)'],[money(sum(red)),'Foodol sales','var(--peach)'],[money(red.length ? sum(red) / red.length : 0),'average redeemed order','var(--sky)'],[freeGiven,'free items given','#f3eefb'],[(D.guests || []).length,'guest emails','#eef8f1']];
+  const freeGiven = o.filter((x) => x.extra).length;
+  const st = [[D.totalOrders,'Foodol orders','var(--soft)'],[money(sum(o)),'Foodol sales','var(--peach)'],[money(o.length ? sum(o) / o.length : 0),'average order','var(--sky)'],[red.length,'confirmed by cashier','var(--butter)'],[freeGiven,'free items given','#f3eefb'],[(D.guests || []).length,'guest emails','#eef8f1']];
   $('stats').innerHTML = st.map(([v,l,bg]) => `<div class="stat" style="background:${bg}"><b>${esc(v)}</b><span>${l}</span></div>`).join('');
   $('qfree').textContent = M.free.on ? `Free ${M.free.name} on orders over ${money(M.free.min)}` : 'Off right now';
   const on = M.items.filter((i) => i.on !== false).length;
@@ -516,7 +516,7 @@ function renderCombos(){
 /* orders */
 function renderOrders(){
   const fmt = (t) => new Date(t).toLocaleString([], {month:'short', day:'numeric', hour:'numeric', minute:'2-digit'});
-  $('orows').innerHTML = D.orders.length ? D.orders.map((o) => `<tr><td><b>#${esc(o.code)}</b></td><td>${fmt(o.createdAt)}</td><td>${esc(o.title)}<div style="color:var(--mut);font-size:13px">${o.items.map((i) => esc(i.q + '× ' + i.n)).join(', ')}</div></td><td>${o.party}</td><td>${money(o.total)}${o.email ? `<div style="color:var(--mut);font-size:13px">${esc(o.email)}</div>` : ''}</td><td>${o.extra ? esc(o.extra) : '<span style="color:var(--mut)">—</span>'}</td><td>${o.redeemedAt ? '<span class="tag ok">Redeemed</span>' : '<span class="tag wait">Not redeemed</span>'}</td></tr>`).join('')
+  $('orows').innerHTML = D.orders.length ? D.orders.map((o) => `<tr><td><b>#${esc(o.code)}</b></td><td>${fmt(o.createdAt)}</td><td>${esc(o.title)}<div style="color:var(--mut);font-size:13px">${o.items.map((i) => esc(i.q + '× ' + i.n)).join(', ')}</div></td><td>${o.party}</td><td>${money(o.total)}${o.email ? `<div style="color:var(--mut);font-size:13px">${esc(o.email)}</div>` : ''}</td><td>${o.extra ? esc(o.extra) : '<span style="color:var(--mut)">—</span>'}</td><td>${o.redeemedAt ? '<span class="tag ok">Confirmed</span>' : '<span class="tag wait">Not confirmed</span>'}</td></tr>`).join('')
     : '<tr><td colspan="7" class="empty">No orders yet. They’ll show up here as guests use Foodol.</td></tr>';
 }
 
