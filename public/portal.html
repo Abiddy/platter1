@@ -32,7 +32,10 @@ header{background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0
 .hin{max-width:1080px;margin:0 auto;padding:14px 24px;display:flex;align-items:center;gap:14px}
 .brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:19px}
 .brand img{height:34px}
+.bt{display:flex;align-items:baseline;gap:12px}
 .rest{color:var(--mut);font-weight:500;font-size:15px}
+#asAdmin{position:fixed;left:50%;top:10px;transform:translateX(-50%);z-index:60;background:var(--butter);color:#7a5a00;border-radius:999px;padding:7px 16px;font-size:14px;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,.08)}
+
 .sp{flex:1}
 nav{max-width:1080px;margin:0 auto;padding:0 24px;display:flex;gap:4px;overflow-x:auto}
 nav button{padding:12px 14px;font-weight:600;color:var(--mut);border-bottom:2.5px solid transparent;white-space:nowrap}
@@ -146,6 +149,30 @@ td{padding:12px;border-bottom:1px solid var(--line);vertical-align:top}
 .agc input{width:20px;height:20px;accent-color:var(--g);flex:none;margin-top:1px}
 .agcard .btn:disabled{opacity:.5;box-shadow:none;cursor:not-allowed}
 .agcard .lnk{display:block;margin:10px auto 0;color:var(--mut);font-size:14px;background:none;border:0;cursor:pointer}
+@media(max-width:640px){
+  #asAdmin{position:static;transform:none;border-radius:0;box-shadow:none;text-align:center;font-size:13px;padding:8px 12px}
+  .hin{flex-wrap:wrap;padding:10px 16px;gap:8px}
+  .brand{font-size:17px;flex:1;min-width:0}
+  .brand img{height:30px}
+  .bt{flex-direction:column;align-items:flex-start;gap:0;line-height:1.15;min-width:0}
+  .rest{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+  .hin .sp{display:none}
+  .hin .btn2{padding:7px 10px;font-size:13px;border-radius:10px}
+  .lg{display:none}
+  nav{padding:0 8px;-webkit-mask-image:linear-gradient(90deg,#000 85%,transparent);mask-image:linear-gradient(90deg,#000 85%,transparent)}
+  nav button{padding:11px 10px;font-size:14.5px}
+  main{padding:18px 16px 120px}
+  h2{font-size:24px}
+  .sub{margin:2px 0 16px;font-size:15px}
+  .stats{grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+  .stat{padding:14px;border-radius:16px}
+  .stat b{font-size:24px}
+  .stat span{font-size:12.5px;line-height:1.25;display:block;margin-top:2px}
+  .card{padding:16px;border-radius:16px}
+  #bar{padding:10px 10px 10px 14px;gap:8px;bottom:14px}
+  #bar span{font-size:13.5px;line-height:1.25}
+  #bar .btn,#bar .btn2,#bar button{padding:10px 14px;font-size:14px;white-space:nowrap}
+}
 </style>
 </head>
 <body>
@@ -181,13 +208,13 @@ td{padding:12px;border-bottom:1px solid var(--line);vertical-align:top}
   </form>
 </div>
 
+<div id="asAdmin" style="display:none">Viewing as Foodol admin · <a href="/admin" style="color:inherit">Back to admin</a></div>
 <div id="app" class="hide">
   <header>
     <div class="hin">
-      <div class="brand"><img src="https://d2ol7oe51mr4n9.cloudfront.net/user_3GsbRE1t9hIx7tjNcLo5jEaZ8ao/fe5e036c-785b-4e97-b270-c3a52036389d.svg" alt="">Foodol</div>
-      <span class="rest" id="rname"></span>
+      <div class="brand"><img src="https://d2ol7oe51mr4n9.cloudfront.net/user_3GsbRE1t9hIx7tjNcLo5jEaZ8ao/fe5e036c-785b-4e97-b270-c3a52036389d.svg" alt=""><span class="bt">Foodol<span class="rest" id="rname"></span></span></div>
       <span class="sp"></span>
-      <a class="btn2" id="live" href="/" target="_blank" rel="noopener" style="text-decoration:none">Open guest app</a>
+      <a class="btn2" id="live" href="/" target="_blank" rel="noopener" style="text-decoration:none;color:var(--ink)"><span class="lg">Open </span>guest app</a>
       <button class="btn2" id="pwBtn">Password</button>
       <button class="btn2" id="out">Log out</button>
     </div>
@@ -287,7 +314,6 @@ td{padding:12px;border-bottom:1px solid var(--line);vertical-align:top}
   </main>
 </div>
 
-<div id="asAdmin" style="display:none;position:fixed;left:50%;top:10px;transform:translateX(-50%);z-index:60;background:var(--butter);color:#7a5a00;border-radius:999px;padding:7px 16px;font-size:14px;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,.08)">Viewing as Foodol admin · <a href="/admin" style="color:inherit">Back to admin</a></div>
 <div id="pw" style="display:none;position:fixed;inset:0;background:rgba(18,58,34,.35);z-index:70;place-items:center;padding:20px">
   <form class="lcard" id="pwf" style="max-width:380px">
     <h1 style="font-size:22px">Change password</h1>
