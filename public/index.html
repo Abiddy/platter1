@@ -23,6 +23,19 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
 .screen{flex:1;display:none;flex-direction:column;padding:20px 22px 28px;animation:in .35s ease}
 .screen.on{display:flex}
 @keyframes in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+/* typeform-style step slides */
+.screen.leave{display:flex;position:absolute;left:0;right:0;top:env(safe-area-inset-top,0px);pointer-events:none;z-index:1}
+.screen.up-in{animation:upIn .5s .16s cubic-bezier(.22,1,.36,1) both}
+.screen.up-out{animation:upOut .3s cubic-bezier(.4,0,1,1) both}
+.screen.down-in{animation:downIn .5s .16s cubic-bezier(.22,1,.36,1) both}
+.screen.down-out{animation:downOut .3s cubic-bezier(.4,0,1,1) both}
+@keyframes upIn{from{opacity:0;transform:translateY(64px)}to{opacity:1;transform:none}}
+@keyframes upOut{from{opacity:1;transform:none}to{opacity:0;transform:translateY(-48px)}}
+@keyframes downIn{from{opacity:0;transform:translateY(-64px)}to{opacity:1;transform:none}}
+@keyframes downOut{from{opacity:1;transform:none}to{opacity:0;transform:translateY(48px)}}
+.screen.up-in .ask,.screen.down-in .ask{animation:stag .55s .2s cubic-bezier(.22,1,.36,1) both}
+.screen.up-in .grid,.screen.up-in .plist,.screen.down-in .grid,.screen.down-in .plist{animation:stag .6s .28s cubic-bezier(.22,1,.36,1) both}
+@keyframes stag{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 
 .tag{align-self:center;font-size:14px;font-weight:600;background:var(--green-soft);color:var(--ink);padding:8px 16px;border-radius:999px}
@@ -153,6 +166,15 @@ h1{font-size:38px;line-height:1.02;letter-spacing:-.03em;font-weight:800}
 .prow{display:flex;gap:8px;flex-wrap:wrap}
 .pf{padding:8px 14px;border-radius:99px;border:2px solid var(--line);background:#fff;font-weight:600;font-size:14.5px;color:var(--ink)}
 .pf.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.plist{display:flex;flex-direction:column;gap:10px}
+.po{display:flex;align-items:center;gap:14px;width:100%;padding:17px 18px;border-radius:18px;border:2px solid var(--line);background:#fff;font-weight:700;font-size:18px;text-align:left;transition:border-color .2s,background .2s,transform .08s}
+.po:active{transform:scale(.98)}
+.po .bx{width:26px;height:26px;border-radius:8px;border:2px solid var(--line);display:grid;place-items:center;flex:none;transition:background .2s,border-color .2s}
+.po .bx svg{opacity:0;transform:scale(.4);transition:opacity .2s,transform .25s cubic-bezier(.34,1.56,.64,1)}
+.po small{display:block;font-weight:500;font-size:13.5px;color:var(--muted);margin-top:2px}
+.po.on{border-color:var(--green);background:var(--green-soft)}
+.po.on .bx{background:var(--green);border-color:var(--green)}.po.on .bx svg{opacity:1;transform:none}
+#pref .actions{position:sticky;bottom:0;padding:16px 0 calc(6px + env(safe-area-inset-bottom));margin-top:auto;background:linear-gradient(to bottom,rgba(255,255,255,0),#fff 30%)}
 .halpill{align-self:center;margin-top:8px;background:var(--green);color:#fff;font-weight:700;font-size:14px;padding:6px 14px;border-radius:999px}
 .hal{display:inline-block;margin-left:6px;background:var(--green);color:#fff;font-weight:700;font-size:12px;padding:4px 10px;border-radius:999px;vertical-align:middle}
 /* picks: aim for one screen, but never hide items in an inner scroll */
@@ -336,8 +358,16 @@ h1{font-size:38px;line-height:1.02;letter-spacing:-.03em;font-weight:800}
     <div class="ask"><img src="https://d2ol7oe51mr4n9.cloudfront.net/user_3GsbRE1t9hIx7tjNcLo5jEaZ8ao/96e4324c-5fc2-4a1f-a62b-067f2a812d76.webp" alt=""><div class="bubble">What are you craving?</div></div>
     <p class="hintline">Pick as many as you like.</p>
     <div class="grid" id="craveGrid"></div>
-    <div class="prefs" id="prefs" hidden><p>Any preferences?</p><div class="prow" id="prefRow"></div></div>
     <div class="actions"><button class="btn" id="craveGo" disabled>Pick at least one</button></div>
+  </section>
+
+  <!-- 4. preferences -->
+  <section class="screen" id="pref">
+    <div class="top"><button class="back" data-go="crave" aria-label="Back"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button><div class="dots"></div><button class="own" data-go="build">Pick my own</button></div>
+    <div class="ask"><img src="https://d2ol7oe51mr4n9.cloudfront.net/user_3GsbRE1t9hIx7tjNcLo5jEaZ8ao/96e4324c-5fc2-4a1f-a62b-067f2a812d76.webp" alt=""><div class="bubble">Any preferences?</div></div>
+    <p class="hintline">Optional. Tap any that matter.</p>
+    <div class="plist" id="prefRow"></div>
+    <div class="actions"><button class="btn" id="prefGo">Skip, show my combos</button></div>
   </section>
 
   <!-- thinking -->
@@ -496,8 +526,22 @@ document.querySelectorAll('.xname').forEach((e) => e.textContent = FREE_EXTRA);
 document.querySelectorAll('.fmin').forEach((e) => e.textContent = '$' + (+FREE.min || 0));
 
 setTimeout(() => $('hello').classList.add('seen'), 4200);
+const FLOW = ['hello','who','crave','pref','think','picks'];
+let goT;
 function go(id){
-  document.querySelectorAll('.screen').forEach((s) => s.classList.toggle('on', s.id === id));
+  const cur = document.querySelector('.screen.on'), nxt = $(id);
+  if (!nxt || cur === nxt) return;
+  const a = FLOW.indexOf(cur && cur.id), b = FLOW.indexOf(id);
+  const slide = cur && a > 0 && b > 0 && a <= 4 && b <= 4 && !matchMedia('(prefers-reduced-motion:reduce)').matches;
+  clearTimeout(goT);
+  document.querySelectorAll('.screen').forEach((s) => s.classList.remove('on','leave','up-in','up-out','down-in','down-out'));
+  if (slide) {
+    const up = b > a;
+    cur.classList.add('leave', up ? 'up-out' : 'down-out');
+    nxt.classList.add(up ? 'up-in' : 'down-in');
+    goT = setTimeout(() => cur.classList.remove('leave','up-out','down-out'), 340);
+  }
+  nxt.classList.add('on');
   window.scrollTo(0,0);
 }
 document.querySelectorAll('[data-go]').forEach((b) => b.onclick = () => go(b.dataset.go));
@@ -510,7 +554,7 @@ $('whoGrid').querySelectorAll('.tile').forEach((b) => b.onclick = () => pickTile
 function syncCrave(){
   $('craveGrid').querySelectorAll('.tile').forEach((b) => { const on = S.craves.has(b.dataset.k); b.classList.toggle('sel', on); b.setAttribute('aria-pressed', on); });
   const n = S.craves.size, g = $('craveGo');
-  g.disabled = !n; g.textContent = !n ? 'Pick at least one' : S.craves.has('surprise') ? 'Surprise me, Foodol!' : 'Show my combos';
+  g.disabled = !n; g.textContent = !n ? 'Pick at least one' : PREF_ON.length ? 'Next' : S.craves.has('surprise') ? 'Surprise me, Foodol!' : 'Show my combos';
 }
 $('craveGrid').querySelectorAll('.tile').forEach((b) => b.onclick = () => {
   const k = b.dataset.k;
@@ -522,14 +566,22 @@ $('craveGrid').querySelectorAll('.tile').forEach((b) => b.onclick = () => {
 const PREFS = [['halal','Halal'],['vegetarian','Vegetarian'],['spicy','Spicy'],['savory','Savory'],['breakfast','Breakfast'],['lunch','Lunch']];
 const PREF_ON = PREFS.filter(([k]) => ITEMS.filter((i) => i.k !== 'drink' && (i.t || []).includes(k)).length >= 2);
 S.prefs = new Set((new URLSearchParams(location.search).get('pref') || '').split(',').filter((k) => PREF_ON.some(([x]) => x === k)));
+const PREF_SUB = {halal:'Only halal items', vegetarian:'No meat', spicy:'Bring the heat', savory:'Less sweet stuff', breakfast:'Morning favorites', lunch:'Hearty, filling picks'};
+const TICK = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg>';
+$('prefRow').innerHTML = PREF_ON.map(([k,l]) => `<button class="po" data-p="${k}" aria-pressed="false"><span class="bx">${TICK}</span><span>${esc(l)}<small>${PREF_SUB[k] || ''}</small></span></button>`).join('');
 function renderPrefs(){
-  $('prefs').hidden = !PREF_ON.length;
-  $('prefRow').innerHTML = PREF_ON.map(([k,l]) => `<button class="pf ${S.prefs.has(k) ? 'on' : ''}" data-p="${k}" aria-pressed="${S.prefs.has(k)}">${S.prefs.has(k) ? '✓ ' : ''}${l}</button>`).join('');
+  $('prefRow').querySelectorAll('.po').forEach((b) => { const on = S.prefs.has(b.dataset.p); b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); });
+  $('prefGo').textContent = S.prefs.size ? 'Show my combos' : 'Skip, show my combos';
   $('halPill').hidden = !S.prefs.has('halal');
 }
-$('prefRow').onclick = (e) => { const b = e.target.closest('.pf'); if (!b) return; const k = b.dataset.p; S.prefs.has(k) ? S.prefs.delete(k) : S.prefs.add(k); renderPrefs(); };
+$('prefRow').onclick = (e) => { const b = e.target.closest('.po'); if (!b) return; const k = b.dataset.p; S.prefs.has(k) ? S.prefs.delete(k) : S.prefs.add(k); renderPrefs(); };
 renderPrefs();
-$('craveGo').onclick = () => { if (!S.craves.size) return; go('think'); setTimeout(() => { buildPicks(); go('picks'); }, 1100); };
+/* progress dots: 3 steps when the menu has preferences, else 2 */
+const STEPS = PREF_ON.length ? ['who','crave','pref'] : ['who','crave'];
+STEPS.forEach((id, i) => { const d = $(id).querySelector('.dots'); d.innerHTML = STEPS.map((_, j) => `<i class="${j <= i ? 'on' : ''}"></i>`).join(''); });
+const showPicks = () => { go('think'); setTimeout(() => { buildPicks(); go('picks'); }, 1100); };
+$('craveGo').onclick = () => { if (!S.craves.size) return; PREF_ON.length ? go('pref') : showPicks(); };
+$('prefGo').onclick = showPicks;
 syncCrave();
 
 /* combo engine lives in /combos.js */
