@@ -23,19 +23,17 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
 .screen{flex:1;display:none;flex-direction:column;padding:20px 22px 28px;animation:in .35s ease}
 .screen.on{display:flex}
 @keyframes in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
-/* typeform-style step slides */
-.screen.leave{display:flex;position:absolute;left:0;right:0;top:env(safe-area-inset-top,0px);pointer-events:none;z-index:1}
-.screen.up-in{animation:upIn .5s .16s cubic-bezier(.22,1,.36,1) both}
-.screen.up-out{animation:upOut .3s cubic-bezier(.4,0,1,1) both}
-.screen.down-in{animation:downIn .5s .16s cubic-bezier(.22,1,.36,1) both}
-.screen.down-out{animation:downOut .3s cubic-bezier(.4,0,1,1) both}
-@keyframes upIn{from{opacity:0;transform:translateY(64px)}to{opacity:1;transform:none}}
-@keyframes upOut{from{opacity:1;transform:none}to{opacity:0;transform:translateY(-48px)}}
-@keyframes downIn{from{opacity:0;transform:translateY(-64px)}to{opacity:1;transform:none}}
-@keyframes downOut{from{opacity:1;transform:none}to{opacity:0;transform:translateY(48px)}}
-.screen.up-in .ask,.screen.down-in .ask{animation:stag .55s .2s cubic-bezier(.22,1,.36,1) both}
-.screen.up-in .grid,.screen.up-in .plist,.screen.down-in .grid,.screen.down-in .plist{animation:stag .6s .28s cubic-bezier(.22,1,.36,1) both}
-@keyframes stag{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:none}}
+/* question form: stacked steps, answered ones stay above (dimmed) */
+#who{padding-top:0;padding-bottom:0}
+.ftop{position:sticky;top:0;z-index:20;background:rgba(255,255,255,.92);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);margin:0 -22px 0;padding:14px 22px 12px}
+.fq{min-height:calc(100dvh - 72px - env(safe-area-inset-top));display:flex;flex-direction:column;padding:14px 0 26px;scroll-margin-top:72px;transition:opacity .45s ease,filter .45s ease}
+.fq+.fq{border-top:1px solid var(--line)}
+.fq:not(.cur){opacity:.32;filter:saturate(.5)}
+#who .fq:not(.cur) .actions{position:static;background:none}
+.fq.rise{animation:rise .7s cubic-bezier(.22,1,.36,1) both}
+.fq.rise .grid,.fq.rise .plist{animation:rise .7s .12s cubic-bezier(.22,1,.36,1) both}
+@keyframes rise{from{opacity:0;transform:translateY(40px)}to{opacity:1;transform:none}}
+.tile.chosen{box-shadow:inset 0 0 0 3px var(--green)}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 
 .tag{align-self:center;font-size:14px;font-weight:600;background:var(--green-soft);color:var(--ink);padding:8px 16px;border-radius:999px}
@@ -111,8 +109,8 @@ h1{font-size:38px;line-height:1.02;letter-spacing:-.03em;font-weight:800}
 .tile.sel .check{background:var(--ink);border-color:var(--ink)}
 .check svg{opacity:0}.tile.sel .check svg{opacity:1}
 .hintline{font-size:15px;color:var(--muted);margin:-12px 0 16px 80px}
-#crave .actions{position:sticky;bottom:0;padding:16px 0 calc(6px + env(safe-area-inset-bottom));margin-top:auto;background:linear-gradient(to bottom,rgba(255,255,255,0),#fff 30%)}
-#crave .btn[disabled]{background:#c9d8ce;box-shadow:0 6px 0 #b3c4b9;cursor:default}
+#who .actions{position:sticky;bottom:0;padding:16px 0 calc(6px + env(safe-area-inset-bottom));margin-top:auto;background:linear-gradient(to bottom,rgba(255,255,255,0),#fff 30%)}
+#who .btn[disabled]{background:#c9d8ce;box-shadow:0 6px 0 #b3c4b9;cursor:default}
 .tile .big{font-size:44px;font-weight:800;line-height:1;letter-spacing:-.03em}
 .tile .lbl{font-size:17px;font-weight:600}
 .tile .emo{font-size:58px;line-height:76px;height:76px}
@@ -149,7 +147,10 @@ h1{font-size:38px;line-height:1.02;letter-spacing:-.03em;font-weight:800}
 .q{min-width:30px;height:26px;border-radius:8px;background:#fff;font-size:13px;font-weight:700;display:grid;place-items:center}
 .it .n{flex:1;font-size:15px;font-weight:500;line-height:1.25}
 .it .p{font-size:15px;font-variant-numeric:tabular-nums}
-.it.freeit{background:#fff;border:2px solid var(--green);border-radius:14px;margin:6px -6px 8px;padding:9px 8px;border-bottom:2px solid var(--green)}
+.it.freeit,#picks .it.freeit{position:relative;overflow:hidden;background:linear-gradient(135deg,#fff 0%,#f1fbf4 100%);border:1.5px solid rgba(46,170,90,.55);border-radius:16px;margin:10px 0 8px;padding:12px 12px 12px 12px;box-shadow:0 0 0 4px rgba(61,190,106,.10),0 8px 22px -6px rgba(46,170,90,.35)}
+.it.freeit::after{content:"";position:absolute;inset:0;background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.85) 50%,transparent 70%);transform:translateX(-120%);animation:sheen 3.2s 1s ease-in-out infinite;pointer-events:none}
+@keyframes sheen{0%{transform:translateX(-120%)}35%,100%{transform:translateX(120%)}}
+.it.freeit .freetag{box-shadow:0 4px 10px -2px rgba(46,170,90,.5)}
 .it.freeit .q{background:var(--green-soft);color:var(--green-d)}
 .it.freeit .n{font-weight:600}
 .freetag{background:var(--green);color:#fff;font-weight:800;font-size:13px;letter-spacing:.06em;padding:5px 11px;border-radius:999px}
@@ -174,7 +175,7 @@ h1{font-size:38px;line-height:1.02;letter-spacing:-.03em;font-weight:800}
 .po small{display:block;font-weight:500;font-size:13.5px;color:var(--muted);margin-top:2px}
 .po.on{border-color:var(--green);background:var(--green-soft)}
 .po.on .bx{background:var(--green);border-color:var(--green)}.po.on .bx svg{opacity:1;transform:none}
-#pref .actions{position:sticky;bottom:0;padding:16px 0 calc(6px + env(safe-area-inset-bottom));margin-top:auto;background:linear-gradient(to bottom,rgba(255,255,255,0),#fff 30%)}
+
 .halpill{align-self:center;margin-top:8px;background:var(--green);color:#fff;font-weight:700;font-size:14px;padding:6px 14px;border-radius:999px}
 .hal{display:inline-block;margin-left:6px;background:var(--green);color:#fff;font-weight:700;font-size:12px;padding:4px 10px;border-radius:999px;vertical-align:middle}
 /* picks: aim for one screen, but never hide items in an inner scroll */
@@ -345,29 +346,25 @@ h1{font-size:38px;line-height:1.02;letter-spacing:-.03em;font-weight:800}
     </div>
   </section>
 
-  <!-- 2. who -->
+  <!-- 2-4. the question form: one scrolling page, answered questions stay above -->
   <section class="screen" id="who">
-    <div class="top"><button class="back" data-go="hello" aria-label="Back"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button><div class="dots"><i class="on"></i><i></i><i></i></div><button class="own" data-go="build">Pick my own</button></div>
-    <div class="ask"><img src="https://d2ol7oe51mr4n9.cloudfront.net/user_3GsbRE1t9hIx7tjNcLo5jEaZ8ao/96e4324c-5fc2-4a1f-a62b-067f2a812d76.webp" alt=""><div class="bubble">Who's eating today?</div></div>
-    <div class="grid" id="whoGrid"></div>
-  </section>
-
-  <!-- 3. crave -->
-  <section class="screen" id="crave">
-    <div class="top"><button class="back" data-go="who" aria-label="Back"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button><div class="dots"><i class="on"></i><i class="on"></i><i></i></div><button class="own" data-go="build">Pick my own</button></div>
-    <div class="ask"><img src="https://d2ol7oe51mr4n9.cloudfront.net/user_3GsbRE1t9hIx7tjNcLo5jEaZ8ao/96e4324c-5fc2-4a1f-a62b-067f2a812d76.webp" alt=""><div class="bubble">What are you craving?</div></div>
-    <p class="hintline">Pick as many as you like.</p>
-    <div class="grid" id="craveGrid"></div>
-    <div class="actions"><button class="btn" id="craveGo" disabled>Pick at least one</button></div>
-  </section>
-
-  <!-- 4. preferences -->
-  <section class="screen" id="pref">
-    <div class="top"><button class="back" data-go="crave" aria-label="Back"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button><div class="dots"></div><button class="own" data-go="build">Pick my own</button></div>
-    <div class="ask"><img src="https://d2ol7oe51mr4n9.cloudfront.net/user_3GsbRE1t9hIx7tjNcLo5jEaZ8ao/96e4324c-5fc2-4a1f-a62b-067f2a812d76.webp" alt=""><div class="bubble">Any preferences?</div></div>
-    <p class="hintline">Optional. Tap any that matter.</p>
-    <div class="plist" id="prefRow"></div>
-    <div class="actions"><button class="btn" id="prefGo">Skip, show my combos</button></div>
+    <div class="top ftop"><button class="back" data-go="hello" aria-label="Back"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button><div class="dots" id="fdots"></div><button class="own" data-go="build">Pick my own</button></div>
+    <div class="fq cur" id="qWho">
+      <div class="ask"><img src="https://d2ol7oe51mr4n9.cloudfront.net/user_3GsbRE1t9hIx7tjNcLo5jEaZ8ao/96e4324c-5fc2-4a1f-a62b-067f2a812d76.webp" alt=""><div class="bubble">Who's eating today?</div></div>
+      <div class="grid" id="whoGrid"></div>
+    </div>
+    <div class="fq" id="qCrave" hidden>
+      <div class="ask"><img src="https://d2ol7oe51mr4n9.cloudfront.net/user_3GsbRE1t9hIx7tjNcLo5jEaZ8ao/96e4324c-5fc2-4a1f-a62b-067f2a812d76.webp" alt=""><div class="bubble">What are you craving?</div></div>
+      <p class="hintline">Pick as many as you like.</p>
+      <div class="grid" id="craveGrid"></div>
+      <div class="actions"><button class="btn" id="craveGo" disabled>Pick at least one</button></div>
+    </div>
+    <div class="fq" id="qPref" hidden>
+      <div class="ask"><img src="https://d2ol7oe51mr4n9.cloudfront.net/user_3GsbRE1t9hIx7tjNcLo5jEaZ8ao/96e4324c-5fc2-4a1f-a62b-067f2a812d76.webp" alt=""><div class="bubble">Any preferences?</div></div>
+      <p class="hintline">Optional. Tap any that matter.</p>
+      <div class="plist" id="prefRow"></div>
+      <div class="actions"><button class="btn" id="prefGo">Skip, show my combos</button></div>
+    </div>
   </section>
 
   <!-- thinking -->
@@ -526,23 +523,10 @@ document.querySelectorAll('.xname').forEach((e) => e.textContent = FREE_EXTRA);
 document.querySelectorAll('.fmin').forEach((e) => e.textContent = '$' + (+FREE.min || 0));
 
 setTimeout(() => $('hello').classList.add('seen'), 4200);
-const FLOW = ['hello','who','crave','pref','think','picks'];
-let goT;
 function go(id){
-  const cur = document.querySelector('.screen.on'), nxt = $(id);
-  if (!nxt || cur === nxt) return;
-  const a = FLOW.indexOf(cur && cur.id), b = FLOW.indexOf(id);
-  const slide = cur && a > 0 && b > 0 && a <= 4 && b <= 4 && !matchMedia('(prefers-reduced-motion:reduce)').matches;
-  clearTimeout(goT);
-  document.querySelectorAll('.screen').forEach((s) => s.classList.remove('on','leave','up-in','up-out','down-in','down-out'));
-  if (slide) {
-    const up = b > a;
-    cur.classList.add('leave', up ? 'up-out' : 'down-out');
-    nxt.classList.add(up ? 'up-in' : 'down-in');
-    goT = setTimeout(() => cur.classList.remove('leave','up-out','down-out'), 340);
-  }
-  nxt.classList.add('on');
+  document.querySelectorAll('.screen').forEach((s) => s.classList.toggle('on', s.id === id));
   window.scrollTo(0,0);
+  if (id === 'who') setCur(0);
 }
 document.querySelectorAll('[data-go]').forEach((b) => b.onclick = () => go(b.dataset.go));
 
@@ -550,7 +534,7 @@ document.querySelectorAll('[data-go]').forEach((b) => b.onclick = () => go(b.dat
 $('whoGrid').innerHTML = WHO.map(([n,l,t]) => `<button class="tile ${t}" data-n="${n}"><span class="big">${n === 6 ? '5+' : n}</span><span class="lbl">${l}</span></button>`).join('');
 $('craveGrid').innerHTML = CRAVE.map(([k,l,img,t,emo],i) => `<button class="tile ${t} ${i === CRAVE.length - 1 && CRAVE.length % 2 ? 'wide' : ''}" data-k="${esc(k)}" aria-pressed="false"><span class="check" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg></span>${img ? `<img src="${IMG + img}.webp" alt="" width="76" height="76">` : `<span class="emo" aria-hidden="true">${esc(emo || '🍽️')}</span>`}<span class="lbl">${esc(l)}</span></button>`).join('');
 const pickTile = (b, then) => { b.classList.add('pick'); setTimeout(() => { b.classList.remove('pick'); then(); }, 160); };
-$('whoGrid').querySelectorAll('.tile').forEach((b) => b.onclick = () => pickTile(b, () => { S.party = +b.dataset.n; go('crave'); }));
+$('whoGrid').querySelectorAll('.tile').forEach((b) => b.onclick = () => pickTile(b, () => { S.party = +b.dataset.n; $('whoGrid').querySelectorAll('.tile').forEach((t) => t.classList.toggle('chosen', t === b)); toStep(1); }));
 function syncCrave(){
   $('craveGrid').querySelectorAll('.tile').forEach((b) => { const on = S.craves.has(b.dataset.k); b.classList.toggle('sel', on); b.setAttribute('aria-pressed', on); });
   const n = S.craves.size, g = $('craveGo');
@@ -576,17 +560,43 @@ function renderPrefs(){
 }
 $('prefRow').onclick = (e) => { const b = e.target.closest('.po'); if (!b) return; const k = b.dataset.p; S.prefs.has(k) ? S.prefs.delete(k) : S.prefs.add(k); renderPrefs(); };
 renderPrefs();
-/* progress dots: 3 steps when the menu has preferences, else 2 */
-const STEPS = PREF_ON.length ? ['who','crave','pref'] : ['who','crave'];
-STEPS.forEach((id, i) => { const d = $(id).querySelector('.dots'); d.innerHTML = STEPS.map((_, j) => `<i class="${j <= i ? 'on' : ''}"></i>`).join(''); });
+/* form steps: reveal the next question and glide to it; scrolling up shows earlier answers */
+const QS = ['qWho','qCrave'].concat(PREF_ON.length ? ['qPref'] : []).map($);
+function setCur(i){
+  QS.forEach((q, j) => q.classList.toggle('cur', j === i));
+  $('fdots').innerHTML = QS.map((_, j) => `<i class="${j <= i ? 'on' : ''}"></i>`).join('');
+}
+function toStep(i){
+  const q = QS[i];
+  if (q.hidden) { q.hidden = false; q.classList.remove('rise'); void q.offsetWidth; q.classList.add('rise'); }
+  setCur(i);
+  const y = q.getBoundingClientRect().top + scrollY - 72;
+  window.scrollTo({top: y, behavior: matchMedia('(prefers-reduced-motion:reduce)').matches ? 'auto' : 'smooth'});
+}
+let qRaf;
+addEventListener('scroll', () => { if (qRaf || !$('who').classList.contains('on')) return; qRaf = requestAnimationFrame(() => {
+  qRaf = 0; const mid = innerHeight * .45; let best = 0;
+  QS.forEach((q, j) => { if (!q.hidden && q.getBoundingClientRect().top < mid) best = j; });
+  if (!QS[best].classList.contains('cur')) setCur(best);
+}); }, {passive: true});
+QS.forEach((q, j) => q.addEventListener('pointerdown', () => { if (!q.classList.contains('cur')) setCur(j); }));
+setCur(0);
 const showPicks = () => { go('think'); setTimeout(() => { buildPicks(); go('picks'); }, 1100); };
-$('craveGo').onclick = () => { if (!S.craves.size) return; PREF_ON.length ? go('pref') : showPicks(); };
+$('craveGo').onclick = () => { if (!S.craves.size) return; PREF_ON.length ? toStep(2) : showPicks(); };
 $('prefGo').onclick = showPicks;
 syncCrave();
 
+/* full dish names: "Nutella & Banana" in Sweet Crepes -> "Nutella & Banana Crepe" */
+const DISH = {crepes:'Crepe',crepe:'Crepe',sandwiches:'Sandwich',paninis:'Panini',wraps:'Wrap',burgers:'Burger',tacos:'Taco',burritos:'Burrito',bowls:'Bowl',salads:'Salad',waffles:'Waffle',pizzas:'Pizza',quesadillas:'Quesadilla'};
+const SAME = {Sandwich:/sandwich|panini|toast|melt|burger|wrap/i, Crepe:/crepe/i};
+function fullName(i){
+  const w = String(i.s || '').trim().split(/\s+/).pop().toLowerCase(), d = DISH[w];
+  if (!d || (SAME[d] || new RegExp(d, 'i')).test(i.n)) return i.n;
+  return i.n + ' ' + d;
+}
 /* combo engine lives in /combos.js */
 function quote(c){
-  const top = c.lines[0].i.n;
+  const top = fullName(c.lines[0].i);
   if (c.how === 'fav') return `“Trust me, the ${esc(top)} is what everyone comes back for.”`;
   if (c.how === 'deal') return S.party > 1 ? `“Most food for the money. Just ${money(c.total / S.party)} each!”` : `“A proper meal that won't empty your wallet.”`;
   if (c.how === 'feast') return S.party > 1 ? `“Really hungry? This is the full spread for the table.”` : `“Really hungry? The ${esc(top)} with all the extras.”`;
@@ -607,7 +617,7 @@ function renderPicks(){
     return `<div class="slide"><img class="peek" src="${PEEK}" alt="" width="220" height="149">
       <div class="card ${K.cls}">
         <div class="bdrow"><span class="badge">${K.badge}</span>${S.prefs.has('halal') ? '<span class="hal">Halal</span>' : ''}</div>
-        <div class="items">${c.lines.map((l) => `<div class="it"><span class="q">${l.q}×</span><span class="n">${esc(l.i.n)}</span><span class="p">${money(l.i.p * l.q)}</span></div>`).join('')}${ok ? freeRow(FREE_EXTRA) : !add ? '' : `<div class="nudge"><span class="n">Add ${money(rem)} more for a free ${esc(FREE_EXTRA)}</span><button class="addb" data-ci="${ci}" data-id="${add.id}">+ ${esc(add.n)}</button></div>`}</div>
+        <div class="items">${c.lines.map((l) => `<div class="it"><span class="q">${l.q}×</span><span class="n">${esc(fullName(l.i))}</span><span class="p">${money(l.i.p * l.q)}</span></div>`).join('')}${ok ? freeRow(FREE_EXTRA) : !add ? '' : `<div class="nudge"><span class="n">Add ${money(rem)} more for a free ${esc(FREE_EXTRA)}</span><button class="addb" data-ci="${ci}" data-id="${add.id}">+ ${esc(fullName(add))}</button></div>`}</div>
         <div class="tot"><span class="l">Total${S.party > 1 ? `<div class="pp" style="text-align:left">${money(c.total / S.party)} per person</div>` : ''}</span><span class="v">${money(c.total)}</span></div>
       </div></div>`;
   }).join('');
@@ -714,7 +724,7 @@ async function sendOrder(tapped){
 }
 $('choose').onclick = () => {
   const c = S.combos[S.idx];
-  placeOrder($('choose'), 'Redeem now', {kind: c.how, title: (S.prefs.has('halal') ? 'Halal · ' : '') + KINDS[c.how].title, party: S.party, items: c.lines.map((l) => ({id:l.i.id, n:l.i.n, q:l.q, p:l.i.p}))});
+  placeOrder($('choose'), 'Redeem now', {kind: c.how, title: (S.prefs.has('halal') ? 'Halal · ' : '') + KINDS[c.how].title, party: S.party, items: c.lines.map((l) => ({id:l.i.id, n:fullName(l.i), q:l.q, p:l.i.p}))});
 };
 
 /* pay online with Square (restaurants connected to Square) */
@@ -821,7 +831,7 @@ function renderBuild(){
   btn.textContent = !total ? 'Add items to start' : PAY ? 'Order & pay' : !FREE.on ? 'Get my code' : rem > 0 ? `Add ${money(rem)} more to unlock` : 'Redeem now';
 }
 $('redeemFree').onclick = () => {
-  const items = Object.entries(S.cart).map(([id,q]) => { const i = ITEMS.find((x) => x.id === id); return {id:i.id, n:i.n, q, p:i.p}; });
+  const items = Object.entries(S.cart).map(([id,q]) => { const i = ITEMS.find((x) => x.id === id); return {id:i.id, n:fullName(i), q, p:i.p}; });
   placeOrder($('redeemFree'), 'Redeem now', {kind:'own', title:'Your order', party:1, items});
 };
 renderBuild();
