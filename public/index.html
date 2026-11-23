@@ -148,6 +148,13 @@ h1{font-size:38px;line-height:1.02;letter-spacing:-.03em;font-weight:800}
 .pdots{display:flex;justify-content:center;gap:6px;margin:12px 0 16px}.pdots i{width:8px;height:8px;border-radius:9px;background:var(--line);transition:all .2s}.pdots i.on{width:22px;background:var(--ink)}
 .actions{position:sticky;bottom:0;padding:14px 22px calc(10px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:2px;margin-top:auto;background:linear-gradient(to bottom,rgba(255,255,255,0),#fff 22%);z-index:5}
 #picks{padding-bottom:0}
+.prefs{margin-top:16px}
+.prefs p{font-size:14px;font-weight:600;color:var(--muted);margin-bottom:8px}
+.prow{display:flex;gap:8px;flex-wrap:wrap}
+.pf{padding:8px 14px;border-radius:99px;border:2px solid var(--line);background:#fff;font-weight:600;font-size:14.5px;color:var(--ink)}
+.pf.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.halpill{align-self:center;margin-top:8px;background:var(--green);color:#fff;font-weight:700;font-size:14px;padding:6px 14px;border-radius:999px}
+.hal{display:inline-block;margin-left:6px;background:var(--green);color:#fff;font-weight:700;font-size:12px;padding:4px 10px;border-radius:999px;vertical-align:middle}
 /* picks: aim for one screen, but never hide items in an inner scroll */
 #picks.on{flex:none;min-height:calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom));padding-top:14px}
 #picks h2{font-size:24px}
@@ -155,7 +162,8 @@ h1{font-size:38px;line-height:1.02;letter-spacing:-.03em;font-weight:800}
 #picks .slide{display:flex;flex-direction:column;padding-top:76px}
 #picks .slide .peek{width:128px;height:auto}
 #picks .card{flex:1;display:flex;flex-direction:column;padding:24px 18px 16px}
-#picks .card .badge{align-self:flex-start;margin-bottom:12px}
+#picks .card .bdrow{display:flex;align-items:center;gap:4px;margin-bottom:12px}
+#picks .card .badge{align-self:flex-start}
 #picks .card h3{font-size:23px;margin:8px 0 4px}
 #picks .quote{font-size:14px;margin-bottom:10px}
 #picks .it{padding:8px 0}
@@ -300,6 +308,7 @@ h1{font-size:38px;line-height:1.02;letter-spacing:-.03em;font-weight:800}
   <!-- 1. hello -->
   <section class="screen on" id="hello">
     <span class="tag">Foodol has made it to <span class="rName">Sausalido Cafe</span>!</span>
+    <span class="halpill" id="halPill" hidden>✓ Showing halal picks</span>
     <div class="mid">
       <div class="says">
         <div class="say s2">I'll pick the best items on the menu for you, <b>plus a FREE item</b> with your order!<small>On orders <span class="fmin">$20</span>+</small></div>
@@ -327,6 +336,7 @@ h1{font-size:38px;line-height:1.02;letter-spacing:-.03em;font-weight:800}
     <div class="ask"><img src="https://d2ol7oe51mr4n9.cloudfront.net/user_3GsbRE1t9hIx7tjNcLo5jEaZ8ao/96e4324c-5fc2-4a1f-a62b-067f2a812d76.webp" alt=""><div class="bubble">What are you craving?</div></div>
     <p class="hintline">Pick as many as you like.</p>
     <div class="grid" id="craveGrid"></div>
+    <div class="prefs" id="prefs" hidden><p>Any preferences?</p><div class="prow" id="prefRow"></div></div>
     <div class="actions"><button class="btn" id="craveGo" disabled>Pick at least one</button></div>
   </section>
 
@@ -508,6 +518,17 @@ $('craveGrid').querySelectorAll('.tile').forEach((b) => b.onclick = () => {
   else { if (k === 'surprise') S.craves.clear(); else S.craves.delete('surprise'); S.craves.add(k); }
   syncCrave();
 });
+/* preferences: halal & vegetarian filter, the rest lean the picks. Only tags this menu uses show up. */
+const PREFS = [['halal','Halal'],['vegetarian','Vegetarian'],['spicy','Spicy'],['savory','Savory'],['breakfast','Breakfast'],['lunch','Lunch']];
+const PREF_ON = PREFS.filter(([k]) => ITEMS.filter((i) => i.k !== 'drink' && (i.t || []).includes(k)).length >= 2);
+S.prefs = new Set((new URLSearchParams(location.search).get('pref') || '').split(',').filter((k) => PREF_ON.some(([x]) => x === k)));
+function renderPrefs(){
+  $('prefs').hidden = !PREF_ON.length;
+  $('prefRow').innerHTML = PREF_ON.map(([k,l]) => `<button class="pf ${S.prefs.has(k) ? 'on' : ''}" data-p="${k}" aria-pressed="${S.prefs.has(k)}">${S.prefs.has(k) ? '✓ ' : ''}${l}</button>`).join('');
+  $('halPill').hidden = !S.prefs.has('halal');
+}
+$('prefRow').onclick = (e) => { const b = e.target.closest('.pf'); if (!b) return; const k = b.dataset.p; S.prefs.has(k) ? S.prefs.delete(k) : S.prefs.add(k); renderPrefs(); };
+renderPrefs();
 $('craveGo').onclick = () => { if (!S.craves.size) return; go('think'); setTimeout(() => { buildPicks(); go('picks'); }, 1100); };
 syncCrave();
 
@@ -521,7 +542,7 @@ function quote(c){
   return `“Never had the ${esc(top)}? Today's the day. Trust me.”`;
 }
 function buildPicks(){
-  const OPT = {popular: MENU.popular, grace: FREE.grace, freeName: FREE.on ? FREE.name : ''};
+  const OPT = {popular: MENU.popular, grace: FREE.grace, freeName: FREE.on ? FREE.name : '', prefs: [...S.prefs]};
   S.combos = FoodolCombos.build(ITEMS, S.party, [...S.craves], FREE.on ? +FREE.min : 0, OPT);
   if (!S.combos.length) S.combos = FoodolCombos.build(ITEMS, S.party, ['surprise'], FREE.on ? +FREE.min : 0, OPT);
   S.idx = 0; renderPicks(); $('rail').scrollLeft = 0;
@@ -533,7 +554,7 @@ function renderPicks(){
     const K = KINDS[c.how];
     return `<div class="slide"><img class="peek" src="${PEEK}" alt="" width="220" height="149">
       <div class="card ${K.cls}">
-        <span class="badge">${K.badge}</span>
+        <div class="bdrow"><span class="badge">${K.badge}</span>${S.prefs.has('halal') ? '<span class="hal">Halal</span>' : ''}</div>
         <div class="items">${c.lines.map((l) => `<div class="it"><span class="q">${l.q}×</span><span class="n">${esc(l.i.n)}</span><span class="p">${money(l.i.p * l.q)}</span></div>`).join('')}${ok ? freeRow(FREE_EXTRA) : !add ? '' : `<div class="nudge"><span class="n">Add ${money(rem)} more for a free ${esc(FREE_EXTRA)}</span><button class="addb" data-ci="${ci}" data-id="${add.id}">+ ${esc(add.n)}</button></div>`}</div>
         <div class="tot"><span class="l">Total${S.party > 1 ? `<div class="pp" style="text-align:left">${money(c.total / S.party)} per person</div>` : ''}</span><span class="v">${money(c.total)}</span></div>
       </div></div>`;
@@ -641,7 +662,7 @@ async function sendOrder(tapped){
 }
 $('choose').onclick = () => {
   const c = S.combos[S.idx];
-  placeOrder($('choose'), 'Redeem now', {kind: c.how, title: KINDS[c.how].title, party: S.party, items: c.lines.map((l) => ({id:l.i.id, n:l.i.n, q:l.q, p:l.i.p}))});
+  placeOrder($('choose'), 'Redeem now', {kind: c.how, title: (S.prefs.has('halal') ? 'Halal · ' : '') + KINDS[c.how].title, party: S.party, items: c.lines.map((l) => ({id:l.i.id, n:l.i.n, q:l.q, p:l.i.p}))});
 };
 
 /* pay online with Square (restaurants connected to Square) */

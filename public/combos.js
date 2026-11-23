@@ -173,14 +173,26 @@
     return { how, lines, total: total(counts), key: lines.map((l) => l.i.id + 'x' + l.q).sort().join() };
   }
 
-  // build(items, party, cravings, freeMin, opts) — opts: { popular: [ids], grace, hour }
+  // Guest preferences. Halal and vegetarian are strict: Foodol only suggests
+  // items tagged for them (drinks always pass; halal also allows vegetarian
+  // and seafood items). The rest just make matching dishes score higher.
+  const STRICT = {
+    halal: (i) => i.k === 'drink' || (i.t || []).some((x) => x === 'halal' || x === 'vegetarian' || x === 'seafood'),
+    vegetarian: (i) => i.k === 'drink' || (i.t || []).includes('vegetarian'),
+  };
+  // build(items, party, cravings, freeMin, opts) — opts: { popular: [ids], grace, hour, prefs: [tags] }
   function build(items, party, craveList, freeMin, opts = {}) {
     const n = Math.max(1, Math.min(20, +party || 1));
     const freeName = String(opts.freeName || '').trim().toLowerCase();
-    const live = items.filter((i) => i.on !== false && i.p > 0 && (!freeName || i.n.trim().toLowerCase() !== freeName)); // never sell the free item
+    const prefs = (opts.prefs || []).filter(Boolean);
+    const live = items.filter((i) => i.on !== false && i.p > 0 && (!freeName || i.n.trim().toLowerCase() !== freeName) // never sell the free item
+      && prefs.every((p) => !STRICT[p] || STRICT[p](i)));
     const popular = opts.popular && opts.popular.length ? opts.popular
       : live.filter((i) => (+i.pop || 0) >= 5).map((i) => i.id); // older menus: top-rated items stand in
-    const sc = scorer(popular);
+    const base = scorer(popular);
+    const soft = prefs.filter((p) => !STRICT[p]);
+    // halal guests see a halal dish first (not just a cheese crepe); other prefs boost matching dishes
+    const sc = (i) => base(i) + soft.filter((p) => (i.t || []).includes(p)).length * 45 + (prefs.includes('halal') && (i.t || []).includes('halal') ? 70 : 0);
     const mains = live.filter((i) => i.k === 'main');
     if (!mains.length) return [];
     const craves = (craveList && craveList.length ? craveList : ['surprise']);

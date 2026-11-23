@@ -99,6 +99,8 @@ function cleanCravings(list) {
   return out.length ? out : null;
 }
 const cravingsOf = (menu) => menu.cravings || DEFAULT_CRAVINGS;
+// Item tags guests can filter or lean on: halal/vegetarian are strict filters, the rest are preferences.
+const TAGS = ['halal', 'vegetarian', 'seafood', 'spicy', 'savory', 'breakfast', 'lunch'];
 function cleanMenu(b) {
   const f = b.free || {};
   const cravings = cleanCravings(b.cravings);
@@ -112,6 +114,7 @@ function cleanMenu(b) {
       id, s: clean(i.s, 40) || 'Menu', n: clean(i.n, 60), d: clean(i.d, 140), p: num(i.p, 0, 500),
       c: (Array.isArray(i.c) ? i.c : []).filter((c) => CRAVES.includes(c)),
       k: ['main', 'side', 'drink'].includes(i.k) ? i.k : 'main', pop: Math.min(5, Math.max(1, Math.round(+i.pop || 3))), on: i.on !== false,
+      ...(Array.isArray(i.t) && i.t.some((x) => TAGS.includes(x)) ? { t: [...new Set(i.t.filter((x) => TAGS.includes(x)))] } : {}),
       ...(i.sq ? { sq: String(i.sq).replace(/[^A-Za-z0-9_-]/g, '').slice(0, 64) } : {}),
       ...(i.cl ? { cl: String(i.cl).replace(/[^A-Za-z0-9_-]/g, '').slice(0, 64) } : {}),
     };

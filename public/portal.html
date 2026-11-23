@@ -89,6 +89,9 @@ h2{font-size:30px;font-weight:800;letter-spacing:-.025em}
 .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
 .chip{font-size:12.5px;font-weight:600;padding:4px 10px;border-radius:99px;background:#f0f3f1;color:var(--mut)}
 .chip.on{background:var(--soft);color:var(--gd)}
+.chips.tags{margin-top:5px}
+.tg{font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:99px;border:1px dashed #cfdcd3;color:var(--mut);background:#fff}
+.tg.on{border-style:solid;border-color:var(--gd);color:var(--gd);background:#fff}
 .popb{font-size:12.5px;font-weight:700;padding:4px 10px;border-radius:99px;background:#f0f3f1;color:var(--mut);margin-left:4px}
 .popb.on{background:#fff1e6;color:#c2410c}
 .plist{display:grid;gap:8px;margin-top:6px}
@@ -401,6 +404,7 @@ function renderOverview(){
 
 /* menu */
 const sections = () => [...new Set(M.items.map((i) => i.s))];
+const TAGL = [['halal','Halal'],['vegetarian','Vegetarian'],['seafood','Seafood'],['spicy','Spicy'],['savory','Savory'],['breakfast','Breakfast'],['lunch','Lunch']];
 function renderMenu(){
   const q = $('q').value.trim().toLowerCase();
   $('menuList').innerHTML = sections().map((s) => {
@@ -411,6 +415,7 @@ function renderMenu(){
         <button class="sw ${i.on !== false ? 'on' : ''}" data-a="on" aria-label="Show ${esc(i.n)} to guests" title="${i.on !== false ? 'Showing to guests' : 'Hidden from guests'}"></button>
         <div><input class="nm" data-f="n" value="${esc(i.n)}" aria-label="Name"><input class="ds" data-f="d" value="${esc(i.d)}" placeholder="Short description" aria-label="Description">
           <div class="chips">${cr().map(([k,l]) => `<button class="chip ${i.c.includes(k) ? 'on' : ''}" data-a="c" data-k="${k}">${l}</button>`).join('')}
+          </div><div class="chips tags">${TAGL.map(([k,l]) => `<button class="tg ${(i.t || []).includes(k) ? 'on' : ''}" data-a="t" data-k="${k}">${l}</button>`).join('')}
           ${i.k !== 'drink' ? `<button class="popb ${M.popular.includes(i.id) ? 'on' : ''}" data-a="popular" title="Popular dishes are what Foodol recommends first">🔥 ${M.popular.includes(i.id) ? 'Popular #' + (M.popular.indexOf(i.id) + 1) : 'Mark popular'}</button>` : ''}
           ${!(+i.p > 0) ? '<span class="flag">Needs a price</span>' : ''}</div></div>
         <div class="pr"><input type="number" min="0" step="0.01" data-f="p" value="${(+i.p || 0).toFixed(2)}" aria-label="Price"></div>
@@ -433,6 +438,7 @@ $('menuList').addEventListener('click', (e) => {
   const b = e.target.closest('[data-a]'); if (!b) return; const r = b.closest('.row'); const idx = +r.dataset.i, i = M.items[idx];
   if (b.dataset.a === 'on') i.on = i.on === false;
   if (b.dataset.a === 'c') { const k = b.dataset.k; i.c = i.c.includes(k) ? i.c.filter((x) => x !== k) : [...i.c, k]; }
+  if (b.dataset.a === 't') { const k = b.dataset.k, t = i.t || []; i.t = t.includes(k) ? t.filter((x) => x !== k) : [...t, k]; }
   if (b.dataset.a === 'popular') M.popular = M.popular.includes(i.id) ? M.popular.filter((x) => x !== i.id) : [...M.popular, i.id];
   if (b.dataset.a === 'del') { if (!confirm(`Delete “${i.n}” from your menu?`)) return; M.items.splice(idx, 1); M.popular = M.popular.filter((x) => x !== i.id); }
   renderMenu(); renderPopular(); renderOverview(); dirty();
