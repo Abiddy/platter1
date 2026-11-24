@@ -275,12 +275,14 @@
       fav: () => ranked[0],
       deal: () => ranked.filter((c) => c !== ranked[0] && !seen.has(c.pl.id) && c.score >= top - 60 && (!freeLine || c.total >= freeLine))
         .sort((a, b) => a.total - b.total || b.score - a.score)[0],
-      adv: () => ranked.find((c) => mainsOf(c).every((id) => !used.has(id))),
+      adv: () => ranked.find((c) => !c.offMains && mainsOf(c).every((id) => !used.has(id))) || ranked.find((c) => mainsOf(c).every((id) => !used.has(id))),
       // the biggest strong plate, preferring a dish not shown yet
       feast: () => { const big = ranked.filter((c) => c.big && c.total >= (freeLine || 0) && !seen.has(c.pl.id) && c.score >= top - 90);
         const pick = (l) => l.sort((a, b) => (b.score + b.total * 3) - (a.score + a.total * 3))[0];
         return pick(big.filter((c) => mainsOf(c).every((id) => !used.has(id)))) || pick(big); },
-      wild: () => ranked.slice(2).find((c) => mainsOf(c).every((id) => !used.has(id)) && c.mains[0].s !== ranked[0].mains[0].s) || ranked.slice(3).find((c) => !seen.has(c.pl.id)),
+      wild: () => ranked.slice(2).find((c) => !c.offMains && mainsOf(c).every((id) => !used.has(id)) && c.mains[0].s !== ranked[0].mains[0].s)
+        || ranked.slice(2).find((c) => !c.offMains && !seen.has(c.pl.id) && mainsOf(c).every((id) => !used.has(id)))
+        || ranked.slice(3).find((c) => !seen.has(c.pl.id)),
     };
     for (const how of ORDER) {
       const lead = roles[how]();
