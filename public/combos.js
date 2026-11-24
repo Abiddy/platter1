@@ -216,11 +216,11 @@
       const hit = surprise ? cr.length : cr.filter((c) => craves.includes(c)).length;
       if (!surprise && !hit) continue;
       const parts = {};
-      parts.craving = surprise ? 40 : 60 + (hit - 1) * 15;
+      parts.craving = surprise ? 40 : 60 + (hit - 1) * 15 - (cr.length - hit) * 20; // mixed plates with a craving they didn't pick rank lower
       parts.time = !pl.tm || !pl.tm.length ? 0 : pl.tm.includes(slot) ? 30 : -35;
       parts.popular = Math.round(mains.reduce((t, m) => t + base(m), 0) / mains.length * 0.35);
       parts.reviews = Math.min(40, lines.reduce((t, l) => t + (+l.i.rv || 0) * 8, 0));
-      parts.owner = lines.some((l) => l.i.b) ? 40 : 0;
+      parts.owner = lines.some((l) => l.i.b) ? 30 : 0;
       parts.prefs = soft.reduce((t, p) => t + 45 * mains.filter((m) => (m.t || []).includes(p)).length / mains.length, 0)
         + (prefs.includes('halal') && mains.some((m) => (m.t || []).includes('halal')) ? 70 : 0);
       const st = (stats || {})[pl.id];
@@ -237,7 +237,7 @@
 
   // One combo for the whole party: a lead plate plus one more per person,
   // spreading cravings and avoiding the same main twice where possible.
-  function assemble(lead, ranked, n, craves) {
+  function assemble(lead, ranked, n, craves, avoid) {
     const chosen = [lead];
     const mainCount = new Map(); lead.mains.forEach((m) => mainCount.set(m.id, 1));
     const covered = new Set((lead.pl.cr || []).filter((c) => craves.includes(c)));
@@ -246,7 +246,7 @@
       for (const c of ranked) {
         const rep = c.mains.reduce((t, m) => t + (mainCount.get(m.id) || 0), 0);
         const fresh = (c.pl.cr || []).some((x) => craves.includes(x) && !covered.has(x)) ? 30 : 0;
-        const v = c.score - rep * 45 + fresh - (chosen.includes(c) ? 25 : 0);
+        const v = c.score - rep * 45 + fresh - (chosen.includes(c) ? 25 : 0) - (avoid.has(c.pl.id) ? 40 : 0);
         if (v > bv) { bv = v; best = c; }
       }
       if (!best) break;
@@ -264,13 +264,14 @@
     const hour = opts.hour ?? new Date().getHours();
     const ranked = scorePlates(opts.library, byId, { craves, surprise, slot: SLOT(hour), prefs, soft, base, stats: opts.stats, seed: opts.seed || 0, freeLine });
     if (!ranked.length) return [];
-    const used = new Set(), out = [], seen = new Set();
+    const used = new Set(), out = [], seen = new Set(), avoid = new Set();
+    const byPlate = new Map(ranked.map((c) => [c.pl.id, c]));
     const mainsOf = (c) => c.mains.map((m) => m.id);
     const top = ranked[0].score;
     const roles = {
       fav: () => ranked[0],
-      deal: () => ranked.filter((c) => c.score >= top - 60 && (!freeLine || c.total >= freeLine)).sort((a, b) => a.total - b.total || b.score - a.score)
-        .find((c) => !mainsOf(c).every((id) => used.has(id))),
+      deal: () => ranked.filter((c) => c !== ranked[0] && !seen.has(c.pl.id) && c.score >= top - 60 && (!freeLine || c.total >= freeLine))
+        .sort((a, b) => a.total - b.total || b.score - a.score)[0],
       adv: () => ranked.find((c) => mainsOf(c).every((id) => !used.has(id))),
       feast: () => ranked.find((c) => c.big && c.total >= (freeLine || 0) && !seen.has(c.pl.id)),
       wild: () => ranked.slice(2).find((c) => mainsOf(c).every((id) => !used.has(id)) && c.mains[0].s !== ranked[0].mains[0].s) || ranked.slice(3).find((c) => !seen.has(c.pl.id)),
@@ -278,11 +279,12 @@
     for (const how of ORDER) {
       const lead = roles[how]();
       if (!lead) continue;
-      const { counts, ids } = assemble(lead, ranked, n, craves);
+      const { counts, ids } = assemble(lead, ranked, n, craves, avoid);
       const c = finish(how, counts);
       if (seen.has(c.key)) continue;
       seen.add(c.key); seen.add(lead.pl.id); c.lib = ids; c.why = lead.parts; out.push(c);
-      mainsOf(lead).forEach((id) => used.add(id));
+      // later combos lean away from the plates and dishes this one used
+      ids.forEach((id) => { avoid.add(id); const x = byPlate.get(id); if (x) mainsOf(x).forEach((m) => used.add(m)); });
     }
     return out;
   }
