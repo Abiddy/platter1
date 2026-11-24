@@ -247,7 +247,7 @@
         const rep = c.mains.reduce((t, m) => t + (mainCount.get(m.id) || 0), 0);
         const fresh = (c.pl.cr || []).some((x) => craves.includes(x) && !covered.has(x)) ? 30 : 0;
         const off = craves.includes('surprise') ? 0 : (c.pl.cr || []).filter((x) => !craves.includes(x)).length * 50; // stay on the group's cravings
-        const v = c.score - rep * 45 + fresh - off - (chosen.includes(c) ? 25 : 0) - (avoid.has(c.pl.id) ? 40 : 0) - (how === 'deal' ? c.total * 4 : 0);
+        const v = c.score - rep * 45 + fresh - off - (chosen.includes(c) ? 25 : 0) - (avoid.has(c.pl.id) ? 70 : 0) - (how === 'deal' ? c.total * 4 : 0);
         if (v > bv) { bv = v; best = c; }
       }
       if (!best) break;
@@ -274,7 +274,7 @@
       deal: () => ranked.filter((c) => c !== ranked[0] && !seen.has(c.pl.id) && c.score >= top - 60 && (!freeLine || c.total >= freeLine))
         .sort((a, b) => a.total - b.total || b.score - a.score)[0],
       adv: () => ranked.find((c) => mainsOf(c).every((id) => !used.has(id))),
-      feast: () => ranked.find((c) => c.big && c.total >= (freeLine || 0) && !seen.has(c.pl.id) && mainsOf(c).some((id) => !used.has(id)))
+      feast: () => ranked.find((c) => c.big && c.total >= (freeLine || 0) && !seen.has(c.pl.id) && mainsOf(c).every((id) => !used.has(id)))
         || ranked.find((c) => c.big && c.total >= (freeLine || 0) && !seen.has(c.pl.id)),
       wild: () => ranked.slice(2).find((c) => mainsOf(c).every((id) => !used.has(id)) && c.mains[0].s !== ranked[0].mains[0].s) || ranked.slice(3).find((c) => !seen.has(c.pl.id)),
     };
