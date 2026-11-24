@@ -492,6 +492,7 @@ const FALLBACK_ITEMS = [
  {id:'fries',s:'Sides',n:'French Fries',d:'Side order',p:5.50,c:['sandwich'],k:'side',pop:2},
  {id:'smoo',s:'Drinks',n:'Fruit Smoothie',d:'Strawberry, mango, mixed berry',p:6.99,c:['sweet','breakfast'],k:'side',pop:4},
 ];
+const SEED = Math.floor(Math.random() * 1e6); // per visit, so the top pick rotates a little
 const MENU = window.FOODOL_MENU || {restaurant:{slug:'sausalido',name:'Sausalido Cafe'}, free:{on:true,name:'Thai iced tea',min:20,grace:.5}, items:FALLBACK_ITEMS};
 const REST = MENU.restaurant || {slug:'sausalido', name:'Sausalido Cafe'};
 const OKEY = 'foodol_order_' + REST.slug;
@@ -604,9 +605,12 @@ function quote(c){
   return `“Never had the ${esc(top)}? Today's the day. Trust me.”`;
 }
 function buildPicks(){
-  const OPT = {popular: MENU.popular, grace: FREE.grace, freeName: FREE.on ? FREE.name : '', prefs: [...S.prefs]};
+  const OPT = {popular: MENU.popular, grace: FREE.grace, freeName: FREE.on ? FREE.name : '', prefs: [...S.prefs], library: MENU.library, stats: MENU.stats, seed: SEED};
   S.combos = FoodolCombos.build(ITEMS, S.party, [...S.craves], FREE.on ? +FREE.min : 0, OPT);
   if (!S.combos.length) S.combos = FoodolCombos.build(ITEMS, S.party, ['surprise'], FREE.on ? +FREE.min : 0, OPT);
+  // tell Foodol which library combos this guest saw, so it learns what gets picked
+  const seen = [...new Set(S.combos.flatMap((c) => c.lib || []))];
+  if (seen.length) try { navigator.sendBeacon('/api/shown', new Blob([JSON.stringify({r: REST.slug, lib: seen})], {type: 'application/json'})); } catch {}
   S.idx = 0; renderPicks(); $('rail').scrollLeft = 0;
 }
 function renderPicks(){
@@ -724,7 +728,7 @@ async function sendOrder(tapped){
 }
 $('choose').onclick = () => {
   const c = S.combos[S.idx];
-  placeOrder($('choose'), 'Redeem now', {kind: c.how, title: (S.prefs.has('halal') ? 'Halal · ' : '') + KINDS[c.how].title, party: S.party, items: c.lines.map((l) => ({id:l.i.id, n:fullName(l.i), q:l.q, p:l.i.p}))});
+  placeOrder($('choose'), 'Redeem now', {kind: c.how, title: (S.prefs.has('halal') ? 'Halal · ' : '') + KINDS[c.how].title, party: S.party, lib: c.lib || [], items: c.lines.map((l) => ({id:l.i.id, n:fullName(l.i), q:l.q, p:l.i.p}))});
 };
 
 /* pay online with Square (restaurants connected to Square) */

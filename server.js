@@ -116,6 +116,8 @@ function cleanMenu(b) {
       k: ['main', 'side', 'drink'].includes(i.k) ? i.k : 'main', pop: Math.min(5, Math.max(1, Math.round(+i.pop || 3))), on: i.on !== false,
       ...(Array.isArray(i.t) && i.t.some((x) => TAGS.includes(x)) ? { t: [...new Set(i.t.filter((x) => TAGS.includes(x)))] } : {}),
       ...(i.sq ? { sq: String(i.sq).replace(/[^A-Za-z0-9_-]/g, '').slice(0, 64) } : {}),
+      ...(+i.rv > 0 ? { rv: Math.min(3, Math.round(+i.rv)) } : {}), // review love: how often reviews praise it (0-3)
+      ...(i.b ? { b: 1 } : {}), // owner feature boost
       ...(i.cl ? { cl: String(i.cl).replace(/[^A-Za-z0-9_-]/g, '').slice(0, 64) } : {}),
     };
   }).filter((i) => i.n);
@@ -123,7 +125,27 @@ function cleanMenu(b) {
   const popular = (Array.isArray(b.popular) ? b.popular : []).map((x) => String(x)).filter((x, k, a) => ids.has(x) && a.indexOf(x) === k).slice(0, 30);
   const menu = { free: { on: !!f.on, name: clean(f.name, 40) || 'free item', min: num(f.min, 0, 500), grace: num(f.grace ?? 0.5, 0, 5), img: /^https:\/\/d2ol7oe51mr4n9\.cloudfront\.net\/[\w\/.-]+$/.test(String(f.img || '')) ? String(f.img) : '' }, items, popular };
   if (cravings) menu.cravings = cravings;
+  const lib = cleanLibrary(b.library, new Set(items.map((i) => i.id)), CRAVES);
+  if (lib.length) menu.library = lib;
   return menu;
+}
+// Combo library: single-person plates written once (AI + owner review), scored live by combos.js.
+const SLOTS = ['morning', 'midday', 'afternoon', 'evening'];
+function cleanLibrary(list, ids, craves) {
+  const seen = new Set();
+  return (Array.isArray(list) ? list : []).slice(0, 150).map((pl, n) => {
+    let id = String(pl.id || '').replace(/[^\w-]/g, '').slice(0, 16) || 'L' + n;
+    while (seen.has(id)) id += 'x';
+    seen.add(id);
+    const items = (Array.isArray(pl.items) ? pl.items : []).slice(0, 6).map((x) => ({ id: String(x.id || ''), q: Math.min(6, Math.max(1, Math.round(+x.q || 1))) })).filter((x) => ids.has(x.id));
+    return {
+      id, n: clean(pl.n, 48), items,
+      cr: (Array.isArray(pl.cr) ? pl.cr : []).filter((c) => craves.includes(c)),
+      tm: (Array.isArray(pl.tm) ? pl.tm : []).filter((t) => SLOTS.includes(t)),
+      w: Math.max(-2, Math.min(2, Math.round(+pl.w || 0))),
+      why: clean(pl.why, 120), src: pl.src === 'owner' ? 'owner' : 'ai', on: pl.on !== false,
+    };
+  }).filter((pl) => pl.items.length && pl.n);
 }
 
 let aliases = {};
@@ -144,6 +166,17 @@ const findR = (slug) => { const s2 = go(slug); return restaurants.find((r) => r.
 
 /* ---------- orders ---------- */
 const orders = new Map();
+// How often each library plate was shown to guests (per restaurant); picks come from orders.
+const shown = new Map();
+const libIds = (v) => (Array.isArray(v) ? v : []).slice(0, 20).map((x) => String(x).replace(/[^\w-]/g, '').slice(0, 16)).filter(Boolean);
+function noteShown(r, lib) { const m = shown.get(r) || new Map(); shown.set(r, m); for (const id of new Set(libIds(lib))) m.set(id, (m.get(id) || 0) + 1); }
+// { plateId: [shown, picked, redeemed] }
+function libStats(r) {
+  const out = {};
+  for (const [id, s] of shown.get(r) || []) out[id] = [s, 0, 0];
+  for (const o of orders.values()) if (o.r === r && o.lib) for (const id of new Set(o.lib)) { const v = out[id] || (out[id] = [0, 0, 0]); v[1]++; if (o.redeemedAt) v[2]++; }
+  return out;
+}
 if (fs.existsSync(LOG)) {
   for (const line of fs.readFileSync(LOG, 'utf8').split('\n')) {
     if (!line.trim()) continue;
@@ -152,6 +185,7 @@ if (fs.existsSync(LOG)) {
       if (ev.type === 'order') orders.set(ev.order.id, { ...ev.order, r: go(ev.order.r || FIRST) });
       if (ev.type === 'redeem' && orders.has(ev.id)) orders.get(ev.id).redeemedAt = ev.at;
       if (ev.type === 'wipe') for (const [id, o] of orders) if (o.r === go(ev.r)) orders.delete(id);
+      if (ev.type === 'shown') noteShown(go(ev.r), ev.lib);
     } catch { /* skip bad line */ }
   }
 }
@@ -351,12 +385,14 @@ function menuFromCatalog(objects, keep) {
 function menuFromRows(rows, keep, key) {
   const prev = new Map((keep.items || []).filter((i) => i[key]).map((i) => [i[key], i]));
   const byName = new Map((keep.items || []).map((i) => [i.n.trim().toLowerCase(), i]));
-  const items = [];
+  const items = [], idMap = new Map();
   for (const r of rows) {
     const sname = r.s || 'Menu', old = prev.get(r.pid) || byName.get(String(r.n).trim().toLowerCase());
     const k = old ? old.k : DRINK_RE.test(sname + ' ' + r.n) ? 'drink' : SIDE_RE.test(sname) ? 'side' : 'main';
     items.push({ id: String(r.pid).slice(0, 24), [key]: r.pid, s: sname, n: r.n, d: String(r.d || '').replace(/\s+/g, ' ').trim().slice(0, 140),
-      p: r.p, c: old ? old.c : [slugify(sname).slice(0, 20)], k, pop: old ? old.pop : 3, on: old ? old.on : true });
+      p: r.p, c: old ? old.c : [slugify(sname).slice(0, 20)], k, pop: old ? old.pop : 3, on: old ? old.on : true,
+      ...(old && old.t ? { t: old.t } : {}), ...(old && old.rv ? { rv: old.rv } : {}), ...(old && old.b ? { b: old.b } : {}) });
+    if (old) idMap.set(old.id, String(r.pid).slice(0, 24));
   }
   const oldIds = new Map((keep.items || []).map((i) => [i.id, i]));
   const popular = (keep.popular || []).map((id) => { const o = oldIds.get(id); if (!o) return null; const n = items.find((x) => x.n.trim().toLowerCase() === o.n.trim().toLowerCase()); return n ? n.id : null; }).filter(Boolean);
@@ -367,7 +403,8 @@ function menuFromRows(rows, keep, key) {
     items.filter((i) => i.k !== 'drink').forEach((i) => counts.set(i.s, (counts.get(i.s) || 0) + 1));
     cravings = [...counts].sort((a, b) => b[1] - a[1]).slice(0, 6).map(([sname]) => ({ id: slugify(sname).slice(0, 20), label: sname.slice(0, 24), emoji: '🍽️' }));
   }
-  return cleanMenu({ free: keep.free || { on: true, name: 'Iced tea', min: 20, grace: 0.5 }, popular, cravings, items });
+  const library = (keep.library || []).map((pl) => ({ ...pl, items: pl.items.map((x) => ({ ...x, id: idMap.get(x.id) || x.id })) }));
+  return cleanMenu({ free: keep.free || { on: true, name: 'Iced tea', min: 20, grace: 0.5 }, popular, cravings, items, library });
 }
 // Build the Square order for a Foodol cart. Prices always come from Square's catalog, never the browser.
 async function sqOrderFor(rest, lines, extra) {
@@ -485,6 +522,13 @@ http.createServer(async (req, res) => {
   const p = url.pathname.replace(/\/+$/, '') || '/';
 
   /* guest API */
+  if (p === '/api/shown' && req.method === 'POST') {
+    const b = await readBody(req); const rest = findR(clean(b.r, 40));
+    if (!rest || !rest.menu.library) return send(res, 204, '');
+    const ids = libIds(b.lib).filter((id) => rest.menu.library.some((pl) => pl.id === id));
+    if (ids.length) { noteShown(rest.slug, ids); append({ type: 'shown', r: rest.slug, lib: ids, at: new Date().toISOString() }); }
+    return send(res, 204, '');
+  }
   if (p === '/api/order' && req.method === 'POST') {
     const b = await readBody(req);
     const rest = findR(clean(b.r, 40)) || findR(FIRST);
@@ -495,7 +539,7 @@ http.createServer(async (req, res) => {
       r: rest.slug,
       code: newCode(rest.slug),
       kind: clean(b.kind, 20), title: clean(b.title, 40), party: Math.min(20, +b.party || 1),
-      items, extra: clean(b.extra, 40),
+      items, extra: clean(b.extra, 40), lib: libIds(b.lib),
       total: Math.round(items.reduce((t, i) => t + i.p * i.q, 0) * 100) / 100,
       src: clean(url.searchParams.get('src') || b.src, 20),
       email: cleanEmail(b.email),
@@ -545,7 +589,7 @@ http.createServer(async (req, res) => {
       const placed = await P.place(rest, q, { code, name, phone, email, idem, sourceId: String(b.sourceId), verificationToken: b.verificationToken });
       const order = {
         id: crypto.randomBytes(9).toString('base64url'), r: rest.slug, code,
-        kind: clean(b.kind, 20), title: clean(b.title, 40), party: Math.min(20, +b.party || 1),
+        kind: clean(b.kind, 20), title: clean(b.title, 40), party: Math.min(20, +b.party || 1), lib: libIds(b.lib),
         items: q.picked.map(({ it, q: n }) => ({ n: it.n, q: n, p: it.p })), extra: q.qualifies ? rest.menu.free.name : '',
         total: q.subtotal / 100, tax: q.tax / 100, charged: placed.charged / 100,
         paid: true, pickupName: name, pos: posOf(rest), [placed.field]: placed.posOrderId, paymentStatus: placed.paymentStatus, receiptUrl: placed.receiptUrl,
@@ -786,7 +830,7 @@ http.createServer(async (req, res) => {
     if (p === '/api/portal/data') {
       const all = [...orders.values()].filter((o) => o.r === r.slug).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
       const gl = [...guests.values()].filter((g) => g.r === r.slug).sort((a, b) => b.lastSeen.localeCompare(a.lastSeen));
-      return send(res, 200, { legal: { version: LEGAL.VERSION, accepted: !!(r.accepted && r.accepted.version === LEGAL.VERSION), acceptedAt: r.accepted ? r.accepted.at : null }, restaurant: { slug: r.slug, name: r.name, email: r.owner ? r.owner.email : null }, menu: { restaurant: r.name, ...r.menu }, orders: all.slice(0, 200), totalOrders: all.length, guests: gl, emailOn: !!process.env.RESEND_API_KEY, asAdmin: isAdmin(req) && !!url.searchParams.get('r'), appUrl: APP_URL });
+      return send(res, 200, { legal: { version: LEGAL.VERSION, accepted: !!(r.accepted && r.accepted.version === LEGAL.VERSION), acceptedAt: r.accepted ? r.accepted.at : null }, restaurant: { slug: r.slug, name: r.name, email: r.owner ? r.owner.email : null }, menu: { restaurant: r.name, ...r.menu }, orders: all.slice(0, 200), totalOrders: all.length, guests: gl, libStats: libStats(r.slug), emailOn: !!process.env.RESEND_API_KEY, asAdmin: isAdmin(req) && !!url.searchParams.get('r'), appUrl: APP_URL });
     }
     if (p === '/api/portal/accept' && req.method === 'POST') {
       if (isAdmin(req) && url.searchParams.get('r')) return send(res, 403, { error: 'Only the restaurant owner can accept the agreement.' });
@@ -865,6 +909,7 @@ try{const r=await fetch('/api/contact',{method:'POST',headers:{'Content-Type':'a
   const rest = /^\/[a-z0-9-]+$/.test(p) ? findR(p.slice(1)) : null;
   if (rest) {
     const live = { restaurant: { slug: rest.slug, name: rest.name }, free: rest.menu.free, popular: rest.menu.popular, cravings: cravingsOf(rest.menu),
+      ...(rest.menu.library ? { library: rest.menu.library.filter((pl) => pl.on !== false), stats: Object.fromEntries(Object.entries(libStats(rest.slug)).map(([k, v]) => [k, [v[0], v[1]]])) } : {}),
       pay: rest.square && rest.square.appId ? { provider: 'square', appId: rest.square.appId, locationId: rest.square.locationId, sandbox: rest.square.env !== 'production' }
         : rest.clover && rest.clover.ecomPublic && rest.clover.ecomPrivate ? { provider: 'clover', publicKey: rest.clover.ecomPublic, merchantId: rest.clover.mid, sandbox: rest.clover.env !== 'production' } : null, items: rest.menu.items.filter((i) => i.on !== false && i.p > 0) };
     if (live.items.filter((i) => i.k !== 'drink').length < 2) return send(res, 200, simplePage(`Foodol is coming to ${rest.name}`, '<p>Foodol is setting up the menu here. Check back soon!</p>'), MIME['.html']);

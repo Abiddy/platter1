@@ -123,6 +123,18 @@ h2{font-size:30px;font-weight:800;letter-spacing:-.025em}
 .cb .tot{display:flex;justify-content:space-between;align-items:flex-end;margin-top:14px}
 .cb .tot b{font-size:28px;font-weight:800}
 .cb .tot small{color:var(--ink2);display:block}
+.lib{display:grid;gap:10px;margin-top:12px}
+.lrow{display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:center;background:#fff;border:1px solid var(--line);border-radius:16px;padding:12px 16px}
+.lrow.off{opacity:.5}
+.lrow .ln{font-weight:700}.lrow .li{font-size:14px;color:var(--ink2);margin-top:2px}
+.lrow .lt{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.lrow .lt span{font-size:12px;background:var(--bg2,#f2f6f3);border-radius:99px;padding:2px 9px;color:var(--ink2)}
+.lrow .ls{text-align:right;font-size:13px;color:var(--ink2);white-space:nowrap}.lrow .ls b{font-size:17px;color:var(--ink)}
+.featb{border:1px solid var(--line);background:#fff;border-radius:99px;padding:4px 11px;font-size:13px;cursor:pointer}
+.featb.on{background:#fff4d6;border-color:#f0c24b;font-weight:700}
+.lhead{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-top:34px}
+.lhead input{max-width:240px}
+@media(max-width:640px){.lrow{grid-template-columns:auto 1fr}.lrow .ls{grid-column:2;text-align:left}}
 .empty{color:var(--mut);padding:30px;text-align:center}
 .note{color:var(--mut);font-size:14px;margin-top:16px}
 /* orders */
@@ -299,6 +311,11 @@ td{padding:12px;border-bottom:1px solid var(--line);vertical-align:top}
       </div>
       <div class="combos" id="combos"></div>
       <p class="note">Combos follow your menu: items you turn off disappear here, and your popular dishes decide what Foodol recommends first.</p>
+      <div id="libWrap" class="hide">
+        <div class="lhead"><h2 style="margin:0">Combo library</h2><input class="in" id="lq" placeholder="Search combos"></div>
+        <p class="sub">Foodol picks from these hand-checked combos first, scoring each one for the guest’s cravings, the time of day, what your reviews rave about, your ★ featured items and what guests actually pick. Turn off any combo you don’t want suggested.</p>
+        <div class="lib" id="lib"></div>
+      </div>
     </section>
 
     <section data-p="guests" class="hide">
@@ -416,6 +433,7 @@ function renderMenu(){
         <div><input class="nm" data-f="n" value="${esc(i.n)}" aria-label="Name"><input class="ds" data-f="d" value="${esc(i.d)}" placeholder="Short description" aria-label="Description">
           <div class="chips">${cr().map(([k,l]) => `<button class="chip ${i.c.includes(k) ? 'on' : ''}" data-a="c" data-k="${k}">${l}</button>`).join('')}
           </div><div class="chips tags">${TAGL.map(([k,l]) => `<button class="tg ${(i.t || []).includes(k) ? 'on' : ''}" data-a="t" data-k="${k}">${l}</button>`).join('')}
+          <button class="featb ${i.b ? 'on' : ''}" data-a="feat" title="Featured items get a boost in Foodol’s combos">★ ${i.b ? 'Featured' : 'Feature'}</button>
           ${i.k !== 'drink' ? `<button class="popb ${M.popular.includes(i.id) ? 'on' : ''}" data-a="popular" title="Popular dishes are what Foodol recommends first">🔥 ${M.popular.includes(i.id) ? 'Popular #' + (M.popular.indexOf(i.id) + 1) : 'Mark popular'}</button>` : ''}
           ${!(+i.p > 0) ? '<span class="flag">Needs a price</span>' : ''}</div></div>
         <div class="pr"><input type="number" min="0" step="0.01" data-f="p" value="${(+i.p || 0).toFixed(2)}" aria-label="Price"></div>
@@ -439,6 +457,7 @@ $('menuList').addEventListener('click', (e) => {
   if (b.dataset.a === 'on') i.on = i.on === false;
   if (b.dataset.a === 'c') { const k = b.dataset.k; i.c = i.c.includes(k) ? i.c.filter((x) => x !== k) : [...i.c, k]; }
   if (b.dataset.a === 't') { const k = b.dataset.k, t = i.t || []; i.t = t.includes(k) ? t.filter((x) => x !== k) : [...t, k]; }
+  if (b.dataset.a === 'feat') { if (i.b) delete i.b; else i.b = 1; }
   if (b.dataset.a === 'popular') M.popular = M.popular.includes(i.id) ? M.popular.filter((x) => x !== i.id) : [...M.popular, i.id];
   if (b.dataset.a === 'del') { if (!confirm(`Delete “${i.n}” from your menu?`)) return; M.items.splice(idx, 1); M.popular = M.popular.filter((x) => x !== i.id); }
   renderMenu(); renderPopular(); renderOverview(); dirty();
@@ -512,12 +531,31 @@ function renderCombos(){
   $('party').querySelectorAll('button').forEach((b) => b.classList.toggle('on', +b.dataset.n === pv.party));
   $('crave').querySelectorAll('button').forEach((b) => b.classList.toggle('on', pv.craves.has(b.dataset.k)));
   const items = M.items.filter((i) => i.on !== false && +i.p > 0);
-  const cs = FoodolCombos.build(items, pv.party, [...pv.craves], M.free.on ? +M.free.min : 0, {popular: M.popular, grace: M.free.grace, freeName: M.free.on ? M.free.name : ''});
+  const cs = FoodolCombos.build(items, pv.party, [...pv.craves], M.free.on ? +M.free.min : 0, {popular: M.popular, grace: M.free.grace, freeName: M.free.on ? M.free.name : '', library: M.library, stats: Object.fromEntries(Object.entries(D.libStats || {}).map(([k, v]) => [k, [v[0], v[1]]]))});
+  renderLib();
   $('combos').innerHTML = cs.length ? cs.map((c) => { const K = FoodolCombos.KINDS[c.how], ok = FoodolCombos.qualifies(c.total, M.free);
     return `<div class="cb ${K.cls}"><span class="bd">${K.badge}</span><h4>${K.title}</h4><div class="its">${c.lines.map((l) => `<div class="it"><span class="q">${l.q}×</span><span class="n">${esc(l.i.n)}</span><span>${money(l.i.p * l.q)}</span></div>`).join('')}${ok ? `<div class="it free"><span class="q">1×</span><span class="n">${esc(M.free.name)}</span><span>FREE</span></div>` : ''}</div>
       <div class="tot"><span>${pv.party > 1 ? `<small>${money(c.total / pv.party)} per person</small>` : ''}${M.free.on ? (ok ? '<small style="color:var(--gd);font-weight:600">Earns the free item</small>' : `<small>${money(Math.max(0, M.free.min - c.total))} short of the free item</small>`) : ''}</span><b>${money(c.total)}</b></div></div>`; }).join('')
     : '<div class="empty">No combos yet. Turn on some mains for these cravings in your menu.</div>';
 }
+const SLOTL = {morning:'Morning', midday:'Lunch', afternoon:'Afternoon', evening:'Evening'};
+function renderLib(){
+  const L = M.library || [];
+  $('libWrap').classList.toggle('hide', !L.length);
+  if (!L.length) return;
+  const byId = new Map(M.items.map((i) => [i.id, i])), crl = new Map(cr()), st = D.libStats || {}, q = $('lq').value.trim().toLowerCase();
+  $('lib').innerHTML = L.map((pl, k) => {
+    const its = pl.items.map((x) => byId.get(x.id)).filter(Boolean);
+    if (q && !(pl.n + ' ' + its.map((i) => i.n).join(' ')).toLowerCase().includes(q)) return '';
+    const tot = pl.items.reduce((t, x) => t + ((byId.get(x.id) || {}).p || 0) * x.q, 0), s = st[pl.id] || [0, 0, 0];
+    const tags = (pl.cr || []).map((c) => crl.get(c) || c).concat((pl.tm || []).map((t) => SLOTL[t] || t));
+    return `<div class="lrow ${pl.on === false ? 'off' : ''}" data-k="${k}"><button class="sw ${pl.on !== false ? 'on' : ''}" data-l="on" aria-label="Suggest ${esc(pl.n)} to guests"></button>
+      <div><div class="ln">${esc(pl.n)} · ${money(tot)}</div><div class="li">${its.map((i) => esc(i.n)).join(' + ')}</div><div class="lt">${tags.map((t) => `<span>${esc(t)}</span>`).join('')}</div></div>
+      <div class="ls"><b>${s[1]}</b> picked<br>${s[0]} shown · ${s[2]} redeemed</div></div>`;
+  }).join('') || '<div class="empty">No combos match.</div>';
+}
+$('lq').oninput = renderLib;
+$('lib').addEventListener('click', (e) => { const b = e.target.closest('[data-l]'); if (!b) return; const pl = M.library[+b.closest('.lrow').dataset.k]; pl.on = pl.on === false; renderCombos(); dirty(); });
 
 /* orders */
 function renderOrders(){

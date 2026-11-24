@@ -180,8 +180,131 @@
     halal: (i) => i.k === 'drink' || (i.t || []).some((x) => x === 'halal' || x === 'vegetarian' || x === 'seafood'),
     vegetarian: (i) => i.k === 'drink' || (i.t || []).includes('vegetarian'),
   };
-  // build(items, party, cravings, freeMin, opts) — opts: { popular: [ids], grace, hour, prefs: [tags] }
+  /* ---------- Combo library ----------
+     A restaurant can have a hand-checked library of single-person combos
+     ("plates"), written once by AI from the menu, the restaurant's reviews and
+     its neighbourhood, then approved by the owner. At order time every plate
+     gets a weighted score and Foodol shows the best ones:
+       craving fit ........ high   (plates that don't match a craving are skipped)
+       halal / vegetarian . hard rule (every item must pass)
+       learned pick rate .. high, grows as real guests pick or skip a plate
+       review love (rv) ... medium (dishes people rave about in reviews)
+       owner feature (b) .. medium (new dish, high margin, stock to move)
+       popular list ....... medium
+       time of day ........ medium
+       soft preferences ... medium (savory, breakfast, lunch, spicy)
+       earns free item .... small push; plate weight (w) set by AI/owner
+       freshness .......... small per-visit jitter so the top pick rotates
+     Groups get one plate per person, mixing cravings and avoiding repeats. */
+  const SLOT = (h) => (h < 11 ? 'morning' : h < 14 ? 'midday' : h < 17 ? 'afternoon' : 'evening');
+  function hash(s) { let h = 2166136261; for (let k = 0; k < s.length; k++) { h ^= s.charCodeAt(k); h = Math.imul(h, 16777619); } return ((h >>> 0) % 1000) / 1000; }
+
+  function scorePlates(lib, byId, ctx) {
+    const { craves, surprise, slot, prefs, soft, base, stats, seed, freeLine } = ctx;
+    const sum = Object.values(stats || {}).reduce((a, v) => [a[0] + (+v[0] || 0), a[1] + (+v[1] || 0)], [0, 0]);
+    const prior = (sum[1] + 1) / (sum[0] + 8);
+    const out = [];
+    for (const pl of lib) {
+      if (pl.on === false) continue;
+      const lines = [];
+      let ok = true;
+      for (const x of pl.items || []) { const it = byId.get(x.id); if (!it) { ok = false; break; } lines.push({ i: it, q: Math.max(1, +x.q || 1) }); }
+      if (!ok || !lines.length) continue; // an item is off, sold out, or fails halal/vegetarian
+      const mains = lines.filter((l) => l.i.k === 'main').map((l) => l.i);
+      if (!mains.length) continue;
+      const cr = pl.cr || [];
+      const hit = surprise ? cr.length : cr.filter((c) => craves.includes(c)).length;
+      if (!surprise && !hit) continue;
+      const parts = {};
+      parts.craving = surprise ? 40 : 60 + (hit - 1) * 15;
+      parts.time = !pl.tm || !pl.tm.length ? 0 : pl.tm.includes(slot) ? 30 : -35;
+      parts.popular = Math.round(mains.reduce((t, m) => t + base(m), 0) / mains.length * 0.35);
+      parts.reviews = Math.min(40, lines.reduce((t, l) => t + (+l.i.rv || 0) * 8, 0));
+      parts.owner = lines.some((l) => l.i.b) ? 40 : 0;
+      parts.prefs = soft.reduce((t, p) => t + 45 * mains.filter((m) => (m.t || []).includes(p)).length / mains.length, 0)
+        + (prefs.includes('halal') && mains.some((m) => (m.t || []).includes('halal')) ? 70 : 0);
+      const st = (stats || {})[pl.id];
+      parts.learned = st ? Math.max(-30, Math.min(50, Math.round(((+st[1] || 0) + 1) / ((+st[0] || 0) + 8) * 200 - prior * 200))) : 0;
+      const tot = r2(lines.reduce((t, l) => t + l.i.p * l.q, 0));
+      parts.free = !freeLine ? 0 : tot >= freeLine ? 20 : -15;
+      parts.weight = (+pl.w || 0) * 15;
+      parts.fresh = Math.round(hash(pl.id + '|' + seed) * 14);
+      const score = Object.values(parts).reduce((a, b) => a + b, 0);
+      out.push({ pl, lines, mains, total: tot, score, parts, big: lines.length >= 3 || mains.length > 1 });
+    }
+    return out.sort((a, b) => b.score - a.score);
+  }
+
+  // One combo for the whole party: a lead plate plus one more per person,
+  // spreading cravings and avoiding the same main twice where possible.
+  function assemble(lead, ranked, n, craves) {
+    const chosen = [lead];
+    const mainCount = new Map(); lead.mains.forEach((m) => mainCount.set(m.id, 1));
+    const covered = new Set((lead.pl.cr || []).filter((c) => craves.includes(c)));
+    while (chosen.length < n) {
+      let best = null, bv = -1e9;
+      for (const c of ranked) {
+        const rep = c.mains.reduce((t, m) => t + (mainCount.get(m.id) || 0), 0);
+        const fresh = (c.pl.cr || []).some((x) => craves.includes(x) && !covered.has(x)) ? 30 : 0;
+        const v = c.score - rep * 45 + fresh - (chosen.includes(c) ? 25 : 0);
+        if (v > bv) { bv = v; best = c; }
+      }
+      if (!best) break;
+      chosen.push(best); best.mains.forEach((m) => mainCount.set(m.id, (mainCount.get(m.id) || 0) + 1));
+      (best.pl.cr || []).forEach((c) => covered.add(c));
+    }
+    const counts = new Map();
+    for (const c of chosen) for (const l of c.lines) counts.set(l.i, (counts.get(l.i) || 0) + l.q);
+    return { counts, ids: chosen.map((c) => c.pl.id) };
+  }
+
+  function fromLibrary(live, n, craves, freeLine, opts, base, prefs, soft) {
+    const byId = new Map(live.map((i) => [i.id, i]));
+    const surprise = craves.includes('surprise');
+    const hour = opts.hour ?? new Date().getHours();
+    const ranked = scorePlates(opts.library, byId, { craves, surprise, slot: SLOT(hour), prefs, soft, base, stats: opts.stats, seed: opts.seed || 0, freeLine });
+    if (!ranked.length) return [];
+    const used = new Set(), out = [], seen = new Set();
+    const mainsOf = (c) => c.mains.map((m) => m.id);
+    const top = ranked[0].score;
+    const roles = {
+      fav: () => ranked[0],
+      deal: () => ranked.filter((c) => c.score >= top - 60 && (!freeLine || c.total >= freeLine)).sort((a, b) => a.total - b.total || b.score - a.score)
+        .find((c) => !mainsOf(c).every((id) => used.has(id))),
+      adv: () => ranked.find((c) => mainsOf(c).every((id) => !used.has(id))),
+      feast: () => ranked.find((c) => c.big && c.total >= (freeLine || 0) && !seen.has(c.pl.id)),
+      wild: () => ranked.slice(2).find((c) => mainsOf(c).every((id) => !used.has(id)) && c.mains[0].s !== ranked[0].mains[0].s) || ranked.slice(3).find((c) => !seen.has(c.pl.id)),
+    };
+    for (const how of ORDER) {
+      const lead = roles[how]();
+      if (!lead) continue;
+      const { counts, ids } = assemble(lead, ranked, n, craves);
+      const c = finish(how, counts);
+      if (seen.has(c.key)) continue;
+      seen.add(c.key); seen.add(lead.pl.id); c.lib = ids; c.why = lead.parts; out.push(c);
+      mainsOf(lead).forEach((id) => used.add(id));
+    }
+    return out;
+  }
+
+  // build(items, party, cravings, freeMin, opts) — opts: { popular: [ids], grace, hour, prefs: [tags], library, stats, seed }
   function build(items, party, craveList, freeMin, opts = {}) {
+    const res = buildRules(items, party, craveList, freeMin, opts);
+    if (!opts.library || !opts.library.length) return res;
+    const n = Math.max(1, Math.min(20, +party || 1));
+    const freeName = String(opts.freeName || '').trim().toLowerCase();
+    const prefs = (opts.prefs || []).filter(Boolean);
+    const live = items.filter((i) => i.on !== false && i.p > 0 && (!freeName || i.n.trim().toLowerCase() !== freeName) && prefs.every((p) => !STRICT[p] || STRICT[p](i)));
+    const popular = opts.popular && opts.popular.length ? opts.popular : live.filter((i) => (+i.pop || 0) >= 5).map((i) => i.id);
+    const craves = craveList && craveList.length ? craveList : ['surprise'];
+    const lib = fromLibrary(live, n, craves, freeMin ? freeMin - (opts.grace ?? 0.5) : 0, opts, scorer(popular), prefs, prefs.filter((p) => !STRICT[p]));
+    if (lib.length >= 3) return lib;
+    // library too thin for this request: top up with rule-built combos in the roles still free
+    const have = new Set(lib.map((c) => c.how)), keys = new Set(lib.map((c) => c.key));
+    return lib.concat(res.filter((c) => !have.has(c.how) && !keys.has(c.key))).sort((a, b) => ORDER.indexOf(a.how) - ORDER.indexOf(b.how));
+  }
+
+  function buildRules(items, party, craveList, freeMin, opts = {}) {
     const n = Math.max(1, Math.min(20, +party || 1));
     const freeName = String(opts.freeName || '').trim().toLowerCase();
     const prefs = (opts.prefs || []).filter(Boolean);
