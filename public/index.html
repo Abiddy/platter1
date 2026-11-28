@@ -205,6 +205,10 @@ h1{font-size:38px;line-height:1.02;letter-spacing:-.03em;font-weight:800}
 #picks .pdots{margin:0 0 10px!important}
 .actrow{display:flex;gap:10px;align-items:stretch}
 .actrow .btn{flex:1}
+#choose.earn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;line-height:1.15;padding-top:10px;padding-bottom:10px}
+#choose .ctl{display:flex;align-items:center;gap:7px;font-size:18px;white-space:nowrap}
+#choose .cts{font-size:12.5px;font-weight:600;opacity:.92;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.htag{display:inline-block;vertical-align:2px;margin-left:6px;font-size:10.5px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:#fff;background:var(--green);border-radius:6px;padding:2px 6px}
 .redo{flex:none;width:60px;border-radius:18px;background:#fff;border:2px solid var(--line);display:grid;place-items:center;color:var(--ink)}
 .redo svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
 .redo:active{transform:scale(.96)}
@@ -358,11 +362,7 @@ h1{font-size:38px;line-height:1.02;letter-spacing:-.03em;font-weight:800}
   <!-- 2-4. the question form: one scrolling page, answered questions stay above -->
   <section class="screen" id="who">
     <div class="top ftop"><button class="back" data-go="hello" aria-label="Back"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button><div class="dots" id="fdots"></div><button class="own" data-go="build">Pick my own</button></div>
-    <div class="fq cur" id="qWho">
-      <div class="ask"><img src="https://d2ol7oe51mr4n9.cloudfront.net/user_3GsbRE1t9hIx7tjNcLo5jEaZ8ao/96e4324c-5fc2-4a1f-a62b-067f2a812d76.webp" alt=""><div class="bubble">Who's eating today?</div></div>
-      <div class="grid" id="whoGrid"></div>
-    </div>
-    <div class="fq" id="qCrave" hidden>
+    <div class="fq cur" id="qCrave">
       <div class="ask"><img src="https://d2ol7oe51mr4n9.cloudfront.net/user_3GsbRE1t9hIx7tjNcLo5jEaZ8ao/96e4324c-5fc2-4a1f-a62b-067f2a812d76.webp" alt=""><div class="bubble">What are you craving?</div></div>
       <p class="hintline">Pick as many as you like.</p>
       <div class="grid" id="craveGrid"></div>
@@ -513,7 +513,6 @@ const FREE_MIN = FREE.on ? +FREE.min || 0 : Infinity;
 const ITEMS = MENU.items.filter((i) => i.on !== false && i.p > 0);
 const hasFree = (total) => FoodolCombos.qualifies(total, FREE);
 
-const WHO = [[1,'Just me','t1'],[2,'Two of us','t2'],[4,'Family','t3'],[6,'Big group','t4']];
 const TONES = ['t3','t2','t1','t5','t3','t2'];
 const CRAVE = (MENU.cravings && MENU.cravings.length ? MENU.cravings : [
   {id:'breakfast',label:'Breakfast',img:'41101946-0e96-4010-b8b0-b3ed77a520e9'},
@@ -524,7 +523,7 @@ const CRAVE = (MENU.cravings && MENU.cravings.length ? MENU.cravings : [
   .concat([['surprise','Surprise me!','683fe273-a1dc-4057-aad1-5e229c7e08dc','t4']]);
 const KINDS = FoodolCombos.KINDS;
 
-const S = {party:2, craves:new Set(), combos:[], idx:0, order:null, cart:{}};
+const S = {party:1, craves:new Set(), combos:[], idx:0, order:null, cart:{}};
 const $ = (id) => document.getElementById(id);
 const money = (v) => '$' + v.toFixed(2);
 const esc = (t) => String(t ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -541,14 +540,12 @@ function go(id){
 document.querySelectorAll('[data-go]').forEach((b) => b.onclick = () => go(b.dataset.go));
 
 /* question tiles */
-$('whoGrid').innerHTML = WHO.map(([n,l,t]) => `<button class="tile ${t}" data-n="${n}"><span class="big">${n === 6 ? '5+' : n}</span><span class="lbl">${l}</span></button>`).join('');
 $('craveGrid').innerHTML = CRAVE.map(([k,l,img,t,emo],i) => `<button class="tile ${t} ${i === CRAVE.length - 1 && CRAVE.length % 2 ? 'wide' : ''}" data-k="${esc(k)}" aria-pressed="false"><span class="check" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg></span>${img ? `<img src="${IMG + img}.webp" alt="" width="76" height="76">` : `<span class="emo" aria-hidden="true">${esc(emo || '🍽️')}</span>`}<span class="lbl">${esc(l)}</span></button>`).join('');
 const pickTile = (b, then) => { b.classList.add('pick'); setTimeout(() => { b.classList.remove('pick'); then(); }, 160); };
-$('whoGrid').querySelectorAll('.tile').forEach((b) => b.onclick = () => pickTile(b, () => { S.party = +b.dataset.n; $('whoGrid').querySelectorAll('.tile').forEach((t) => t.classList.toggle('chosen', t === b)); toStep(1); }));
 function syncCrave(){
   $('craveGrid').querySelectorAll('.tile').forEach((b) => { const on = S.craves.has(b.dataset.k); b.classList.toggle('sel', on); b.setAttribute('aria-pressed', on); });
   const n = S.craves.size, g = $('craveGo');
-  g.disabled = !n; g.textContent = !n ? 'Pick at least one' : PREF_ON.length ? 'Next' : S.craves.has('surprise') ? 'Surprise me, Foodol!' : 'Show my combos';
+  g.disabled = !n; g.textContent = !n ? 'Pick at least one' : 'Next';
 }
 $('craveGrid').querySelectorAll('.tile').forEach((b) => b.onclick = () => {
   const k = b.dataset.k;
@@ -558,9 +555,10 @@ $('craveGrid').querySelectorAll('.tile').forEach((b) => b.onclick = () => {
 });
 /* preferences: halal & vegetarian filter, the rest lean the picks. Only tags this menu uses show up. */
 const PREFS = [['halal','Halal'],['vegetarian','Vegetarian'],['spicy','Spicy'],['savory','Savory'],['breakfast','Breakfast'],['lunch','Lunch']];
-const PREF_ON = PREFS.filter(([k]) => ITEMS.filter((i) => i.k !== 'drink' && (i.t || []).includes(k)).length >= 2);
+const PREF_ON = PREFS.filter(([k]) => ITEMS.filter((i) => i.k !== 'drink' && (i.t || []).includes(k)).length >= 2)
+  .concat([['light','Light bite'],['hungry','Extra hungry']]); // these two work on every menu
 S.prefs = new Set((new URLSearchParams(location.search).get('pref') || '').split(',').filter((k) => PREF_ON.some(([x]) => x === k)));
-const PREF_SUB = {halal:'Only halal items', vegetarian:'No meat', spicy:'Bring the heat', savory:'Less sweet stuff', breakfast:'Morning favorites', lunch:'Hearty, filling picks'};
+const PREF_SUB = {light:'Something smaller', hungry:'A bigger, fuller combo', halal:'Halal dishes first', vegetarian:'No meat', spicy:'Bring the heat', savory:'Less sweet stuff', breakfast:'Morning favorites', lunch:'Hearty, filling picks'};
 const TICK = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg>';
 $('prefRow').innerHTML = PREF_ON.map(([k,l]) => `<button class="po" data-p="${k}" aria-pressed="false"><span class="bx">${TICK}</span><span>${esc(l)}<small>${PREF_SUB[k] || ''}</small></span></button>`).join('');
 function renderPrefs(){
@@ -568,10 +566,12 @@ function renderPrefs(){
   $('prefGo').textContent = S.prefs.size ? 'Show my combos' : 'Skip, show my combos';
   $('halPill').hidden = !S.prefs.has('halal');
 }
-$('prefRow').onclick = (e) => { const b = e.target.closest('.po'); if (!b) return; const k = b.dataset.p; S.prefs.has(k) ? S.prefs.delete(k) : S.prefs.add(k); renderPrefs(); };
+$('prefRow').onclick = (e) => { const b = e.target.closest('.po'); if (!b) return; const k = b.dataset.p;
+  if (S.prefs.has(k)) S.prefs.delete(k); else { S.prefs.add(k); if (k === 'light') S.prefs.delete('hungry'); if (k === 'hungry') S.prefs.delete('light'); }
+  renderPrefs(); };
 renderPrefs();
 /* form steps: reveal the next question and glide to it; scrolling up shows earlier answers */
-const QS = ['qWho','qCrave'].concat(PREF_ON.length ? ['qPref'] : []).map($);
+const QS = ['qCrave','qPref'].map($);
 function setCur(i){
   QS.forEach((q, j) => q.classList.toggle('cur', j === i));
   $('fdots').innerHTML = QS.map((_, j) => `<i class="${j <= i ? 'on' : ''}"></i>`).join('');
@@ -592,7 +592,7 @@ addEventListener('scroll', () => { if (qRaf || !$('who').classList.contains('on'
 QS.forEach((q, j) => q.addEventListener('pointerdown', () => { if (!q.classList.contains('cur')) setCur(j); }));
 setCur(0);
 const showPicks = () => { go('think'); setTimeout(() => { buildPicks(); go('picks'); }, 1100); };
-$('craveGo').onclick = () => { if (!S.craves.size) return; PREF_ON.length ? toStep(2) : showPicks(); };
+$('craveGo').onclick = () => { if (!S.craves.size) return; toStep(1); };
 $('prefGo').onclick = showPicks;
 syncCrave();
 
@@ -631,12 +631,13 @@ function renderPicks(){
       <div class="card ${K.cls}">
         <div class="bdrow"><span class="badge">${K.badge}</span>${S.prefs.has('halal') ? '<span class="hal">Halal</span>' : ''}</div>
         ${heroHtml(c)}
-        <div class="items">${c.lines.map((l) => `<div class="it">${lead(l, pics(c))}<span class="n">${esc(fullName(l.i))}</span><span class="p">${money(l.i.p * l.q)}</span></div>`).join('')}${ok ? freeRow(FREE_EXTRA, pics(c)) : !add ? '' : `<div class="nudge"><span class="n">Add ${money(rem)} more for a free ${esc(FREE_EXTRA)}</span><button class="addb" data-ci="${ci}" data-id="${add.id}">+ ${esc(fullName(add))}</button></div>`}</div>
+        <div class="items">${c.lines.map((l) => `<div class="it">${lead(l, pics(c))}<span class="n">${esc(fullName(l.i))}${halTag(l.i)}</span><span class="p">${money(l.i.p * l.q)}</span></div>`).join('')}${ok || !add ? '' : `<div class="nudge"><span class="n">Add ${money(rem)} more for a free ${esc(FREE_EXTRA)}</span><button class="addb" data-ci="${ci}" data-id="${add.id}">+ ${esc(fullName(add))}</button></div>`}</div>
         <div class="tot"><span class="l">Total${S.party > 1 ? `<div class="pp" style="text-align:left">${money(c.total / S.party)} per person</div>` : ''}</span><span class="v">${money(c.total)}</span></div>
       </div></div>`;
   }).join('');
   $('pdots').innerHTML = S.combos.map((_,i) => `<i class="${i === S.idx ? 'on' : ''}"></i>`).join('');
   $('rail').scrollLeft = keep;
+  syncCTA();
   $('rail').querySelectorAll('.addb').forEach((b) => b.onclick = () => {
     const c = S.combos[+b.dataset.ci], it = ITEMS.find((i) => i.id === b.dataset.id);
     const line = c.lines.find((l) => l.i === it); if (line) line.q++; else c.lines.push({i:it, q:1});
@@ -647,7 +648,16 @@ $('rail').addEventListener('scroll', () => {
   const r = $('rail'), w = r.firstElementChild ? r.firstElementChild.offsetWidth + 14 : 1;
   S.idx = Math.max(0, Math.min(S.combos.length - 1, Math.round(r.scrollLeft / w)));
   [...$('pdots').children].forEach((d,i) => d.classList.toggle('on', i === S.idx));
+  syncCTA();
 }, {passive:true});
+// the big button sells the free item when this combo earns it
+function syncCTA(){
+  const c = S.combos[S.idx], b = $('choose'); if (!c) return;
+  const earns = FREE.on && hasFree(c.total);
+  b.classList.toggle('earn', earns);
+  b.innerHTML = earns ? `<span class="ctl">${giftSvg()} Claim your free item</span><span class="cts">${PAY ? 'Order & pay' : 'Redeem this combo'} · ${esc(FREE_EXTRA)} on us</span>` : (PAY ? 'Order & pay' : 'Redeem now');
+}
+function halTag(i){ return (i.t || []).includes('halal') ? '<span class="htag">Halal</span>' : ''; }
 function freeRow(x, photos){ return `<div class="it freeit">${photos && FREE.img ? `<span class="th fr"><img src="${esc(FREE.img)}" alt=""></span>` : '<span class="q">1×</span>'}<span class="n">${esc(x)}</span><span class="freetag">FREE</span></div>`; }
 /* real dish photos: a hero shot of the main dish plus thumbnails on every line */
 const pics = (c) => c.lines.some((l) => l.i.img);
@@ -843,7 +853,7 @@ const secs = [...new Set(ITEMS.map((i) => i.s))];
 function renderBuild(){
   $('buildList').innerHTML = secs.map((sname) => `<div class="sec">${esc(sname)}</div>` + ITEMS.filter((i) => i.s === sname).map((i) => {
     const q = S.cart[i.id] || 0;
-    return `<div class="mi">${i.img ? `<img class="mimg" src="${esc(i.img)}" alt="" loading="lazy">` : ''}<div class="x"><div class="a">${esc(i.n)}</div><div class="b">${esc(i.d)}</div><div class="pr">${money(i.p)}</div></div>
+    return `<div class="mi">${i.img ? `<img class="mimg" src="${esc(i.img)}" alt="" loading="lazy">` : ''}<div class="x"><div class="a">${esc(i.n)}${halTag(i)}</div><div class="b">${esc(i.d)}</div><div class="pr">${money(i.p)}</div></div>
       <div class="step">${q ? `<button class="sbtn" data-m="${i.id}" aria-label="Remove one ${esc(i.n)}">−</button><span class="qn">${q}</span><button class="sbtn" data-p="${i.id}" aria-label="Add one ${esc(i.n)}">+</button>` : `<button class="sbtn add" data-p="${i.id}">Add</button>`}</div></div>`;
   }).join('')).join('');
   $('buildList').querySelectorAll('[data-p]').forEach((b) => b.onclick = () => { S.cart[b.dataset.p] = (S.cart[b.dataset.p] || 0) + 1; renderBuild(); });

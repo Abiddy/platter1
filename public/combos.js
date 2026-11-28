@@ -200,7 +200,7 @@
   function hash(s) { let h = 2166136261; for (let k = 0; k < s.length; k++) { h ^= s.charCodeAt(k); h = Math.imul(h, 16777619); } return ((h >>> 0) % 1000) / 1000; }
 
   function scorePlates(lib, byId, ctx) {
-    const { craves, surprise, slot, prefs, soft, base, stats, seed, freeLine } = ctx;
+    const { craves, surprise, slot, prefs, soft, base, stats, seed, freeLine, halalMain } = ctx;
     const sum = Object.values(stats || {}).reduce((a, v) => [a[0] + (+v[0] || 0), a[1] + (+v[1] || 0)], [0, 0]);
     const prior = (sum[1] + 1) / (sum[0] + 8);
     const out = [];
@@ -213,11 +213,12 @@
       const mains = lines.filter((l) => l.i.k === 'main').map((l) => l.i);
       if (!mains.length) continue;
       const cr = pl.cr || [];
+      if (halalMain && !mains.some((m) => (m.t || []).includes('halal'))) continue; // halal guests: chicken (halal) main first
       const hit = surprise ? cr.length : cr.filter((c) => craves.includes(c)).length;
-      if (!surprise && !hit) continue;
+      if (!surprise && !hit && !halalMain) continue;
       const parts = {};
       // a main dish that isn't any of the picked cravings (a Thai plate for someone who asked for sweet) ranks lower
-      const offMains = surprise ? 0 : mains.filter((m) => !m.c.some((c) => craves.includes(c))).length;
+      const offMains = surprise || halalMain ? 0 : mains.filter((m) => !m.c.some((c) => craves.includes(c))).length;
       parts.craving = surprise ? 40 : 60 + (hit - 1) * 15 - offMains * 35;
       parts.time = !pl.tm || !pl.tm.length ? 0 : pl.tm.includes(slot) ? 30 : -35;
       parts.popular = Math.round(mains.reduce((t, m) => t + base(m), 0) / mains.length * 0.35);
@@ -230,6 +231,8 @@
       const tot = r2(lines.reduce((t, l) => t + l.i.p * l.q, 0));
       parts.free = !freeLine ? 0 : tot >= freeLine ? 20 : -15;
       parts.weight = (+pl.w || 0) * 15;
+      // size preferences work on every menu: light bite leans small, extra hungry leans big
+      parts.size = prefs.includes('light') ? -tot * 3 + (lines.length <= 2 ? 25 : 0) : prefs.includes('hungry') ? tot * 3 + (lines.length >= 3 || mains.length > 1 ? 30 : 0) : 0;
       parts.fresh = Math.round(hash(pl.id + '|' + seed) * 14);
       const score = Object.values(parts).reduce((a, b) => a + b, 0);
       out.push({ pl, lines, mains, total: tot, score, parts, offMains, big: lines.length >= 3 || mains.length > 1 });
@@ -265,7 +268,8 @@
     const byId = new Map(live.map((i) => [i.id, i]));
     const surprise = craves.includes('surprise');
     const hour = opts.hour ?? new Date().getHours();
-    const ranked = scorePlates(opts.library, byId, { craves, surprise, slot: SLOT(hour), prefs, soft, base, stats: opts.stats, seed: opts.seed || 0, freeLine });
+    const halalMain = prefs.includes('halal') && live.some((i) => i.k === 'main' && (i.t || []).includes('halal'));
+    const ranked = scorePlates(opts.library, byId, { craves, surprise, slot: SLOT(hour), prefs, soft, base, stats: opts.stats, seed: opts.seed || 0, freeLine, halalMain });
     if (!ranked.length) return [];
     const used = new Set(), out = [], seen = new Set(), avoid = new Set();
     const byPlate = new Map(ranked.map((c) => [c.pl.id, c]));
@@ -299,6 +303,13 @@
 
   // build(items, party, cravings, freeMin, opts) — opts: { popular: [ids], grace, hour, prefs: [tags], library, stats, seed }
   function build(items, party, craveList, freeMin, opts = {}) {
+    const out = buildMain(items, party, craveList, freeMin, opts), pf = opts.prefs || [];
+    // size preferences: light bite shows the smaller combos first, extra hungry the bigger ones
+    if (pf.includes('light')) out.sort((a, b) => a.total - b.total);
+    else if (pf.includes('hungry')) out.sort((a, b) => b.total - a.total);
+    return out;
+  }
+  function buildMain(items, party, craveList, freeMin, opts = {}) {
     const res = buildRules(items, party, craveList, freeMin, opts);
     if (!opts.library || !opts.library.length) return res;
     const n = Math.max(1, Math.min(20, +party || 1));
@@ -326,7 +337,10 @@
     const soft = prefs.filter((p) => !STRICT[p]);
     // halal guests see a halal dish first (not just a cheese crepe); other prefs boost matching dishes
     const sc = (i) => base(i) + soft.filter((p) => (i.t || []).includes(p)).length * 45 + (prefs.includes('halal') && (i.t || []).includes('halal') ? 70 : 0);
-    const mains = live.filter((i) => i.k === 'main');
+    let mains = live.filter((i) => i.k === 'main');
+    // halal is the top priority: build every combo around a halal-tagged main (e.g. the chicken), whatever the craving
+    const halalMains = prefs.includes('halal') ? mains.filter((m) => (m.t || []).includes('halal')) : [];
+    if (halalMains.length) mains = halalMains;
     if (!mains.length) return [];
     const craves = (craveList && craveList.length ? craveList : ['surprise']);
     const hour = opts.hour ?? new Date().getHours();
