@@ -146,6 +146,15 @@ h1{font-size:38px;line-height:1.02;letter-spacing:-.03em;font-weight:800}
 .it:last-child{border-bottom:0}
 .q{min-width:30px;height:26px;border-radius:8px;background:#fff;font-size:13px;font-weight:700;display:grid;place-items:center}
 .it .n{flex:1;font-size:15px;font-weight:500;line-height:1.25}
+.hero{position:relative;height:172px;border-radius:20px;overflow:hidden;margin-bottom:12px;background:#fff;flex:none}
+.hero>img{width:100%;height:100%;object-fit:cover;display:block}
+.hero .minis{position:absolute;left:10px;bottom:10px;display:flex}
+.hero .minis img{width:54px;height:54px;border-radius:50%;object-fit:cover;border:3px solid #fff;margin-right:-12px;box-shadow:0 4px 12px rgba(0,0,0,.18);background:#fff}
+.th{position:relative;flex:none;width:44px;height:44px;border-radius:12px;overflow:visible;background:#fff;display:grid;place-items:center;font-size:13px;font-weight:700}
+.th img{width:44px;height:44px;max-width:none;object-fit:cover;border-radius:12px;display:block}
+.th b{position:absolute;right:-6px;bottom:-6px;background:var(--ink);color:#fff;font-size:11px;font-weight:700;border-radius:8px;padding:2px 5px;line-height:1.2}
+.th.fr img{object-fit:contain;padding:3px}
+.mimg{width:76px;height:76px;border-radius:16px;object-fit:cover;flex:none;background:var(--soft,#f4f6f4)}
 .it .p{font-size:15px;font-variant-numeric:tabular-nums}
 .it.freeit,#picks .it.freeit{position:relative;overflow:hidden;background:linear-gradient(135deg,#fff 0%,#f1fbf4 100%);border:1.5px solid rgba(46,170,90,.55);border-radius:16px;margin:10px 0 8px;padding:12px 12px 12px 12px;box-shadow:0 0 0 4px rgba(61,190,106,.10),0 8px 22px -6px rgba(46,170,90,.35)}
 .it.freeit::after{content:"";position:absolute;inset:0;background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.85) 50%,transparent 70%);transform:translateX(-120%);animation:sheen 3.2s 1s ease-in-out infinite;pointer-events:none}
@@ -621,7 +630,8 @@ function renderPicks(){
     return `<div class="slide"><img class="peek" src="${PEEK}" alt="" width="220" height="149">
       <div class="card ${K.cls}">
         <div class="bdrow"><span class="badge">${K.badge}</span>${S.prefs.has('halal') ? '<span class="hal">Halal</span>' : ''}</div>
-        <div class="items">${c.lines.map((l) => `<div class="it"><span class="q">${l.q}×</span><span class="n">${esc(fullName(l.i))}</span><span class="p">${money(l.i.p * l.q)}</span></div>`).join('')}${ok ? freeRow(FREE_EXTRA) : !add ? '' : `<div class="nudge"><span class="n">Add ${money(rem)} more for a free ${esc(FREE_EXTRA)}</span><button class="addb" data-ci="${ci}" data-id="${add.id}">+ ${esc(fullName(add))}</button></div>`}</div>
+        ${heroHtml(c)}
+        <div class="items">${c.lines.map((l) => `<div class="it">${lead(l, pics(c))}<span class="n">${esc(fullName(l.i))}</span><span class="p">${money(l.i.p * l.q)}</span></div>`).join('')}${ok ? freeRow(FREE_EXTRA, pics(c)) : !add ? '' : `<div class="nudge"><span class="n">Add ${money(rem)} more for a free ${esc(FREE_EXTRA)}</span><button class="addb" data-ci="${ci}" data-id="${add.id}">+ ${esc(fullName(add))}</button></div>`}</div>
         <div class="tot"><span class="l">Total${S.party > 1 ? `<div class="pp" style="text-align:left">${money(c.total / S.party)} per person</div>` : ''}</span><span class="v">${money(c.total)}</span></div>
       </div></div>`;
   }).join('');
@@ -638,7 +648,19 @@ $('rail').addEventListener('scroll', () => {
   S.idx = Math.max(0, Math.min(S.combos.length - 1, Math.round(r.scrollLeft / w)));
   [...$('pdots').children].forEach((d,i) => d.classList.toggle('on', i === S.idx));
 }, {passive:true});
-function freeRow(x){ return `<div class="it freeit"><span class="q">1×</span><span class="n">${esc(x)}</span><span class="freetag">FREE</span></div>`; }
+function freeRow(x, photos){ return `<div class="it freeit">${photos && FREE.img ? `<span class="th fr"><img src="${esc(FREE.img)}" alt=""></span>` : '<span class="q">1×</span>'}<span class="n">${esc(x)}</span><span class="freetag">FREE</span></div>`; }
+/* real dish photos: a hero shot of the main dish plus thumbnails on every line */
+const pics = (c) => c.lines.some((l) => l.i.img);
+function heroHtml(c){
+  const ph = c.lines.filter((l) => l.i.img); if (!ph.length) return '';
+  const hero = ph.find((l) => l.i.k === 'main') || ph[0];
+  const minis = ph.filter((l) => l !== hero && l.i.img !== hero.i.img).slice(0, 3);
+  return `<div class="hero"><img src="${esc(hero.i.img)}" alt="${esc(fullName(hero.i))}">${minis.length ? `<div class="minis">${minis.map((l) => `<img src="${esc(l.i.img)}" alt="">`).join('')}</div>` : ''}</div>`;
+}
+function lead(l, photos){
+  if (!photos) return `<span class="q">${l.q}×</span>`;
+  return l.i.img ? `<span class="th"><img src="${esc(l.i.img)}" alt="" loading="lazy">${l.q > 1 ? `<b>${l.q}×</b>` : ''}</span>` : `<span class="th ph">${l.q}×</span>`;
+}
 function giftSvg(){ return '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="8" width="18" height="13" rx="2"/><path d="M12 8v13M3 12h18M7.5 8a2.5 2.5 0 1 1 4.5-1.5V8M16.5 8A2.5 2.5 0 1 0 12 6.5V8"/></svg>'; }
 
 /* reward celebration: sound, haptic tap, confetti */
@@ -821,7 +843,7 @@ const secs = [...new Set(ITEMS.map((i) => i.s))];
 function renderBuild(){
   $('buildList').innerHTML = secs.map((sname) => `<div class="sec">${esc(sname)}</div>` + ITEMS.filter((i) => i.s === sname).map((i) => {
     const q = S.cart[i.id] || 0;
-    return `<div class="mi"><div class="x"><div class="a">${esc(i.n)}</div><div class="b">${esc(i.d)}</div><div class="pr">${money(i.p)}</div></div>
+    return `<div class="mi">${i.img ? `<img class="mimg" src="${esc(i.img)}" alt="" loading="lazy">` : ''}<div class="x"><div class="a">${esc(i.n)}</div><div class="b">${esc(i.d)}</div><div class="pr">${money(i.p)}</div></div>
       <div class="step">${q ? `<button class="sbtn" data-m="${i.id}" aria-label="Remove one ${esc(i.n)}">−</button><span class="qn">${q}</span><button class="sbtn" data-p="${i.id}" aria-label="Add one ${esc(i.n)}">+</button>` : `<button class="sbtn add" data-p="${i.id}">Add</button>`}</div></div>`;
   }).join('')).join('');
   $('buildList').querySelectorAll('[data-p]').forEach((b) => b.onclick = () => { S.cart[b.dataset.p] = (S.cart[b.dataset.p] || 0) + 1; renderBuild(); });

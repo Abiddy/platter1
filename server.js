@@ -101,6 +101,8 @@ function cleanCravings(list) {
 const cravingsOf = (menu) => menu.cravings || DEFAULT_CRAVINGS;
 // Item tags guests can filter or lean on: halal/vegetarian are strict filters, the rest are preferences.
 const TAGS = ['halal', 'vegetarian', 'seafood', 'spicy', 'savory', 'breakfast', 'lunch'];
+// a dish photo: our own /img folder or our CDN
+const okImg = (v) => /^\/img\/[a-z0-9-]+\/[a-z0-9._-]+\.(jpe?g|png|webp)$/.test(String(v || '')) || /^https:\/\/d2ol7oe51mr4n9\.cloudfront\.net\/[\w\/.-]+$/.test(String(v || ''));
 function cleanMenu(b) {
   const f = b.free || {};
   const cravings = cleanCravings(b.cravings);
@@ -118,12 +120,13 @@ function cleanMenu(b) {
       ...(i.sq ? { sq: String(i.sq).replace(/[^A-Za-z0-9_-]/g, '').slice(0, 64) } : {}),
       ...(+i.rv > 0 ? { rv: Math.min(3, Math.round(+i.rv)) } : {}), // review love: how often reviews praise it (0-3)
       ...(i.b ? { b: 1 } : {}), // owner feature boost
+      ...(okImg(i.img) ? { img: String(i.img) } : {}), // real photo of the dish (our /img folder or our CDN)
       ...(i.cl ? { cl: String(i.cl).replace(/[^A-Za-z0-9_-]/g, '').slice(0, 64) } : {}),
     };
   }).filter((i) => i.n);
   const ids = new Set(items.filter((i) => i.k !== 'drink').map((i) => i.id));
   const popular = (Array.isArray(b.popular) ? b.popular : []).map((x) => String(x)).filter((x, k, a) => ids.has(x) && a.indexOf(x) === k).slice(0, 30);
-  const menu = { free: { on: !!f.on, name: clean(f.name, 40) || 'free item', min: num(f.min, 0, 500), grace: num(f.grace ?? 0.5, 0, 5), img: /^https:\/\/d2ol7oe51mr4n9\.cloudfront\.net\/[\w\/.-]+$/.test(String(f.img || '')) ? String(f.img) : '' }, items, popular };
+  const menu = { free: { on: !!f.on, name: clean(f.name, 40) || 'free item', min: num(f.min, 0, 500), grace: num(f.grace ?? 0.5, 0, 5), img: okImg(f.img) ? String(f.img) : '' }, items, popular };
   if (cravings) menu.cravings = cravings;
   const lib = cleanLibrary(b.library, new Set(items.map((i) => i.id)), CRAVES);
   if (lib.length) menu.library = lib;
@@ -249,7 +252,7 @@ ${order.extra ? `<tr><td align="center" style="padding-top:18px"><span style="di
 }
 
 /* ---------- http helpers ---------- */
-const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.png': 'image/png', '.webp': 'image/webp', '.ico': 'image/x-icon', '.json': 'application/json' };
+const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp', '.ico': 'image/x-icon', '.json': 'application/json' };
 function send(res, status, body, type = 'application/json') {
   res.writeHead(status, { 'Content-Type': type, 'Cache-Control': 'no-store' });
   res.end(typeof body === 'string' || Buffer.isBuffer(body) ? body : JSON.stringify(body));
@@ -391,7 +394,7 @@ function menuFromRows(rows, keep, key) {
     const k = old ? old.k : DRINK_RE.test(sname + ' ' + r.n) ? 'drink' : SIDE_RE.test(sname) ? 'side' : 'main';
     items.push({ id: String(r.pid).slice(0, 24), [key]: r.pid, s: sname, n: r.n, d: String(r.d || '').replace(/\s+/g, ' ').trim().slice(0, 140),
       p: r.p, c: old ? old.c : [slugify(sname).slice(0, 20)], k, pop: old ? old.pop : 3, on: old ? old.on : true,
-      ...(old && old.t ? { t: old.t } : {}), ...(old && old.rv ? { rv: old.rv } : {}), ...(old && old.b ? { b: old.b } : {}) });
+      ...(old && old.t ? { t: old.t } : {}), ...(old && old.rv ? { rv: old.rv } : {}), ...(old && old.b ? { b: old.b } : {}), ...(old && old.img ? { img: old.img } : {}) });
     if (old) idMap.set(old.id, String(r.pid).slice(0, 24));
   }
   const oldIds = new Map((keep.items || []).map((i) => [i.id, i]));
@@ -934,7 +937,7 @@ try{const r=await fetch('/api/contact',{method:'POST',headers:{'Content-Type':'a
   if (!f.startsWith(PUBLIC + path.sep) || /\/(index|admin|portal|home)\.html$/.test(f)) return send(res, 404, simplePage('Not found', '<p>That page doesn’t exist. <a href="/">Go to Foodol</a></p>'), 'text/html; charset=utf-8');
   fs.readFile(f, (err, data) => {
     if (err) return send(res, 404, simplePage('Not found', '<p>That page doesn’t exist. <a href="/">Go to Foodol</a></p>'), 'text/html; charset=utf-8');
-    res.writeHead(200, { 'Content-Type': MIME[path.extname(f)] || 'application/octet-stream', 'Cache-Control': 'public, max-age=300' });
+    res.writeHead(200, { 'Content-Type': MIME[path.extname(f)] || 'application/octet-stream', 'Cache-Control': p.startsWith('/img/') ? 'public, max-age=86400' : 'public, max-age=300' });
     res.end(data);
   });
 }).listen(PORT, '0.0.0.0', () => console.log('Foodol listening on', PORT));
