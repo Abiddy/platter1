@@ -219,7 +219,7 @@
       const parts = {};
       // a main dish that isn't any of the picked cravings (a Thai plate for someone who asked for sweet) ranks lower
       const offMains = surprise || halalMain ? 0 : mains.filter((m) => !m.c.some((c) => craves.includes(c))).length;
-      parts.craving = surprise ? 40 : 60 + (hit - 1) * 15 - offMains * 35;
+      parts.craving = surprise ? 40 : hit ? 60 + (hit - 1) * 15 - offMains * 35 : 0; // (no hit only happens for halal guests: plates that also match the craving come first)
       parts.time = !pl.tm || !pl.tm.length ? 0 : pl.tm.includes(slot) ? 30 : -35;
       parts.popular = Math.round(mains.reduce((t, m) => t + base(m), 0) / mains.length * 0.35);
       parts.reviews = Math.min(40, lines.reduce((t, l) => t + (+l.i.rv || 0) * 8, 0));

@@ -662,8 +662,8 @@ function freeRow(x, photos){ return `<div class="it freeit">${photos && FREE.img
 /* real dish photos: a hero shot of the main dish plus thumbnails on every line */
 const pics = (c) => c.lines.some((l) => l.i.img);
 function heroHtml(c){
-  const ph = c.lines.filter((l) => l.i.img); if (!ph.length) return '';
-  const hero = ph.find((l) => l.i.k === 'main') || ph[0];
+  const ph = c.lines.filter((l) => l.i.img);
+  const hero = ph.find((l) => l.i.k === 'main'); if (!hero) return ''; // the big photo is always the main dish, never a drink
   const minis = ph.filter((l) => l !== hero && l.i.img !== hero.i.img).slice(0, 3);
   return `<div class="hero"><img src="${esc(hero.i.img)}" alt="${esc(fullName(hero.i))}">${minis.length ? `<div class="minis">${minis.map((l) => `<img src="${esc(l.i.img)}" alt="">`).join('')}</div>` : ''}</div>`;
 }
